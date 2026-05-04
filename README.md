@@ -1,59 +1,64 @@
-# Kawaii VS Code Color - VS Code Theme
+# Kawaii VS Code Color
 
-![Kawaii VS Code Color logo over a cityscape](./icon.png)
+![Kawaii VS Code Color logo](icon.png)
 
-Kawaii VS Code Color is a dark pink and light green pastel-pink VS Code theme. The visual focus comes first: the dark theme leans into neon pink contrast, while the light theme uses soft green and pastel pink. It is inspired by [SynthWave '84](https://github.com/robb0wen/synthwave-vscode) and [Sakura Theme](https://github.com/mhiratani/theme-sakura), and was originally forked from [SynthWave '84](https://github.com/robb0wen/synthwave-vscode) by [Robb Owen](https://github.com/robb0wen). This fork keeps the optional Neon Dreams workflow and adds dark/light theme customization, image-backed effects, Settings Sync support, and JSON import/export.
+Kawaii VS Code Color provides dark pink and light green pastel-pink themes for Visual Studio Code, with optional glow effects, image-backed editor styling, theme-specific color customization, Settings Sync support, and JSON import/export.
 
-![Neon glowing text](./theme.jpg)
+## Preview
 
-## Features
+![Kawaii VS Code Color features overview](images/kawaii-vscode-color-features-1.png)
 
-- Dark theme: `Kawaii VS Code Color`.
-- Light theme: `Kawaii VS Code Color Light`.
-- Theme-specific color customization for both modes.
-- Optional Neon Effect for glow, editor chrome styling, background images, and no-tab logo replacement.
-- Local editor background image with opacity and fit area controls.
-- Local no-tab logo replacement with opacity control.
-- `Random Neko` image source powered by [Nekos.moe](https://nekos.moe).
-- Settings bundle export/import as JSON.
-- Settings bundle save/import through VS Code Settings Sync global state.
+![Kawaii VS Code Color dark index view](images/kawaii-vscode-color-dark-index.png)
 
-## Installation
+![Kawaii VS Code Color dark file view](images/kawaii-vscode-color-dark-file.png)
 
-### from visualstudio marketplace
+![Kawaii VS Code Color light index view](images/kawaii-vscode-color-light-index.png)
 
+![Kawaii VS Code Color light file view](images/kawaii-vscode-color-light-file.png)
 
-### development
+![Kawaii VS Code Color presets](images/kawaii-vscode-color-presets.png)
 
-Package the extension:
+![Kawaii VS Code Color color customization](images/kawaii-vscode-color-color-customization.png)
 
-```powershell
-npm run build:local
-```
+![Kawaii VS Code Color image customization](images/kawaii-vscode-color-image-customization.png)
 
-### from VSIX
+## User Guide
 
-Install the generated VSIX in VS Code:
+### Installation
 
-```powershell
-code --install-extension .\dist\kawaii-vscode-color-0.1.20.vsix --force
-```
+Install from the Visual Studio Marketplace:
 
-For VS Code Insiders:
+- Marketplace page: [Kawaii VS Code Color](https://marketplace.visualstudio.com/items?itemName=ITEM-PIXEL.kawaii-vscode-color)
+- Extension Name: `Kawaii VS Code Color`
+
+Install from VS Code:
+
+1. Open the Extensions view.
+2. Search for `Kawaii VS Code Color`.
+3. Select `Install`.
+
+Install from the command line:
 
 ```powershell
-code-insiders --install-extension .\dist\kawaii-vscode-color-0.1.20.vsix --force
+code --install-extension ITEM-PIXEL.kawaii-vscode-color
 ```
 
-You can also install it from the Extensions view with `Install from VSIX...`.
+If you received a `.vsix` file:
 
-## Enable the Theme
+1. Open the Extensions view.
+2. Select `Views and More Actions...`.
+3. Select `Install from VSIX...`.
+4. Choose the `.vsix` file.
+
+### Setup
+
+Enable the theme:
 
 1. Open the Command Palette.
 2. Run `Preferences: Color Theme`.
 3. Select `Kawaii VS Code Color` or `Kawaii VS Code Color Light`.
 
-## Open Settings
+Open the extension settings:
 
 1. Open the Command Palette.
 2. Run `Kawaii VS Code Color: Settings`.
@@ -61,15 +66,15 @@ You can also install it from the Extensions view with `Install from VSIX...`.
 
 The settings window opens as a normal editor tab.
 
-## Settings Window
+### Settings Window
 
 | Area | Purpose |
 | --- | --- |
-| `Home` | Shows project references and external links used by the theme. |
+| `Home` | Shows project links and extension information. |
 | `Color Settings` | Changes theme mode, color overrides, image-backed effects, sync, export, and import. |
 | `Neon Effect` | Enables or disables the unsupported VS Code workbench patch used for glow and image effects. |
 
-## Color Settings
+### Color Settings
 
 The `Color Settings` page edits local user overrides for the selected theme mode.
 
@@ -81,7 +86,7 @@ The `Color Settings` page edits local user overrides for the selected theme mode
 
 Use `Reset` to remove one custom color. Use `Reset All` to remove all color customizations for the selected theme mode.
 
-## Image Customization
+### Image Customization
 
 The `Color Settings` page can store one editor background image and one no-tab logo replacement.
 
@@ -89,7 +94,7 @@ The `Color Settings` page can store one editor background image and one no-tab l
 | --- | --- |
 | `Upload Image` | Selects a local editor background image. |
 | `Upload Logo` | Selects a local no-tab logo image. |
-| `Random Neko` | Fetches a non-NSFW random image from Nekos.moe and uses it as the selected image input. |
+| `Random Neko` | Fetches a non-NSFW random image and uses it as the selected image input. |
 | `Download Image` / `Download Logo` | Saves the current stored image with a Save As dialog. |
 | `Remove Image` / `Remove Logo` | Removes the stored image input. |
 | `Opacity` | Controls the injected image layer opacity. |
@@ -106,7 +111,7 @@ Images are capped at 2 MB. If preview or injected effects fail, try a smaller im
 
 Image changes do not auto-apply. Click `Apply Effects`, then reload VS Code when prompted. If the editor does not refresh cleanly, close and open VS Code manually.
 
-## Sync, Export, and Import
+### Sync, Export, and Import
 
 | Button | Behavior |
 | --- | --- |
@@ -126,7 +131,7 @@ The settings bundle includes:
 
 VS Code Settings Sync must be enabled in VS Code for `Save to VSSync` / `Import VSSync` to move data between machines.
 
-## Neon Effect
+### Neon Effect
 
 VS Code color themes do not natively support text glow, editor background images, no-tab logo replacement, or arbitrary editor CSS. Those effects are provided by the optional Neon Effect path.
 
@@ -146,7 +151,7 @@ Enable or disable the effect:
 
 If VS Code shows the corruption warning, the `Neon Effect` page includes the official VS Code FAQ link and an optional checksum-fix community workaround. The supported recovery path is to disable Neon Effect and reinstall or repair VS Code so the modified workbench files are replaced.
 
-## VS Code Settings
+### VS Code Settings
 
 Customize glow brightness:
 
@@ -168,9 +173,17 @@ Keep editor chrome updates but disable token glow:
 
 After changing either setting, open `Kawaii VS Code Color: Settings`, apply the Neon Effect again, and reload VS Code.
 
-## Development
+## Developer Guide
 
-Out-of-the-box checks:
+### Local Setup
+
+Install project dependencies:
+
+```powershell
+npm install
+```
+
+Validate the extension metadata and scripts:
 
 ```powershell
 npm pkg get name version publisher dependencies devDependencies engines
@@ -181,7 +194,27 @@ node --check src\settings.js
 node --check src\js\theme_template.js
 ```
 
-Theme color workflow:
+### Build a Local VSIX
+
+Package the extension:
+
+```powershell
+npm run build:local
+```
+
+Install the generated VSIX in VS Code:
+
+```powershell
+code --install-extension .\dist\kawaii-vscode-color-0.1.21.vsix --force
+```
+
+For VS Code Insiders:
+
+```powershell
+code-insiders --install-extension .\dist\kawaii-vscode-color-0.1.21.vsix --force
+```
+
+### Theme Color Workflow
 
 - Keep `themes/kawaii_synthwave-color-theme.json` as the protected dark base theme.
 - Keep `themes/kawaii_synthwave-color-theme-light.json` as the protected light base theme.
@@ -190,7 +223,7 @@ Theme color workflow:
 - Run `npm run build:theme` to regenerate both generated theme JSON files.
 - VS Code loads generated themes through `package.json.contributes.themes`.
 
-Manual theme test:
+### Manual Theme Test
 
 1. Open this repository in VS Code.
 2. Run `npm run build:theme`.
@@ -200,32 +233,17 @@ Manual theme test:
 
 Live Neon Effect testing is possible from the Extension Development Host, but it patches the VS Code installation used by that host. Prefer a disposable VS Code installation or VS Code Insiders.
 
-## Publishing
+### Publishing
 
-Before publishing this fork:
+Before publishing:
 
-- Ensure `package.json.publisher` is the intended Marketplace publisher.
-- Ensure `package.json.name` is `kawaii-vscode-color` or another valid Marketplace identifier.
-- Ensure repository links point to the fork.
+- Confirm `package.json.publisher` is `ITEM-PIXEL`.
+- Confirm `package.json.name` is `kawaii-vscode-color`.
+- Confirm `package.json.repository.url` points to the public repository that contains the README images.
 - Package to `./dist` with `npm run build:local`.
 - Publish only from an account authorized for the configured publisher.
 
-## References
-
-- Fork repository: [karolva/kawaii-vscode-color](https://github.com/karolva/kawaii-vscode-color)
-- Upstream base: [robb0wen/synthwave-vscode](https://github.com/robb0wen/synthwave-vscode)
-- Original Marketplace extension: [SynthWave '84](https://marketplace.visualstudio.com/items?itemName=RobbOwen.synthwave-vscode)
-- Light theme inspiration: [mhiratani/theme-sakura](https://github.com/mhiratani/theme-sakura)
-- Nekos.moe site: [nekos.moe](https://nekos.moe)
-- Nekos.moe API docs: [docs.nekos.moe](https://docs.nekos.moe/)
-- Nekos.moe image routes: [Images / Posts](https://docs.nekos.moe/images.html)
-- Random Neko downloader inspiration: [NyarchLinux/CatgirlDownloader](https://github.com/NyarchLinux/CatgirlDownloader)
-- VS Code Color Theme guide: [Color Theme](https://code.visualstudio.com/api/extension-guides/color-theme)
-- VS Code Theme Color reference: [Theme Color](https://code.visualstudio.com/api/references/theme-color)
-- VS Code theme customization: [Customize a color theme](https://code.visualstudio.com/docs/configure/themes#_customize-a-color-theme)
-- VS Code Settings Sync extension state: [Common Capabilities - Data Storage](https://code.visualstudio.com/api/extension-capabilities/common-capabilities)
-
-## Attribution
+## Credits
 
 Kawaii VS Code Color is based on [SynthWave '84](https://github.com/robb0wen/synthwave-vscode). The original theme, glow concept, and much of the historical implementation came from Robb Owen's project.
 
@@ -239,3 +257,21 @@ The original SynthWave '84 README also credited:
 - [Wes Bos](https://twitter.com/wesbos) and the [Cobalt2 VS Code theme](https://github.com/wesbos/cobalt2-vscode).
 - [Fira Code](https://github.com/tonsky/FiraCode), used in the original screenshots.
 - Banner cityscape image from [Unsplash](https://unsplash.com/photos/DxHR8K5Egjk).
+
+## References
+
+- Marketplace extension: [Kawaii VS Code Color](https://marketplace.visualstudio.com/items?itemName=ITEM-PIXEL.kawaii-vscode-color)
+- Repository: [karolva/kawaii-vscode-color](https://github.com/karolva/kawaii-vscode-color)
+- Upstream base: [robb0wen/synthwave-vscode](https://github.com/robb0wen/synthwave-vscode)
+- SynthWave Marketplace extension: [SynthWave '84](https://marketplace.visualstudio.com/items?itemName=RobbOwen.synthwave-vscode)
+- Light theme inspiration: [mhiratani/theme-sakura](https://github.com/mhiratani/theme-sakura)
+- Nekos.moe site: [nekos.moe](https://nekos.moe)
+- Nekos.moe API docs: [docs.nekos.moe](https://docs.nekos.moe/)
+- Nekos.moe image routes: [Images / Posts](https://docs.nekos.moe/images.html)
+- Random Neko downloader inspiration: [NyarchLinux/CatgirlDownloader](https://github.com/NyarchLinux/CatgirlDownloader)
+- VS Code Color Theme guide: [Color Theme](https://code.visualstudio.com/api/extension-guides/color-theme)
+- VS Code Theme Color reference: [Theme Color](https://code.visualstudio.com/api/references/theme-color)
+- VS Code theme customization: [Customize a color theme](https://code.visualstudio.com/docs/configure/themes#_customize-a-color-theme)
+- VS Code Settings Sync extension state: [Common Capabilities - Data Storage](https://code.visualstudio.com/api/extension-capabilities/common-capabilities)
+- VS Code extension manifest reference: [Extension Manifest](https://code.visualstudio.com/api/references/extension-manifest)
+- VS Code publishing guide: [Publishing Extensions](https://code.visualstudio.com/api/working-with-extensions/publishing-extension)
