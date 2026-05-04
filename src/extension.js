@@ -68,7 +68,7 @@ let extensionContext;
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
-	this.extensionName = 'karolva.kawaii-vscode-color';
+	this.extensionName = 'ITEM-PIXEL.kawaii-vscode-color';
 	this.cntx = context;
 	extensionContext = context;
 	activeColorThemeLabel = getActiveColorThemeLabel();
