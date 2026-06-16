@@ -39,7 +39,7 @@ const EDITOR_BACKGROUND_SUPPORTED_FORMATS_LABEL = "PNG, JPG/JPEG, WEBP, SVG";
 const IMAGE_DATA_URL_WARNING = "If preview image fails to apply, try a smaller image resolution. Image previews and injected effects use data URLs, so oversized images can make the settings page or VS Code reload unstable.";
 const NEKOS_MOE_RANDOM_IMAGE_ENDPOINT = "https://nekos.moe/api/v1/random/image?nsfw=false";
 const NEKOS_MOE_IMAGE_BASE_URL = "https://nekos.moe/image/";
-const NEKOS_MOE_USER_AGENT = "KawaiiVSCodeColor (https://github.com/karolva/kawaii-vscode-color)";
+const NEKOS_MOE_USER_AGENT = "KawaiiVSCodeColor (https://github.com/EmmiiChan/kawaii-vscode-color)";
 const NETWORK_REQUEST_TIMEOUT_MS = 20000;
 const NETWORK_REDIRECT_LIMIT = 3;
 const NETWORK_JSON_MAX_BYTES = 1024 * 1024;
@@ -222,7 +222,7 @@ const TOKEN_DESCRIPTION_RULES = [
 const DOCUMENTATION_LINKS = [
   {
     label: "Kawaii VS Code Color repository",
-    url: "https://github.com/karolva/kawaii-vscode-color"
+    url: "https://github.com/EmmiiChan/kawaii-vscode-color"
   },
   {
     label: "SynthWave '84 upstream",

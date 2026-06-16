@@ -261,7 +261,7 @@ The original SynthWave '84 README also credited:
 ## References
 
 - Marketplace extension: [Kawaii VS Code Color](https://marketplace.visualstudio.com/items?itemName=ITEM-PIXEL.kawaii-vscode-color)
-- Repository: [karolva/kawaii-vscode-color](https://github.com/karolva/kawaii-vscode-color)
+- Repository: [EmmiiChan/kawaii-vscode-color](https://github.com/EmmiiChan/kawaii-vscode-color)
 - Upstream base: [robb0wen/synthwave-vscode](https://github.com/robb0wen/synthwave-vscode)
 - SynthWave Marketplace extension: [SynthWave '84](https://marketplace.visualstudio.com/items?itemName=RobbOwen.synthwave-vscode)
 - Light theme inspiration: [mhiratani/theme-sakura](https://github.com/mhiratani/theme-sakura)

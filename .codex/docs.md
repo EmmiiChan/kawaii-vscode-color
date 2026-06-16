@@ -8,7 +8,7 @@ Purpose: give Codex a stable, source-backed link index for the Kawaii SynthWave 
 
 | Item | Detected value | Source in repo | Reference |
 | --- | --- | --- | --- |
-| Fork repository | `https://github.com/karolva/kawaii-synthwave-vscode` | `git remote -v` | [GitHub fork page](https://github.com/karolva/kawaii-synthwave-vscode) |
+| Fork repository | `https://github.com/EmmiiChan/kawaii-synthwave-vscode` | `git remote -v` | [GitHub fork page](https://github.com/EmmiiChan/kawaii-synthwave-vscode) |
 | Upstream repository | `https://github.com/robb0wen/synthwave-vscode` | README attribution, user context | [Upstream GitHub repository](https://github.com/robb0wen/synthwave-vscode) |
 | Upstream Marketplace extension | `RobbOwen.synthwave-vscode` | README attribution | [Visual Studio Marketplace page](https://marketplace.visualstudio.com/items?itemName=RobbOwen.synthwave-vscode) |
 | Root package name | `kawaii-synthwave` | `package.json`, `package-lock.json` | [VS Code extension manifest](https://code.visualstudio.com/api/references/extension-manifest), [npm package.json docs](https://docs.npmjs.com/cli/v11/configuring-npm/package-json/) |
@@ -208,7 +208,7 @@ Use these after official docs when examples or issue history are needed.
 | MDN Web Docs source/community | [mdn/content](https://github.com/mdn/content) |
 | npm CLI docs/source | [npm/cli](https://github.com/npm/cli) |
 | npm semver implementation | [npm/node-semver](https://github.com/npm/node-semver) |
-| Current fork | [karolva/kawaii-synthwave-vscode](https://github.com/karolva/kawaii-synthwave-vscode) |
+| Current fork | [EmmiiChan/kawaii-synthwave-vscode](https://github.com/EmmiiChan/kawaii-synthwave-vscode) |
 | Upstream project | [robb0wen/synthwave-vscode](https://github.com/robb0wen/synthwave-vscode) |
 
 ## Codex Lookup Rules for This Project

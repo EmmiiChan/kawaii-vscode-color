@@ -18,7 +18,7 @@ Current tooling state:
 | npm dependencies | None. `package-lock.json` contains only the root package. |
 | Packaging tool | Not installed in this repo. Use `@vscode/vsce` when packaging. |
 | Runtime entry | `package.json.main` points to `./src/extension.js`. |
-| Extension id | `karolva.kawaii-synthwave` from `publisher + name`. |
+| Extension id | `EmmiiChan.kawaii-synthwave` from `publisher + name`. |
 
 Do not add another build system or test framework unless the task explicitly asks for it.
 
@@ -185,7 +185,7 @@ GUI alternative:
 
 Local install cautions:
 
-- This package now uses its own extension id: `karolva.kawaii-synthwave`.
+- This package now uses its own extension id: `EmmiiChan.kawaii-synthwave`.
 - If an older local build used the upstream id, uninstall `RobbOwen.synthwave-vscode` before comparing behavior.
 - VSIX-installed extensions have auto update disabled by default in VS Code.
 - If publishing or sharing this fork independently, change `publisher`, `name`, display branding, repository links, and any extension-id-dependent selectors intentionally.
@@ -280,13 +280,13 @@ If a Neon Dreams test leaves VS Code patched:
 If local VSIX installation needs to be removed:
 
 ```powershell
-code --uninstall-extension karolva.kawaii-synthwave
+code --uninstall-extension EmmiiChan.kawaii-synthwave
 ```
 
 For Insiders:
 
 ```powershell
-code-insiders --uninstall-extension karolva.kawaii-synthwave
+code-insiders --uninstall-extension EmmiiChan.kawaii-synthwave
 ```
 
 ## Sources
