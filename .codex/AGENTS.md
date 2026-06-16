@@ -12,8 +12,8 @@ Current tooling state:
 
 | Area | Current state |
 | --- | --- |
-| Build step | `npm run build:theme` merges the protected base theme and editable overrides into the generated theme loaded by VS Code. |
-| Automated tests | None. No test runner is configured. |
+| Build step | `npm run build:theme` merges the protected base theme and editable overrides into the generated theme loaded by VS Code. `npm run build:local` bumps the patch version, then builds the theme and local VSIX. |
+| Automated tests | No project-wide test runner is configured. The version-bump utility has a focused Node test at `scripts/increment-package-version.test.js`. |
 | TypeScript | Not used. Runtime source is CommonJS JavaScript. |
 | npm dependencies | None. `package-lock.json` contains only the root package. |
 | Packaging tool | Not installed in this repo. Use `@vscode/vsce` when packaging. |
@@ -29,6 +29,8 @@ Run these checks before and after code changes:
 ```powershell
 npm pkg get name version dependencies devDependencies engines
 node --check scripts\build-color-theme.js
+node --check scripts\increment-package-version.js
+node --test scripts\increment-package-version.test.js
 npm run build:theme
 node --check src\extension.js
 node --check src\settings.js
@@ -39,9 +41,10 @@ Expected result:
 
 - `npm pkg get` should show `name`, `version`, and `engines`; it should not show dependency objects unless dependencies were intentionally added.
 - `node --check` should exit without syntax errors.
+- `node --test scripts\increment-package-version.test.js` should pass and should not modify the repository package files.
 - `npm run build:theme` should generate `themes/kawaii_synthwave-generated-color-theme.json` from the protected base theme and the overrides file.
 
-There is no `npm test`, `npm run build`, `tsc --noEmit`, or lint command in the current project.
+There is no `npm test`, `tsc --noEmit`, or lint command in the current project.
 
 ## Manual Theme Test
 
@@ -136,9 +139,12 @@ Preferred command:
 npm run build:local
 ```
 
+This command increments `package.json.version` by one patch version before packaging and synchronizes `package-lock.json` root version fields. The Extension Host launch flow that only runs `build:theme` does not bump the package version.
+
 Equivalent one-off commands:
 
 ```powershell
+node .\scripts\increment-package-version.js
 npm run build:theme
 npx --yes @vscode/vsce package --out .\dist\kawaii-synthwave-0.1.20.vsix
 ```

@@ -2,7 +2,7 @@
     "name": "kawaii-vscode-color",
     "displayName": "Kawaii VS Code Color",
     "description": "Dark pink and light green pastel-pink VS Code themes with optional glow effects, image-backed editor styling, color customization, Settings Sync, and JSON import/export.",
-    "version": "0.1.24",
+    "version": "0.1.25",
     "author": "EmmiiChan",
     "publisher": "ITEM-PIXEL",
     "license": "SEE LICENSE IN LICENSE",
@@ -29,7 +29,7 @@
     "scripts": {
         "build": "npm run build:local",
         "build:theme": "node ./scripts/build-color-theme.js",
-        "build:local": "npm run build:theme && node ./scripts/package-local-vsix.js",
+        "build:local": "node ./scripts/increment-package-version.js && npm run build:theme && node ./scripts/package-local-vsix.js",
         "vscode:prepublish": "npm run build:theme",
         "package:vsix": "npm run build:local",
         "publish:vsce": "npm run build:theme && npx --yes @vscode/vsce publish"
