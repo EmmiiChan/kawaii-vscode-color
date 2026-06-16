@@ -3137,6 +3137,18 @@ function getWebviewHtml(webview, initialState) {
       padding: 28px;
     }
 
+    .home-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .home-actions {
+      display: flex;
+      justify-content: flex-end;
+    }
+
     .home-label {
       margin: 0 0 6px;
       color: var(--muted-color);
@@ -3726,6 +3738,14 @@ function getWebviewHtml(webview, initialState) {
         padding: 18px;
       }
 
+      .home-header {
+        grid-template-columns: 1fr;
+      }
+
+      .home-actions {
+        justify-content: flex-start;
+      }
+
       .neon-effect {
         padding: 18px;
       }
@@ -3775,8 +3795,15 @@ function getWebviewHtml(webview, initialState) {
     <div class="workspace">
       <section id="home-page" class="page">
         <div class="home">
-          <p class="home-label">Kawaii VS Code Color</p>
-          <h2 class="home-title">Dark pink and light pastel VS Code theme setup</h2>
+          <div class="home-header">
+            <div>
+              <p class="home-label">Kawaii VS Code Color</p>
+              <h2 class="home-title">Dark pink and light pastel VS Code theme setup</h2>
+            </div>
+            <div class="home-actions">
+              <button id="home-apply-effects" class="button" type="button">Apply Effects</button>
+            </div>
+          </div>
           <p class="home-text">Kawaii VS Code Color focuses on dark pink and light green pastel-pink themes. It is inspired by SynthWave '84 and Sakura Theme, and was originally forked from SynthWave '84. This setup page keeps local user customization in VS Code settings and preserves the repository theme files as source assets.</p>
           <p class="home-text">Use Color Settings to edit theme-specific colors, image-backed effects, Settings Sync bundles, and JSON import/export. Random Neko image inputs use Nekos.moe and were inspired by CatgirlDownloader.</p>
           <section class="home-section" aria-labelledby="references-title">
@@ -3950,6 +3977,7 @@ function getWebviewHtml(webview, initialState) {
     const documentationLinks = document.getElementById("documentation-links");
     const corruptionWarningLinks = document.getElementById("corruption-warning-links");
     const checksumFixLink = document.getElementById("checksum-fix-link");
+    const homeApplyEffects = document.getElementById("home-apply-effects");
     const content = document.getElementById("content");
     const search = document.getElementById("search");
     const status = document.getElementById("status");
@@ -4042,12 +4070,15 @@ function getWebviewHtml(webview, initialState) {
       vscode.postMessage({ type: "import-settings" });
     });
 
-    applyEffects.addEventListener("click", () => {
+    homeApplyEffects.addEventListener("click", handleApplyEffectsClick);
+    applyEffects.addEventListener("click", handleApplyEffectsClick);
+
+    function handleApplyEffectsClick() {
       hideEffectsWarning();
       setStatus("Applying effects...");
       setNeonStatus("Requesting effects apply...");
       applyNeonCustomizations();
-    });
+    }
 
     editorBackgroundUpload.addEventListener("click", () => {
       setStatus("Opening image picker...");
