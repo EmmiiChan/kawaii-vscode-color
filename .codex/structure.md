@@ -1,12 +1,12 @@
 # Codex Structure and Workflow Guide
 
-Last reviewed: 2026-04-29
+Last reviewed: 2026-06-17
 
 Use this guide to understand how this VS Code theme extension is shaped, how files relate to each other, and where future changes belong. For official API links and version-specific references, read `.codex/docs.md` first.
 
 ## Mental Model
 
-This repository is not an MVC app, a Vue app, or a component-based frontend. It is the Kawaii SynthWave VS Code color theme with an optional settings-page "Neon Dreams" patcher.
+This repository is not an MVC app, a Vue app, or a component-based frontend. It is the Kawaii VS Code Color VS Code color theme with an optional settings-page Neon Effect patcher.
 
 The project has four cooperating layers:
 
@@ -57,7 +57,7 @@ VS Code loads patched workbench HTML
 Disable path:
 
 ```text
-Kawaii SynthWave: Settings webview
+Kawaii VS Code Color: Settings webview
   -> user opens Neon Effect from the side menu
   -> webview posts disable-neon to the extension host
   -> internal disableNeon() handler
@@ -78,13 +78,12 @@ Command Palette
   -> registerCommand('kawaii_synthwave.openSettings')
   -> src/settings.js opens a WebviewPanel editor tab
   -> Home page is shown first with theme and reference links
-  -> side menu switches content to Color Settings
-  -> side menu can also switch content to Neon Effect
+  -> side menu switches between Home, Settings, Color Settings, Neon Effect, Image Customization, Sync/Files, and Help
   -> Color Settings reads colors from themes/kawaii_synthwave-generated-color-theme.json
   -> user changes a color field
   -> webview posts update-color to the extension host
   -> extension host validates the hex color
-  -> extension host writes a [Kawaii SynthWave] block to user settings
+  -> extension host writes a [Kawaii VS Code Color] block to user settings
   -> VS Code applies workbench.colorCustomizations or editor.tokenColorCustomizations live
 ```
 
@@ -157,6 +156,9 @@ Keep changes inside the existing responsibility boundaries.
 | `src/css` | CSS that the generated renderer script injects into the workbench | VS Code theme color definitions and TextMate token colors |
 | `themes` | Protected base theme, editable Kawaii overrides, and generated VS Code theme output | Runtime patching code |
 | `scripts` | Small repository build utilities such as the color theme merge script | Extension runtime code loaded by VS Code |
+| `test/unit` | Node unit tests for dependency-free logic and extension-host helpers | VS Code Extension Host integration tests |
+| `test/dom` | `jsdom` tests for the settings webview DOM and message behavior | Runtime webview source files |
+| `test/integration` | VS Code Extension Development Host tests using `@vscode/test-cli` | Unit-only helper tests |
 | `.vscode` | Local VS Code development/debug configuration | Extension source or published assets |
 | `.codex` | Agent-facing project guides and reference docs | Extension runtime files |
 | Root image assets | README/Marketplace icon, screenshots, banners | Generated runtime assets |
@@ -166,11 +168,19 @@ Current source of truth:
 
 - Workbench chrome injection lives in `src/css/editor_chrome.css`.
 - Renderer behavior lives in the JS template under `src/js`.
-- Setup webview and live user color settings behavior live in `src/settings.js`.
+- Setup state, persistence, sync/export/import, and webview message routing live in `src/settings.js`.
+- Setup webview HTML generation lives in `src/settingsWebview.js`.
+- Workbench path detection and marked HTML patch helpers live in `src/workbenchPatch.js`.
 - Protected upstream/base palette and token rules live in `themes/kawaii_synthwave-color-theme.json`.
 - Kawaii palette and token changes must be placed in `themes/kawaii_synthwave-color-theme-overrides.json`.
 - The public theme loaded by VS Code is generated at `themes/kawaii_synthwave-generated-color-theme.json`.
 - Command registration, setting normalization, filesystem writes, and workbench patching live in the extension host entry point or extracted host modules.
+
+Settings webview visual rule:
+
+- The webview must consume editor-provided VS Code webview tokens such as `--vscode-editor-background`, `--vscode-foreground`, `--vscode-button-background`, and `--vscode-panel-border`.
+- Do not add a separate hardcoded product palette for page surfaces, text, controls, panels, or states.
+- Help content should continue to centralize repository, issue tracker, README/homepage, and publisher/contact metadata derived from project data.
 
 ## Where New Code Should Go
 
@@ -226,7 +236,7 @@ The renderer glow template supports separate dark and light token replacement ma
 - Dark glow-driving token colors include `#fe4450`, `#ff7edb`, `#fede5d`, `#72f1b8`, and `#36f9f6`.
 - Light glow-driving token colors include `#0000ff`, `#008000`, `#098658`, `#a31515`, `#cd3131`, `#811f3f`, `#800000`, `#ff0000`, `#0451a5`, `#000080`, and `#000000`.
 - Token matching must allow normal hex colors, uppercase/lowercase values, optional opaque alpha suffixes such as `#000000ff`, and spacing variants such as `color:#0000ff;`.
-- The injected `#kawaii_synthwave-theme-styles` style tag is not single-use. It must be updated when `.vscode-tokens-styles` changes so switching between Kawaii SynthWave and Kawaii SynthWave Light can rebuild the glow styles.
+- The injected `#kawaii_synthwave-theme-styles` style tag is not single-use. It must be updated when `.vscode-tokens-styles` changes so switching between Kawaii VS Code Color and Kawaii VS Code Color Light can rebuild the glow styles.
 - Keep the observer bounded by signature checks, not by permanent disconnects. Reprocessing should happen only when token CSS content changes.
 
 Rules for changing theme colors:
@@ -237,7 +247,7 @@ Rules for changing theme colors:
 - Run `npm run build:theme` after editing overrides so `themes/kawaii_synthwave-generated-color-theme.json` is refreshed.
 - Do not edit `themes/kawaii_synthwave-generated-color-theme.json` manually; it is build output.
 - Prefer public VS Code theme keys in the overrides file for normal UI and syntax changes.
-- Use `src/settings.js` for the setup webview and user-local live color changes. It should write theme-scoped settings under `[Kawaii SynthWave]`, not mutate repository theme JSON files at runtime.
+- Use `src/settings.js` for setup state and user-local live color changes. It should write theme-scoped settings under `[Kawaii VS Code Color]`, not mutate repository theme JSON files at runtime.
 - Use injected CSS only for effects VS Code themes cannot express, such as text shadows and internal chrome decoration.
 - Validate TextMate scopes with `Developer: Inspect Editor Tokens and Scopes`.
 - Check semantic highlighting interactions when a language server is active.
@@ -263,7 +273,7 @@ Treat these as negation prompts. Do not cross these boundaries unless the user e
 - Do not modify `themes/kawaii_synthwave-generated-color-theme.json` by hand. It is generated by `npm run build:theme`.
 - Do not expect VS Code to load `themes/kawaii_synthwave-color-theme.json` and `themes/kawaii_synthwave-color-theme-overrides.json` as a native cascade. VS Code receives one contributed theme path, so the cascade is implemented by the repository build script.
 - Do not try to register a new per-user generated theme file at runtime. VS Code theme contributions are static manifest entries; local live customization belongs in `workbench.colorCustomizations`, `editor.tokenColorCustomizations`, and `editor.semanticTokenColorCustomizations`.
-- Do not re-add direct commands or menu contributions for `Color Settings`, `Enable Neon Dreams`, or `Disable Neon Dreams`. The public command opens `Kawaii SynthWave: Settings`; Color Settings and Neon Effect are internal pages selected from that webview's side menu.
+- Do not re-add direct commands or menu contributions for `Color Settings`, `Enable Neon Effect`, or `Disable Neon Effect`. The public command opens `Kawaii VS Code Color: Settings`; Color Settings and Neon Effect are internal pages selected from that webview's side menu.
 - Do not use any theme JSON file to register commands, settings, activation events, views, keybindings, menus, or extension behavior. Those belong in `package.json` contribution points and extension host code.
 - Do not use a color theme file to change file icons, product icons, activity bar icons, codicons, or custom UI surfaces. Color themes are not icon themes or webviews.
 - Do not use theme JSON to add runtime logic, filesystem access, reload behavior, notifications, or command handling. Runtime behavior belongs in `src/extension.js` or extracted extension host modules.
@@ -359,16 +369,17 @@ Recommended order for changes:
 
 Useful checks for this repository:
 
-- `npm pkg get name version dependencies devDependencies engines`
-- `node --check scripts/build-color-theme.js`
+- `npm pkg get name version publisher dependencies devDependencies engines`
+- `npm run test:check`
+- `npm run test:unit`
+- `npm run test:dom`
+- `npm run test:integration`
+- `npm test`
 - `npm run build:theme`
-- `node --check src/extension.js`
-- `node --check src/settings.js`
-- `node --check src/js/theme_template.js`
 - Manual inspection of `package.json` contribution points.
 - Manual theme validation in VS Code with `Developer: Inspect Editor Tokens and Scopes`.
 
-There is currently no test runner, TypeScript config, lint script, or third-party dependency tree. The only build step is the theme merge script.
+There is no TypeScript config or lint script. Tests are split across unit, DOM, and VS Code integration layers, and the only build step is the theme merge script.
 
 ## Packaging and Release Boundaries
 
@@ -387,13 +398,18 @@ Local source anchors:
 
 - `package.json`: manifest, contributions, activation, settings, extension entry.
 - `src/extension.js`: extension host command flow, setting normalization, patch/unpatch mechanics.
-- `src/settings.js`: setup webview, Home page, Color Settings page, and user settings persistence.
+- `src/settings.js`: settings state, persistence, sync/export/import, and webview message handling.
+- `src/settingsWebview.js`: setup webview HTML, Home, Settings, Color Settings, Neon Effect, Image Customization, Sync/Files, and Help pages.
+- `src/workbenchPatch.js`: testable workbench path detection and HTML patch helpers.
 - `src/js/theme_template.js`: renderer bootstrap, theme detection, token replacement, style injection.
 - `src/css/editor_chrome.css`: injected workbench chrome styles.
 - `themes/kawaii_synthwave-color-theme.json`: protected base color theme definition.
 - `themes/kawaii_synthwave-color-theme-overrides.json`: editable Kawaii color and token overrides.
 - `themes/kawaii_synthwave-generated-color-theme.json`: generated VS Code public color theme definition.
 - `scripts/build-color-theme.js`: base-plus-overrides theme build flow.
+- `test/unit`: Node unit tests without UI.
+- `test/dom`: `jsdom` settings webview tests.
+- `test/integration`: VS Code Extension Development Host tests.
 - `README.md`: user-facing install, enable, disable, warning, and update behavior.
 - `.codex/docs.md`: official documentation and version-specific reference index.
 

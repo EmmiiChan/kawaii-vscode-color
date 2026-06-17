@@ -196,6 +196,7 @@ npm pkg get name version publisher dependencies devDependencies engines
 npm run test:check
 npm run test:unit
 npm run test:dom
+npm run test:integration
 npm run build:theme
 ```
 
