@@ -425,6 +425,7 @@ Local source anchors:
 - `themes/kawaii_synthwave-color-theme-overrides.json`: editable Kawaii color and token overrides.
 - `themes/kawaii_synthwave-generated-color-theme.json`: generated VS Code public color theme definition.
 - `scripts/build-color-theme.js`: base-plus-overrides theme build flow.
+- `scripts/run-test-all.js`: safe test orchestration for `npm run test:all`, including final aggregate pass/fail/skipped summary output.
 - `test/unit`: Node unit tests without UI.
 - `test/dom`: `jsdom` settings webview tests and `settings-webview-helper.js`.
 - `test/integration`: VS Code Extension Development Host tests.

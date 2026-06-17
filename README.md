@@ -213,7 +213,7 @@ The project has four regular automated test layers, plus one gated Neon Effect E
 | `npm run test:integration` | VS Code integration | Uses `@vscode/test-cli` and `@vscode/test-electron` to activate the extension in an Extension Development Host and execute the settings command. |
 | `npm run test:e2e` | Real VS Code UI E2E | Uses ExTester/WebDriver to package the extension, open a disposable VS Code, run `Kawaii VS Code Color: Settings`, navigate the real webview, and validate safe UI flows. |
 | `npm test` | Full suite | Runs unit, DOM, and VS Code integration tests in sequence. |
-| `npm run test:all` | Full suite plus safe E2E | Runs `npm test` and then `npm run test:e2e`. |
+| `npm run test:all` | Full suite plus safe E2E | Runs unit, DOM, integration, and safe E2E layers in order, then prints a final pass/fail/skipped summary. |
 
 The integration suite opens `Kawaii VS Code Color: Settings`, but it does not control the rendered VS Code window. The E2E suite does control the real window and webview, but it is still safe by default: it does not click `Enable Neon Effect`, `Disable Neon Effect`, `Apply Effects`, upload/import/export/download controls, or network-backed random image controls. E2E screenshots and state notes are written under `test-results/e2e`.
 
