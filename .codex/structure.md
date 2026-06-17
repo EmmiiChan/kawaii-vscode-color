@@ -159,6 +159,7 @@ Keep changes inside the existing responsibility boundaries.
 | `test/unit` | Node unit tests for dependency-free logic and extension-host helpers | VS Code Extension Host integration tests |
 | `test/dom` | `jsdom` tests for the settings webview DOM and message behavior | Runtime webview source files |
 | `test/integration` | VS Code Extension Development Host tests using `@vscode/test-cli` | Unit-only helper tests |
+| `test/e2e` | ExTester/WebDriver tests that open a disposable real VS Code window, drive the Command Palette, and interact with the real settings webview iframe | Unit logic, fake-DOM-only assertions, or safe-suite clicks that apply the real Neon patch |
 | `.vscode` | Local VS Code development/debug configuration | Extension source or published assets |
 | `.codex` | Agent-facing project guides and reference docs | Extension runtime files |
 | Root image assets | README/Marketplace icon, screenshots, banners | Generated runtime assets |
@@ -171,6 +172,7 @@ Current source of truth:
 - Setup state, persistence, sync/export/import, and webview message routing live in `src/settings.js`.
 - Setup webview HTML generation lives in `src/settingsWebview.js`.
 - Workbench path detection and marked HTML patch helpers live in `src/workbenchPatch.js`.
+- Real VS Code E2E helpers live in `test/e2e/helpers/extester-app.js`.
 - Protected upstream/base palette and token rules live in `themes/kawaii_synthwave-color-theme.json`.
 - Kawaii palette and token changes must be placed in `themes/kawaii_synthwave-color-theme-overrides.json`.
 - The public theme loaded by VS Code is generated at `themes/kawaii_synthwave-generated-color-theme.json`.
@@ -301,6 +303,8 @@ Current mechanics:
 - It writes `neondreams.js` next to the workbench HTML.
 - It inserts a versioned script tag before the closing `</html>` marker.
 - The inserted script is wrapped with marker comments so it can be removed later.
+- The gated E2E command `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` validates this only inside `.vscode-test/extest-111-neon`.
+- The gated E2E uses three separate VS Code launches: capture baseline/apply patch, validate applied runtime after full restart and disable, then validate restored runtime after another full restart.
 
 Patch marker contract:
 
@@ -374,7 +378,10 @@ Useful checks for this repository:
 - `npm run test:unit`
 - `npm run test:dom`
 - `npm run test:integration`
+- `npm run test:e2e`
 - `npm test`
+- `npm run test:all`
+- `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` only when validating disposable Neon patch behavior.
 - `npm run build:theme`
 - Manual inspection of `package.json` contribution points.
 - Manual theme validation in VS Code with `Developer: Inspect Editor Tokens and Scopes`.
@@ -410,6 +417,7 @@ Local source anchors:
 - `test/unit`: Node unit tests without UI.
 - `test/dom`: `jsdom` settings webview tests.
 - `test/integration`: VS Code Extension Development Host tests.
+- `test/e2e`: ExTester/WebDriver real VS Code UI tests, including safe webview flows and the gated Neon full-restart lifecycle.
 - `README.md`: user-facing install, enable, disable, warning, and update behavior.
 - `.codex/docs.md`: official documentation and version-specific reference index.
 

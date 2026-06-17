@@ -1,0 +1,9 @@
+{
+    "extensions.autoCheckUpdates": false,
+    "extensions.autoUpdate": false,
+    "security.workspace.trust.enabled": false,
+    "telemetry.telemetryLevel": "off",
+    "update.mode": "none",
+    "window.titleBarStyle": "custom",
+    "workbench.colorTheme": "Kawaii VS Code Color"
+}

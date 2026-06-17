@@ -13,9 +13,9 @@ Current tooling state:
 | Area | Current state |
 | --- | --- |
 | Build step | `npm run build:theme` merges protected base themes and editable overrides into the generated themes loaded by VS Code. `npm run build:local` bumps the patch version, then builds the themes and local VSIX. |
-| Automated tests | Three layers are configured: Node unit tests, `jsdom` DOM UI tests, and VS Code Extension Development Host integration tests. |
+| Automated tests | Four regular layers are configured: Node unit tests, `jsdom` DOM UI tests, VS Code Extension Development Host integration tests, and ExTester/WebDriver real VS Code UI E2E tests. A separate gated Neon E2E patches only a disposable `.vscode-test` install. |
 | TypeScript | Not used. Runtime source is CommonJS JavaScript. |
-| npm dependencies | No runtime dependencies. Dev-only test dependencies are `jsdom@29.1.1`, `@vscode/test-cli@0.0.12`, and `@vscode/test-electron@3.0.0`. |
+| npm dependencies | No runtime dependencies. Dev-only test dependencies are `jsdom@29.1.1`, `@vscode/test-cli@0.0.12`, `@vscode/test-electron@3.0.0`, `vscode-extension-tester@8.23.0`, and `mocha@11.7.6`. |
 | Packaging tool | Not installed permanently in this repo. Use `@vscode/vsce` through the existing npm scripts when packaging. |
 | Runtime entry | `package.json.main` points to `./src/extension.js`. |
 | Extension id | `ITEM-PIXEL.kawaii-vscode-color` from `publisher + name`. |
@@ -32,6 +32,7 @@ npm run test:check
 npm run test:unit
 npm run test:dom
 npm run test:integration
+npm run test:e2e
 npm run build:theme
 ```
 
@@ -42,9 +43,10 @@ Expected result:
 - `npm run test:unit` should pass build, version, and workbench patch unit tests.
 - `npm run test:dom` should pass settings webview DOM tests and confirm the webview uses editor-provided `--vscode-*` tokens instead of a standalone UI palette.
 - `npm run test:integration` should activate the extension in the Extension Development Host and execute `kawaii_synthwave.openSettings` without running the real Neon Effect patch.
+- `npm run test:e2e` should package the extension, open disposable VS Code `1.111.0` through ExTester/WebDriver, navigate the real settings webview, and avoid all real Neon patch actions.
 - `npm run build:theme` should regenerate the generated theme files from protected bases and overrides without unexpected diffs.
 
-`npm test` runs the unit, DOM, and VS Code integration layers in sequence. There is no `tsc --noEmit` or lint command in the current project.
+`npm test` runs the unit, DOM, and VS Code integration layers in sequence. `npm run test:all` runs `npm test` plus the safe real VS Code E2E layer. There is no `tsc --noEmit` or lint command in the current project.
 
 ## Manual Theme Test
 
@@ -67,6 +69,15 @@ This validates the public VS Code theme contribution without installing the exte
 Live testing is possible, but it is risky because the Neon Effect setup action modifies the VS Code installation used by the Extension Development Host. The automated integration tests intentionally do not execute `Enable Neon Effect`.
 
 Use live Neon testing only when testing `src/extension.js`, `src/workbenchPatch.js`, `src/js/theme_template.js`, or `src/css/editor_chrome.css`.
+
+Preferred automated path:
+
+```powershell
+$env:KAWAII_E2E_ALLOW_NEON_PATCH = "1"
+npm run test:e2e:neon
+```
+
+This command is intentionally separate from `npm test`, `npm run test:all`, and `npm run test:e2e`. It uses `.vscode-test/extest-111-neon`, validates before/apply/remove states, and opens VS Code three times so applied and restored checks happen after full process restarts. It also verifies that runtime CSS keeps using editor-provided `--vscode-*` tokens instead of a separate hardcoded palette.
 
 Recommended safe approach:
 
@@ -119,8 +130,10 @@ The package ships runtime source files directly:
 | Unit without UI | `npm run test:unit` | Theme build merge behavior, version bump behavior, and workbench patch helpers. |
 | DOM UI | `npm run test:dom` | Settings webview readiness message, app navigation, Help metadata, Neon Effect messages, and `--vscode-*` color-token contract. |
 | VS Code integration | `npm run test:integration` | Extension manifest registration, activation, command registration, and opening settings in the Extension Development Host. |
+| Real VS Code UI E2E | `npm run test:e2e` | ExTester/WebDriver opens disposable VS Code, runs the Command Palette, switches into the real settings webview iframe, validates navigation, layout, and safe UI flows. |
+| Gated Neon E2E | `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` | Applies the real workbench patch only inside `.vscode-test`, validates applied runtime state after full restart, disables the patch, and validates restored state after another full restart. |
 
-Do not replace these with a browser E2E test that enables the real Neon Effect unless the task explicitly asks for destructive live patch testing.
+Do not fold the gated Neon E2E into the safe suite. It must stay behind `KAWAII_E2E_ALLOW_NEON_PATCH=1`.
 
 ## Package a Local VSIX
 
@@ -148,6 +161,7 @@ npm run test:check
 npm run test:unit
 npm run test:dom
 npm run test:integration
+npm run test:e2e
 npm run build:theme
 ```
 
@@ -219,6 +233,8 @@ code-insiders --uninstall-extension ITEM-PIXEL.kawaii-vscode-color
 - Node.js test runner is used for dependency-light unit tests: https://nodejs.org/api/test.html
 - jsdom is used for DOM webview tests: https://github.com/jsdom/jsdom
 - `@vscode/test-cli` provides the `vscode-test` runner configuration: https://github.com/microsoft/vscode-test-cli
+- ExTester drives real VS Code UI tests through Selenium WebDriver: https://github.com/redhat-developer/vscode-extension-tester
+- Mocha runs the ExTester suites: https://mochajs.org/
 - VS Code publishing docs define `@vscode/vsce`, `vsce package`, VSIX packaging, `vsce publish`, and `engines.vscode` compatibility: https://code.visualstudio.com/api/working-with-extensions/publishing-extension
 - VS Code marketplace docs describe installing from VSIX and note that VSIX installs disable auto update by default: https://code.visualstudio.com/docs/configure/extensions/extension-marketplace#_install-from-a-vsix
 - VS Code CLI docs define `--install-extension`, `--uninstall-extension`, `--profile`, `--extensions-dir`, and `--user-data-dir`: https://code.visualstudio.com/docs/configure/command-line#_working-with-extensions

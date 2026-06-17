@@ -39,6 +39,8 @@ No runtime npm packages are installed or declared. Dev-only test packages are pi
 | `jsdom` | `29.1.1` | Dev dependency for DOM UI tests | [jsdom repository and docs](https://github.com/jsdom/jsdom) |
 | `@vscode/test-cli` | `0.0.12` | Dev dependency exposing `vscode-test` | [`@vscode/test-cli` repository](https://github.com/microsoft/vscode-test-cli) |
 | `@vscode/test-electron` | `3.0.0` | Dev dependency used by VS Code integration tests | [`@vscode/test-electron` repository](https://github.com/microsoft/vscode-test) |
+| `vscode-extension-tester` | `8.23.0` | Dev dependency for real VS Code UI E2E through Selenium WebDriver | [ExTester repository](https://github.com/redhat-developer/vscode-extension-tester) |
+| `mocha` | `11.7.6` | Dev dependency used as the ExTester test runner | [Mocha docs](https://mochajs.org/) |
 
 When adding any dependency later, update this table with:
 
@@ -68,6 +70,7 @@ Use these as primary references for manifest and runtime changes.
 | Extension lifecycle | `activate(context)`, `deactivate()` | [Extension anatomy](https://code.visualstudio.com/api/get-started/extension-anatomy), [Activation Events lifecycle note](https://code.visualstudio.com/api/references/activation-events) |
 | Extension debugging | `.vscode/launch.json` with `type: "extensionHost"` | [Your First Extension - debugging](https://code.visualstudio.com/api/get-started/your-first-extension), [VS Code debugging docs](https://code.visualstudio.com/docs/debugtest/debugging) |
 | Extension integration tests | `.vscode-test.js`, `test/integration/**/*.test.js`, and `npm run test:integration` | [VS Code extension testing](https://code.visualstudio.com/api/working-with-extensions/testing-extension), [`@vscode/test-cli`](https://github.com/microsoft/vscode-test-cli) |
+| Real VS Code UI E2E tests | `scripts/run-e2e.js`, `test/e2e/**/*.spec.js`, `npm run test:e2e`, and gated `npm run test:e2e:neon` | [ExTester repository](https://github.com/redhat-developer/vscode-extension-tester), [Mocha docs](https://mochajs.org/), [VS Code extension testing](https://code.visualstudio.com/api/working-with-extensions/testing-extension) |
 | Packaging/publishing | Marketplace release workflow | [Publishing Extensions](https://code.visualstudio.com/api/working-with-extensions/publishing-extension), [@vscode/vsce repository](https://github.com/microsoft/vscode-vsce) |
 
 Compatibility rule:
@@ -198,7 +201,7 @@ Theme validation checklist:
 
 Packaging caution:
 
-- `package-lock.json` contains the dev-only test dependency tree for `jsdom`, `@vscode/test-cli`, and `@vscode/test-electron`.
+- `package-lock.json` contains the dev-only test dependency tree for `jsdom`, `@vscode/test-cli`, `@vscode/test-electron`, `vscode-extension-tester`, and `mocha`.
 - `.vscodeignore` controls files excluded from the extension package. Check it before packaging assets or docs.
 - If publishing from this fork under a different publisher/name, update `publisher`, `name`, repository URLs, README links, badges, marketplace references, and extension id assumptions in code.
 

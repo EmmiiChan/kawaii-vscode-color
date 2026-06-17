@@ -197,12 +197,13 @@ npm run test:check
 npm run test:unit
 npm run test:dom
 npm run test:integration
+npm run test:e2e
 npm run build:theme
 ```
 
 ### Automated Tests
 
-The project has three automated test layers:
+The project has four regular automated test layers, plus one gated Neon Effect E2E layer:
 
 | Command | Layer | Purpose |
 | --- | --- | --- |
@@ -210,9 +211,20 @@ The project has three automated test layers:
 | `npm run test:unit` | Unit tests without UI | Uses Node's built-in test runner for build logic and workbench patch helpers. |
 | `npm run test:dom` | DOM UI tests | Uses `jsdom` to load the settings webview HTML, verify webview messages, app navigation, Help metadata, and `--vscode-*` token usage. |
 | `npm run test:integration` | VS Code integration | Uses `@vscode/test-cli` and `@vscode/test-electron` to activate the extension in an Extension Development Host and execute the settings command. |
+| `npm run test:e2e` | Real VS Code UI E2E | Uses ExTester/WebDriver to package the extension, open a disposable VS Code, run `Kawaii VS Code Color: Settings`, navigate the real webview, and validate safe UI flows. |
 | `npm test` | Full suite | Runs unit, DOM, and VS Code integration tests in sequence. |
+| `npm run test:all` | Full suite plus safe E2E | Runs `npm test` and then `npm run test:e2e`. |
 
-The integration suite opens `Kawaii VS Code Color: Settings`, but it does not execute the real `Enable Neon Effect` path against an installed VS Code workbench. Workbench patch behavior is covered by pure unit tests and temporary probes that use fake files.
+The integration suite opens `Kawaii VS Code Color: Settings`, but it does not control the rendered VS Code window. The E2E suite does control the real window and webview, but it is still safe by default: it does not click `Enable Neon Effect`, `Disable Neon Effect`, `Apply Effects`, upload/import/export/download controls, or network-backed random image controls. E2E screenshots and state notes are written under `test-results/e2e`.
+
+The real Neon Effect patch has its own gated command:
+
+```powershell
+$env:KAWAII_E2E_ALLOW_NEON_PATCH = "1"
+npm run test:e2e:neon
+```
+
+`npm run test:e2e:neon` patches only the disposable VS Code installation under `.vscode-test/extest-111-neon`. It runs three separate VS Code launches to validate the same lifecycle users may need manually: before applying, after applying and reopening VS Code, and after removing and reopening VS Code. It verifies the workbench HTML hash returns to the original baseline and that injected runtime CSS uses editor-provided `--vscode-*` tokens rather than a standalone UI palette.
 
 ### Build a Local VSIX
 

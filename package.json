@@ -2,7 +2,7 @@
     "name": "kawaii-vscode-color",
     "displayName": "Kawaii VS Code Color",
     "description": "Dark pink and light green pastel-pink VS Code themes with optional glow effects, image-backed editor styling, color customization, Settings Sync, and JSON import/export.",
-    "version": "0.1.26",
+    "version": "0.1.27",
     "author": "EmmiiChan",
     "publisher": "ITEM-PIXEL",
     "license": "SEE LICENSE IN LICENSE",
@@ -31,10 +31,13 @@
         "build:theme": "node ./scripts/build-color-theme.js",
         "build:local": "node ./scripts/increment-package-version.js && npm run build:theme && node ./scripts/package-local-vsix.js",
         "test": "npm run test:unit && npm run test:dom && npm run test:integration",
-        "test:check": "node --check scripts/build-color-theme.js && node --check scripts/increment-package-version.js && node --check src/extension.js && node --check src/settings.js && node --check src/settingsWebview.js && node --check src/workbenchPatch.js && node --check src/js/theme_template.js",
+        "test:check": "node --check scripts/build-color-theme.js && node --check scripts/increment-package-version.js && node --check scripts/require-e2e-neon-flag.js && node --check scripts/run-e2e.js && node --check src/extension.js && node --check src/settings.js && node --check src/settingsWebview.js && node --check src/workbenchPatch.js && node --check src/js/theme_template.js && node --check test/e2e/.mocharc.js && node --check test/e2e/.mocharc.neon.js && node --check test/e2e/.mocharc.neon-apply.js && node --check test/e2e/.mocharc.neon-applied.js && node --check test/e2e/.mocharc.neon-restored.js && node --check test/e2e/helpers/extester-app.js && node --check test/e2e/vscode-launcher.spec.js && node --check test/e2e/settings-webview.spec.js && node --check test/e2e/settings-safe-flows.spec.js && node --check test/e2e/neon-real.spec.js",
         "test:unit": "node --test \"scripts/**/*.test.js\" \"test/unit/**/*.test.js\"",
         "test:dom": "node --test \"test/dom/**/*.test.js\"",
         "test:integration": "vscode-test",
+        "test:e2e": "node scripts/run-e2e.js",
+        "test:e2e:neon": "node scripts/require-e2e-neon-flag.js && node scripts/run-e2e.js neon",
+        "test:all": "npm test && npm run test:e2e",
         "vscode:prepublish": "npm run build:theme",
         "package:vsix": "npm run build:local",
         "publish:vsce": "npm run build:theme && npx --yes @vscode/vsce publish"
@@ -101,6 +104,8 @@
     "devDependencies": {
         "@vscode/test-cli": "0.0.12",
         "@vscode/test-electron": "3.0.0",
-        "jsdom": "29.1.1"
+        "jsdom": "29.1.1",
+        "mocha": "11.7.6",
+        "vscode-extension-tester": "8.23.0"
     }
 }
