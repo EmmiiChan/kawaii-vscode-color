@@ -209,7 +209,7 @@ The project has four regular automated test layers, plus one gated Neon Effect E
 | --- | --- | --- |
 | `npm run test:check` | Static syntax check | Runs `node --check` against runtime and build JavaScript files. |
 | `npm run test:unit` | Unit tests without UI | Uses Node's built-in test runner for build logic and workbench patch helpers. |
-| `npm run test:dom` | DOM UI tests | Uses `jsdom` to load the settings webview HTML, verify webview messages, app navigation, Help metadata, and `--vscode-*` token usage. |
+| `npm run test:dom` | DOM UI tests | Uses `jsdom` to load the settings webview HTML and verify safe `postMessage` events, app navigation, Help metadata, Color Settings inputs/debounce, image/logo state, incoming webview messages, warnings/errors, and `--vscode-*` token usage. |
 | `npm run test:integration` | VS Code integration | Uses `@vscode/test-cli` and `@vscode/test-electron` to activate the extension in an Extension Development Host and execute the settings command. |
 | `npm run test:e2e` | Real VS Code UI E2E | Uses ExTester/WebDriver to package the extension, open a disposable VS Code, run `Kawaii VS Code Color: Settings`, navigate the real webview, and validate safe UI flows. |
 | `npm test` | Full suite | Runs unit, DOM, and VS Code integration tests in sequence. |

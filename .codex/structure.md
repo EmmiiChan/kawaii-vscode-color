@@ -157,7 +157,7 @@ Keep changes inside the existing responsibility boundaries.
 | `themes` | Protected base theme, editable Kawaii overrides, and generated VS Code theme output | Runtime patching code |
 | `scripts` | Small repository build utilities such as the color theme merge script | Extension runtime code loaded by VS Code |
 | `test/unit` | Node unit tests for dependency-free logic and extension-host helpers | VS Code Extension Host integration tests |
-| `test/dom` | `jsdom` tests for the settings webview DOM and message behavior | Runtime webview source files |
+| `test/dom` | `jsdom` tests and helpers for the settings webview DOM, safe webview events, timers, and message behavior | Runtime webview source files |
 | `test/integration` | VS Code Extension Development Host tests using `@vscode/test-cli` | Unit-only helper tests |
 | `test/e2e` | ExTester/WebDriver tests that open a disposable real VS Code window, drive the Command Palette, and interact with the real settings webview iframe | Unit logic, fake-DOM-only assertions, or safe-suite clicks that apply the real Neon patch |
 | `.vscode` | Local VS Code development/debug configuration | Extension source or published assets |
@@ -173,6 +173,7 @@ Current source of truth:
 - Setup webview HTML generation lives in `src/settingsWebview.js`.
 - Workbench path detection and marked HTML patch helpers live in `src/workbenchPatch.js`.
 - Real VS Code E2E helpers live in `test/e2e/helpers/extester-app.js`.
+- Reusable settings webview DOM test setup lives in `test/dom/settings-webview-helper.js`.
 - Protected upstream/base palette and token rules live in `themes/kawaii_synthwave-color-theme.json`.
 - Kawaii palette and token changes must be placed in `themes/kawaii_synthwave-color-theme-overrides.json`.
 - The public theme loaded by VS Code is generated at `themes/kawaii_synthwave-generated-color-theme.json`.
@@ -415,7 +416,7 @@ Local source anchors:
 - `themes/kawaii_synthwave-generated-color-theme.json`: generated VS Code public color theme definition.
 - `scripts/build-color-theme.js`: base-plus-overrides theme build flow.
 - `test/unit`: Node unit tests without UI.
-- `test/dom`: `jsdom` settings webview tests.
+- `test/dom`: `jsdom` settings webview tests and `settings-webview-helper.js`.
 - `test/integration`: VS Code Extension Development Host tests.
 - `test/e2e`: ExTester/WebDriver real VS Code UI tests, including safe webview flows and the gated Neon full-restart lifecycle.
 - `README.md`: user-facing install, enable, disable, warning, and update behavior.

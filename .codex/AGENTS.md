@@ -41,7 +41,7 @@ Expected result:
 - `npm pkg get` should show `kawaii-vscode-color`, publisher `ITEM-PIXEL`, no runtime dependency object, and the pinned test devDependencies.
 - `npm run test:check` should exit without syntax errors.
 - `npm run test:unit` should pass build, version, and workbench patch unit tests.
-- `npm run test:dom` should pass settings webview DOM tests and confirm the webview uses editor-provided `--vscode-*` tokens instead of a standalone UI palette.
+- `npm run test:dom` should pass settings webview DOM tests covering all safe webview events, app navigation, Help metadata, Color Settings inputs/debounce, image/logo state, incoming webview messages, warnings/errors, and editor-provided `--vscode-*` tokens instead of a standalone UI palette.
 - `npm run test:integration` should activate the extension in the Extension Development Host and execute `kawaii_synthwave.openSettings` without running the real Neon Effect patch.
 - `npm run test:e2e` should package the extension, open disposable VS Code `1.111.0` through ExTester/WebDriver, navigate the real settings webview, and avoid all real Neon patch actions.
 - `npm run build:theme` should regenerate the generated theme files from protected bases and overrides without unexpected diffs.
@@ -128,7 +128,7 @@ The package ships runtime source files directly:
 | Layer | Command | Main coverage |
 | --- | --- | --- |
 | Unit without UI | `npm run test:unit` | Theme build merge behavior, version bump behavior, and workbench patch helpers. |
-| DOM UI | `npm run test:dom` | Settings webview readiness message, app navigation, Help metadata, Neon Effect messages, and `--vscode-*` color-token contract. |
+| DOM UI | `npm run test:dom` | Settings webview readiness, all safe webview events, app navigation, Help metadata, Color Settings inputs/debounce, image/logo state, incoming webview messages, warnings/errors, and `--vscode-*` color-token contract. |
 | VS Code integration | `npm run test:integration` | Extension manifest registration, activation, command registration, and opening settings in the Extension Development Host. |
 | Real VS Code UI E2E | `npm run test:e2e` | ExTester/WebDriver opens disposable VS Code, runs the Command Palette, switches into the real settings webview iframe, validates navigation, layout, and safe UI flows. |
 | Gated Neon E2E | `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` | Applies the real workbench patch only inside `.vscode-test`, validates applied runtime state after full restart, disables the patch, and validates restored state after another full restart. |
