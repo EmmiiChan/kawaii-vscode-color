@@ -2,7 +2,7 @@
     "name": "kawaii-vscode-color",
     "displayName": "Kawaii VS Code Color",
     "description": "Dark pink and light green pastel-pink VS Code themes with optional glow effects, image-backed editor styling, color customization, Settings Sync, and JSON import/export.",
-    "version": "0.1.27",
+    "version": "0.1.28",
     "author": "EmmiiChan",
     "publisher": "ITEM-PIXEL",
     "license": "SEE LICENSE IN LICENSE",
