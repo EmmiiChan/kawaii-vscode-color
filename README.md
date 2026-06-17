@@ -62,7 +62,7 @@ Open the extension settings:
 
 1. Open the Command Palette.
 2. Run `Kawaii VS Code Color: Settings`.
-3. Use the side menu to switch between `Home`, `Color Settings`, and `Neon Effect`.
+3. Use the side menu to switch between `Home`, `Settings`, `Color Settings`, `Neon Effect`, `Image Customization`, `Sync/Files`, and `Help`.
 
 The settings window opens as a normal editor tab.
 
@@ -71,8 +71,14 @@ The settings window opens as a normal editor tab.
 | Area | Purpose |
 | --- | --- |
 | `Home` | Shows project links and extension information. |
-| `Color Settings` | Changes theme mode, color overrides, image-backed effects, sync, export, and import. |
+| `Settings` | Groups the main configuration controls for the active theme mode. |
+| `Color Settings` | Changes theme mode and workbench or syntax color overrides. |
 | `Neon Effect` | Enables or disables the unsupported VS Code workbench patch used for glow and image effects. |
+| `Image Customization` | Stores editor background and no-tab logo image inputs used by the Neon Effect patch. |
+| `Sync/Files` | Saves or restores settings through VS Code Settings Sync, JSON export, and JSON import. |
+| `Help` | Shows repository, issue tracker, README/homepage, and publisher/contact links from project metadata. |
+
+The settings webview must use the active editor theme for its own UI. Its CSS consumes VS Code webview tokens such as `--vscode-editor-background`, `--vscode-foreground`, `--vscode-button-background`, and `--vscode-panel-border`; it must not define a separate hardcoded product palette for page surfaces, text, controls, panels, or states.
 
 ### Color Settings
 
@@ -187,12 +193,25 @@ Validate the extension metadata and scripts:
 
 ```powershell
 npm pkg get name version publisher dependencies devDependencies engines
-node --check scripts\build-color-theme.js
+npm run test:check
+npm run test:unit
+npm run test:dom
 npm run build:theme
-node --check src\extension.js
-node --check src\settings.js
-node --check src\js\theme_template.js
 ```
+
+### Automated Tests
+
+The project has three automated test layers:
+
+| Command | Layer | Purpose |
+| --- | --- | --- |
+| `npm run test:check` | Static syntax check | Runs `node --check` against runtime and build JavaScript files. |
+| `npm run test:unit` | Unit tests without UI | Uses Node's built-in test runner for build logic and workbench patch helpers. |
+| `npm run test:dom` | DOM UI tests | Uses `jsdom` to load the settings webview HTML, verify webview messages, app navigation, Help metadata, and `--vscode-*` token usage. |
+| `npm run test:integration` | VS Code integration | Uses `@vscode/test-cli` and `@vscode/test-electron` to activate the extension in an Extension Development Host and execute the settings command. |
+| `npm test` | Full suite | Runs unit, DOM, and VS Code integration tests in sequence. |
+
+The integration suite opens `Kawaii VS Code Color: Settings`, but it does not execute the real `Enable Neon Effect` path against an installed VS Code workbench. Workbench patch behavior is covered by pure unit tests and temporary probes that use fake files.
 
 ### Build a Local VSIX
 
@@ -205,13 +224,13 @@ npm run build:local
 Install the generated VSIX in VS Code:
 
 ```powershell
-code --install-extension .\dist\kawaii-vscode-color-0.1.21.vsix --force
+code --install-extension .\dist\kawaii-vscode-color-<version>.vsix --force
 ```
 
 For VS Code Insiders:
 
 ```powershell
-code-insiders --install-extension .\dist\kawaii-vscode-color-0.1.21.vsix --force
+code-insiders --install-extension .\dist\kawaii-vscode-color-<version>.vsix --force
 ```
 
 ### Theme Color Workflow

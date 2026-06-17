@@ -389,9 +389,15 @@ function main() {
   console.log(summaryLines.join("\n"));
 }
 
-try {
-  main();
-} catch (error) {
-  logBuildError(error);
-  process.exitCode = 1;
+if (require.main === module) {
+  try {
+    main();
+  } catch (error) {
+    logBuildError(error);
+    process.exitCode = 1;
+  }
 }
+
+module.exports = {
+  buildGeneratedTheme
+};

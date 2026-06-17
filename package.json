@@ -2,7 +2,7 @@
     "name": "kawaii-vscode-color",
     "displayName": "Kawaii VS Code Color",
     "description": "Dark pink and light green pastel-pink VS Code themes with optional glow effects, image-backed editor styling, color customization, Settings Sync, and JSON import/export.",
-    "version": "0.1.25",
+    "version": "0.1.26",
     "author": "EmmiiChan",
     "publisher": "ITEM-PIXEL",
     "license": "SEE LICENSE IN LICENSE",
@@ -30,6 +30,11 @@
         "build": "npm run build:local",
         "build:theme": "node ./scripts/build-color-theme.js",
         "build:local": "node ./scripts/increment-package-version.js && npm run build:theme && node ./scripts/package-local-vsix.js",
+        "test": "npm run test:unit && npm run test:dom && npm run test:integration",
+        "test:check": "node --check scripts/build-color-theme.js && node --check scripts/increment-package-version.js && node --check src/extension.js && node --check src/settings.js && node --check src/settingsWebview.js && node --check src/workbenchPatch.js && node --check src/js/theme_template.js",
+        "test:unit": "node --test \"scripts/**/*.test.js\" \"test/unit/**/*.test.js\"",
+        "test:dom": "node --test \"test/dom/**/*.test.js\"",
+        "test:integration": "vscode-test",
         "vscode:prepublish": "npm run build:theme",
         "package:vsix": "npm run build:local",
         "publish:vsce": "npm run build:theme && npx --yes @vscode/vsce publish"
@@ -92,5 +97,10 @@
                 }
             }
         }
+    },
+    "devDependencies": {
+        "@vscode/test-cli": "0.0.12",
+        "@vscode/test-electron": "3.0.0",
+        "jsdom": "29.1.1"
     }
 }

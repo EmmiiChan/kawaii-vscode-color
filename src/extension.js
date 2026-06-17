@@ -2,6 +2,13 @@ const path = require('path');
 const fs = require('fs');
 const vscode = require('vscode');
 const settings = require('./settings');
+const {
+	NEON_SCRIPT_FILE_NAME,
+	applyWorkbenchPatchScriptTag,
+	isWorkbenchPatchEnabled,
+	removeWorkbenchPatchScriptTag,
+	resolveWorkbenchPatchPaths
+} = require('./workbenchPatch');
 
 const COLOR_THEME_SETTING = "workbench.colorTheme";
 const KAWAII_VSCODE_COLOR_THEME_LABELS = [
@@ -43,12 +50,7 @@ const EMPTY_EDITOR_LOGO_IMAGE_FILE_PREFIX = 'empty-editor-logo-image';
 const EMPTY_EDITOR_LOGO_DEFAULT_OPACITY = 0.75;
 const EMPTY_EDITOR_LOGO_MIN_OPACITY = 0;
 const EMPTY_EDITOR_LOGO_MAX_OPACITY = 1;
-const NEON_SCRIPT_FILE_NAME = 'neondreams.js';
 const WORKBENCH_RELOAD_COMMAND = "workbench.action.reloadWindow";
-const WORKBENCH_PATCH_START_MARKER = '<!-- KAWAII SYNTHWAVE -->';
-const WORKBENCH_PATCH_END_MARKER = '<!-- NEON DREAMS -->';
-const WORKBENCH_PATCH_SCRIPT_TAG_PATTERN = /^.*<!-- KAWAII SYNTHWAVE --><script src="neondreams\.js(?:\?v=[^"]+)?"><\/script><!-- NEON DREAMS -->.*\r?\n?/mg;
-const WORKBENCH_HTML_CLOSING_TAG_PATTERN = /<\/html>/i;
 
 // Centralise errors & info messages to keep activation code clean
 const messages = {
@@ -669,52 +671,6 @@ function isKawaiiVsCodeColorTheme(themeLabel) {
 }
 
 /**
- * Checks whether the workbench HTML includes the Neon Dreams script tag.
- *
- * @param {string} html - Workbench HTML.
- * @returns {boolean} True when Neon Dreams is patched in.
- */
-function isWorkbenchPatchEnabled(html) {
-	return html.includes(NEON_SCRIPT_FILE_NAME);
-}
-
-/**
- * Replaces any existing Neon Dreams script tag with a cache-busted script URL.
- *
- * @param {string} html - Workbench HTML.
- * @returns {string} Workbench HTML with a fresh Neon Dreams script tag.
- */
-function applyWorkbenchPatchScriptTag(html) {
-	const cleanHtml = removeWorkbenchPatchScriptTag(html);
-	const scriptTag = createWorkbenchPatchScriptTag();
-
-	if (!WORKBENCH_HTML_CLOSING_TAG_PATTERN.test(cleanHtml)) {
-		return `${cleanHtml}\n${scriptTag}\n`;
-	}
-
-	return cleanHtml.replace(WORKBENCH_HTML_CLOSING_TAG_PATTERN, `${scriptTag}\n$&`);
-}
-
-/**
- * Removes extension-owned Neon Dreams script tags from workbench HTML.
- *
- * @param {string} html - Workbench HTML.
- * @returns {string} Workbench HTML without the marked script tag.
- */
-function removeWorkbenchPatchScriptTag(html) {
-	return html.replace(WORKBENCH_PATCH_SCRIPT_TAG_PATTERN, '');
-}
-
-/**
- * Creates the marked Neon Dreams script tag with a cache-busting query string.
- *
- * @returns {string} Workbench script tag.
- */
-function createWorkbenchPatchScriptTag() {
-	return `	${WORKBENCH_PATCH_START_MARKER}<script src="${NEON_SCRIPT_FILE_NAME}?v=${Date.now()}"></script>${WORKBENCH_PATCH_END_MARKER}`;
-}
-
-/**
  * Prompts the user and reloads the current workbench window.
  *
  * @param {string} message - User-facing reload message.
@@ -724,28 +680,6 @@ function createWorkbenchPatchScriptTag() {
 async function requestWorkbenchReload(message, actionTitle) {
 	await vscode.window.showInformationMessage(message, { title: actionTitle });
 	await vscode.commands.executeCommand(WORKBENCH_RELOAD_COMMAND);
-}
-
-/**
- * Resolves all files needed by the workbench patch.
- *
- * @param {string} base - VS Code workbench base path.
- * @returns {{htmlFile: string, templateFile: string} | null} Patch file paths.
- */
-function resolveWorkbenchPatchPaths(base) {
-	const workbenchPaths = resolveWorkbenchPaths(base);
-
-	if (!workbenchPaths) {
-		return null;
-	}
-
-	const [electronBase, workBenchFilename] = workbenchPaths;
-	const workbenchDirectory = path.join(base, electronBase, "workbench");
-
-	return {
-		htmlFile: path.join(workbenchDirectory, workBenchFilename),
-		templateFile: path.join(workbenchDirectory, NEON_SCRIPT_FILE_NAME)
-	};
 }
 
 /**
@@ -776,35 +710,6 @@ function logExtensionError(methodName, error, context) {
 		message: normalizedError.message,
 		stack: normalizedError.stack
 	}, null, 2));
-}
-
-// Find the workbench HTML file and electron base directory.
-// Returns an array with the electron base directory and the workbench HTML filename.
-// If not found, returns null.
-function resolveWorkbenchPaths(base) {
-	const electronBaseCandidates = [
-		// v1.70-, v1.102+
-		"electron-browser",
-		// v1.70 ~ v1.102
-		"electron-sandbox",
-	]
-
-	const htmlCandidates = [
-		// v1.94.0
-		"workbench.esm.html",
-		// other
-		"workbench.html",
-	];
-
-	for (const electronBase of electronBaseCandidates) {
-		for (const htmlFile of htmlCandidates) {
-			if (fs.existsSync(path.join(base, electronBase, "workbench", htmlFile))) {
-				return [electronBase, htmlFile];
-			}
-		}
-	}
-
-	return null;
 }
 
 module.exports = {
