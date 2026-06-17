@@ -169,7 +169,12 @@ Current source of truth:
 
 - Workbench chrome injection lives in `src/css/editor_chrome.css`.
 - Renderer behavior lives in the JS template under `src/js`.
-- Setup state, persistence, sync/export/import, and webview message routing live in `src/settings.js`.
+- Settings webview orchestration, message routing, VS Code notifications/dialogs, native picker/download workflows, and state composition live in `src/settings.js`.
+- Pure color customization block mutation, scope comparison, and hex validation live in `src/settingsPersistence.js`.
+- VS Code configuration get/inspect/update target handling lives in `src/settingsStore.js`.
+- Generated-theme-aware color customization updates/resets live in `src/settingsColorService.js`.
+- Settings bundle creation/application, Settings Sync state, and JSON import/export actions live in `src/settingsBundle.js`.
+- Deterministic effect/image persistence helpers live in `src/settingsEffectsPersistence.js`.
 - Setup webview HTML generation lives in `src/settingsWebview.js`.
 - Workbench path detection and marked HTML patch helpers live in `src/workbenchPatch.js`.
 - Real VS Code E2E helpers live in `test/e2e/helpers/extester-app.js`.
@@ -199,7 +204,7 @@ Recommended extraction boundaries if the runtime grows:
 | Generated JS assembly | `src/neon/...` or a focused helper | Keep placeholders documented and validated |
 | Notification messages | A constants/helper module | Preserve user-facing clarity and avoid duplicated strings |
 | Token replacement rules | Renderer template or a focused renderer data file | Keep in sync with theme token foreground colors |
-| Settings UI | `src/settings.js` or extracted `src/settings/...` modules | Keep Home and Color Settings in the same setup webview; keep user overrides in VS Code settings, not generated theme files |
+| Settings UI and persistence | `src/settings.js`, `src/settingsPersistence.js`, `src/settingsStore.js`, `src/settingsColorService.js`, `src/settingsBundle.js`, `src/settingsEffectsPersistence.js` | Keep Home and Color Settings in the same setup webview; keep user overrides in VS Code settings, not generated theme files; keep deterministic persistence logic unit-testable without a VS Code Extension Host |
 
 Avoid these unless the project is deliberately refactored:
 
@@ -250,7 +255,7 @@ Rules for changing theme colors:
 - Run `npm run build:theme` after editing overrides so `themes/kawaii_synthwave-generated-color-theme.json` is refreshed.
 - Do not edit `themes/kawaii_synthwave-generated-color-theme.json` manually; it is build output.
 - Prefer public VS Code theme keys in the overrides file for normal UI and syntax changes.
-- Use `src/settings.js` for setup state and user-local live color changes. It should write theme-scoped settings under `[Kawaii VS Code Color]`, not mutate repository theme JSON files at runtime.
+- Use `src/settings.js` for setup state and webview orchestration; use the extracted settings modules for user-local live color changes. They should write theme-scoped settings under `[Kawaii VS Code Color]`, not mutate repository theme JSON files at runtime.
 - Use injected CSS only for effects VS Code themes cannot express, such as text shadows and internal chrome decoration.
 - Validate TextMate scopes with `Developer: Inspect Editor Tokens and Scopes`.
 - Check semantic highlighting interactions when a language server is active.
@@ -406,7 +411,12 @@ Local source anchors:
 
 - `package.json`: manifest, contributions, activation, settings, extension entry.
 - `src/extension.js`: extension host command flow, setting normalization, patch/unpatch mechanics.
-- `src/settings.js`: settings state, persistence, sync/export/import, and webview message handling.
+- `src/settings.js`: settings webview orchestration, message handling, VS Code notifications/dialogs, native picker/download workflows, and state composition.
+- `src/settingsPersistence.js`: pure color customization block mutation, scope comparison, and hex validation.
+- `src/settingsStore.js`: VS Code configuration adapter for global/workspace settings reads and writes.
+- `src/settingsColorService.js`: generated-theme-aware color customization update/reset orchestration.
+- `src/settingsBundle.js`: settings bundle, Settings Sync, and JSON import/export orchestration.
+- `src/settingsEffectsPersistence.js`: effect/image persistence normalization, safe paths, metadata/state, export/restore/store/remove helpers.
 - `src/settingsWebview.js`: setup webview HTML, Home, Settings, Color Settings, Neon Effect, Image Customization, Sync/Files, and Help pages.
 - `src/workbenchPatch.js`: testable workbench path detection and HTML patch helpers.
 - `src/js/theme_template.js`: renderer bootstrap, theme detection, token replacement, style injection.

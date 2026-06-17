@@ -3,14 +3,21 @@ const https = require("https");
 const os = require("os");
 const path = require("path");
 const vscode = require("vscode");
+const { createSettingsBundleActions } = require("./settingsBundle");
+const { createSettingsColorService } = require("./settingsColorService");
+const effectsPersistence = require("./settingsEffectsPersistence");
+const { createSettingsStore } = require("./settingsStore");
 const { createSettingsWebviewHtml } = require("./settingsWebview");
+const {
+  ensurePlainObject,
+  findMatchingTokenRuleIndex,
+  getTextMateRules,
+  getThemeCustomizationKey,
+  stringifyScope
+} = require("./settingsPersistence");
 const packageManifest = require("../package.json");
 
 const PANEL_VIEW_TYPE = "kawaiiVsCodeColor.settings";
-const SETTINGS_EXPORT_SCHEMA = "kawaii-vscode-color-settings";
-const LEGACY_SETTINGS_EXPORT_SCHEMA = "kawaii-synthwave-settings";
-const SETTINGS_EXPORT_SCHEMA_VERSION = 1;
-const SYNC_SETTINGS_STATE_KEY = "kawaii_synthwave.syncedSettingsBundle";
 const THEME_VARIANTS = [
   {
     id: "dark",
@@ -31,8 +38,39 @@ const WORKBENCH_CUSTOMIZATIONS_SETTING = "workbench.colorCustomizations";
 const TOKEN_CUSTOMIZATIONS_SETTING = "editor.tokenColorCustomizations";
 const BRIGHTNESS_SETTING = "kawaii_synthwave.brightness";
 const DISABLE_GLOW_SETTING = "kawaii_synthwave.disableGlow";
+const SETTINGS_EXPORT_FILE_NAME = "kawaii-vscode-color-settings.json";
 const COLOR_SCHEME_REFERENCE_PATH = path.join(__dirname, "..", ".codex", "color_scheme_reference.md");
-const COLOR_HEX_PATTERN = /^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+const settingsStore = createSettingsStore(vscode.workspace);
+const settingsColorService = createSettingsColorService({
+  colorThemeSetting: COLOR_THEME_SETTING,
+  getGeneratedTokenRule,
+  getThemeVariantById,
+  readGeneratedTheme,
+  settingsStore,
+  tokenCustomizationsSetting: TOKEN_CUSTOMIZATIONS_SETTING,
+  workbenchCustomizationsSetting: WORKBENCH_CUSTOMIZATIONS_SETTING
+});
+const settingsBundleActions = createSettingsBundleActions({
+  activeThemeService: {
+    getActiveThemeVariant,
+    changeThemeVariant
+  },
+  brightnessSetting: BRIGHTNESS_SETTING,
+  disableGlowSetting: DISABLE_GLOW_SETTING,
+  effectsService: {
+    applyEffectsExport,
+    getEffectsExport
+  },
+  fileSystem: fs.promises,
+  homeDirectory: os.homedir,
+  settingsExportFileName: SETTINGS_EXPORT_FILE_NAME,
+  settingsStore,
+  themeVariants: THEME_VARIANTS,
+  tokenCustomizationsSetting: TOKEN_CUSTOMIZATIONS_SETTING,
+  uri: vscode.Uri,
+  window: vscode.window,
+  workbenchCustomizationsSetting: WORKBENCH_CUSTOMIZATIONS_SETTING
+});
 const EDITOR_BACKGROUND_IMAGE_STATE_KEY = "kawaii_synthwave.editorBackgroundImage";
 const EDITOR_BACKGROUND_OPACITY_STATE_KEY = "kawaii_synthwave.editorBackgroundOpacity";
 const EDITOR_BACKGROUND_IMAGE_FILE_PREFIX = "editor-background-image";
@@ -45,7 +83,6 @@ const NEKOS_MOE_USER_AGENT = "KawaiiVSCodeColor (https://github.com/EmmiiChan/ka
 const NETWORK_REQUEST_TIMEOUT_MS = 20000;
 const NETWORK_REDIRECT_LIMIT = 3;
 const NETWORK_JSON_MAX_BYTES = 1024 * 1024;
-const SETTINGS_EXPORT_FILE_NAME = "kawaii-vscode-color-settings.json";
 const EDITOR_BACKGROUND_MIME_TYPES = {
   png: "image/png",
   jpg: "image/jpeg",
@@ -54,12 +91,10 @@ const EDITOR_BACKGROUND_MIME_TYPES = {
   svg: "image/svg+xml"
 };
 const EDITOR_BACKGROUND_MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
-const EDITOR_BACKGROUND_DEFAULT_OPACITY = 0.12;
 const EDITOR_BACKGROUND_MIN_OPACITY = 0;
 const EDITOR_BACKGROUND_MAX_OPACITY = 0.35;
 const EDITOR_BACKGROUND_OPACITY_STEP = 0.01;
 const EDITOR_BACKGROUND_FIT_STATE_KEY = "kawaii_synthwave.editorBackgroundFit";
-const EDITOR_BACKGROUND_DEFAULT_FIT = "full";
 const EDITOR_BACKGROUND_FIT_OPTIONS = [
   { id: "full", label: "Full", description: "100% x 100%" },
   { id: "top", label: "Top", description: "100% x 50%" },
@@ -74,7 +109,6 @@ const EDITOR_BACKGROUND_FIT_OPTIONS = [
 const EMPTY_EDITOR_LOGO_IMAGE_STATE_KEY = "kawaii_synthwave.emptyEditorLogoImage";
 const EMPTY_EDITOR_LOGO_OPACITY_STATE_KEY = "kawaii_synthwave.emptyEditorLogoOpacity";
 const EMPTY_EDITOR_LOGO_IMAGE_FILE_PREFIX = "empty-editor-logo-image";
-const EMPTY_EDITOR_LOGO_DEFAULT_OPACITY = 0.75;
 const EMPTY_EDITOR_LOGO_MIN_OPACITY = 0;
 const EMPTY_EDITOR_LOGO_MAX_OPACITY = 1;
 const EMPTY_EDITOR_LOGO_OPACITY_STEP = 0.01;
@@ -335,13 +369,7 @@ async function openSettings(context, actions) {
  * @returns {void}
  */
 function configureSettingsSync(context) {
-  if (
-    context
-    && context.globalState
-    && typeof context.globalState.setKeysForSync === "function"
-  ) {
-    context.globalState.setKeysForSync([SYNC_SETTINGS_STATE_KEY]);
-  }
+  return settingsBundleActions.configureSettingsSync(context);
 }
 
 /**
@@ -650,20 +678,7 @@ function isDocumentationLinkAllowed(url) {
  * @returns {Promise<void>} Completes when settings are persisted.
  */
 async function updateColorCustomization(section, id, value, themeVariantId) {
-  const themeVariant = getThemeVariantById(themeVariantId);
-  const colorValue = normalizeHexColor(value);
-
-  if (section === "workbench") {
-    await updateWorkbenchColor(String(id), colorValue, themeVariant);
-    return;
-  }
-
-  if (section === "token") {
-    await updateTokenColor(Number(id), colorValue, themeVariant);
-    return;
-  }
-
-  throw new Error(`Unsupported color settings section: ${String(section)}`);
+  return settingsColorService.updateColorCustomization(section, id, value, themeVariantId);
 }
 
 /**
@@ -675,19 +690,7 @@ async function updateColorCustomization(section, id, value, themeVariantId) {
  * @returns {Promise<void>} Completes when settings are persisted.
  */
 async function resetColorCustomization(section, id, themeVariantId) {
-  const themeVariant = getThemeVariantById(themeVariantId);
-
-  if (section === "workbench") {
-    await resetWorkbenchColor(String(id), themeVariant);
-    return;
-  }
-
-  if (section === "token") {
-    await resetTokenColor(Number(id), themeVariant);
-    return;
-  }
-
-  throw new Error(`Unsupported color settings section: ${String(section)}`);
+  return settingsColorService.resetColorCustomization(section, id, themeVariantId);
 }
 
 /**
@@ -697,119 +700,7 @@ async function resetColorCustomization(section, id, themeVariantId) {
  * @returns {Thenable<void>} Completes when VS Code persists the active theme.
  */
 function changeThemeVariant(themeVariantId) {
-  const themeVariant = getThemeVariantById(themeVariantId);
-  return vscode.workspace.getConfiguration().update(COLOR_THEME_SETTING, themeVariant.label, true);
-}
-
-/**
- * Updates one workbench color inside the theme-specific user settings block.
- *
- * @param {string} colorId - VS Code workbench color id.
- * @param {string} colorValue - Hex color value.
- * @param {Record<string, string>} themeVariant - Active theme variant.
- * @returns {Promise<void>} Completes when settings are persisted.
- */
-async function updateWorkbenchColor(colorId, colorValue, themeVariant) {
-  const theme = readGeneratedTheme(themeVariant);
-
-  if (!theme.colors || !Object.prototype.hasOwnProperty.call(theme.colors, colorId)) {
-    throw new Error(`Unknown ${themeVariant.label} workbench color: ${colorId}`);
-  }
-
-  const customizations = getSettingsObject(WORKBENCH_CUSTOMIZATIONS_SETTING);
-  const themeCustomizations = ensurePlainObject(customizations[getThemeCustomizationKey(themeVariant)]);
-  themeCustomizations[colorId] = colorValue;
-  customizations[getThemeCustomizationKey(themeVariant)] = themeCustomizations;
-
-  await updateGlobalSetting(WORKBENCH_CUSTOMIZATIONS_SETTING, customizations);
-}
-
-/**
- * Resets one workbench color from the theme-specific user settings block.
- *
- * @param {string} colorId - VS Code workbench color id.
- * @param {Record<string, string>} themeVariant - Active theme variant.
- * @returns {Promise<void>} Completes when settings are persisted.
- */
-async function resetWorkbenchColor(colorId, themeVariant) {
-  await updateThemeCustomizationSetting(
-    WORKBENCH_CUSTOMIZATIONS_SETTING,
-    true,
-    themeVariant,
-    function deleteWorkbenchColor(themeCustomizations) {
-      delete themeCustomizations[colorId];
-    }
-  );
-
-  if (canUpdateWorkspaceSettings()) {
-    await updateThemeCustomizationSetting(
-      WORKBENCH_CUSTOMIZATIONS_SETTING,
-      false,
-      themeVariant,
-      function deleteWorkspaceWorkbenchColor(themeCustomizations) {
-        delete themeCustomizations[colorId];
-      }
-    );
-  }
-}
-
-/**
- * Updates one TextMate token foreground override.
- *
- * @param {number} tokenIndex - Token rule index in the generated theme.
- * @param {string} colorValue - Hex color value.
- * @param {Record<string, string>} themeVariant - Active theme variant.
- * @returns {Promise<void>} Completes when settings are persisted.
- */
-async function updateTokenColor(tokenIndex, colorValue, themeVariant) {
-  const tokenRule = getGeneratedTokenRule(tokenIndex, themeVariant);
-
-  if (!tokenRule || !tokenRule.scope) {
-    throw new Error(`Unknown ${themeVariant.label} token color index: ${tokenIndex}`);
-  }
-
-  const customizations = getSettingsObject(TOKEN_CUSTOMIZATIONS_SETTING);
-  const themeCustomizations = ensurePlainObject(customizations[getThemeCustomizationKey(themeVariant)]);
-  const textMateRules = getTextMateRules(themeCustomizations);
-  const customRule = {
-    scope: tokenRule.scope,
-    settings: {
-      foreground: colorValue
-    }
-  };
-  const existingIndex = findMatchingTokenRuleIndex(textMateRules, tokenRule);
-
-  if (existingIndex >= 0) {
-    textMateRules[existingIndex] = customRule;
-  } else {
-    textMateRules.push(customRule);
-  }
-
-  themeCustomizations.textMateRules = textMateRules;
-  customizations[getThemeCustomizationKey(themeVariant)] = themeCustomizations;
-
-  await updateGlobalSetting(TOKEN_CUSTOMIZATIONS_SETTING, customizations);
-}
-
-/**
- * Resets one TextMate token foreground override.
- *
- * @param {number} tokenIndex - Token rule index in the generated theme.
- * @param {Record<string, string>} themeVariant - Active theme variant.
- * @returns {Promise<void>} Completes when settings are persisted.
- */
-async function resetTokenColor(tokenIndex, themeVariant) {
-  const tokenRule = getGeneratedTokenRule(tokenIndex, themeVariant);
-
-  if (!tokenRule || !tokenRule.scope) {
-    return;
-  }
-
-  await deleteTokenColorFromTarget(tokenRule, true, themeVariant);
-
-  if (canUpdateWorkspaceSettings()) {
-    await deleteTokenColorFromTarget(tokenRule, false, themeVariant);
-  }
+  return settingsColorService.changeThemeVariant(themeVariantId);
 }
 
 /**
@@ -819,15 +710,7 @@ async function resetTokenColor(tokenIndex, themeVariant) {
  * @returns {Promise<void>} Completes when settings are persisted.
  */
 async function resetAllColorCustomizations(themeVariantId) {
-  const themeVariant = getThemeVariantById(themeVariantId);
-
-  await removeThemeCustomizationBlock(WORKBENCH_CUSTOMIZATIONS_SETTING, true, themeVariant);
-  await removeThemeCustomizationBlock(TOKEN_CUSTOMIZATIONS_SETTING, true, themeVariant);
-
-  if (canUpdateWorkspaceSettings()) {
-    await removeThemeCustomizationBlock(WORKBENCH_CUSTOMIZATIONS_SETTING, false, themeVariant);
-    await removeThemeCustomizationBlock(TOKEN_CUSTOMIZATIONS_SETTING, false, themeVariant);
-  }
+  return settingsColorService.resetAllColorCustomizations(themeVariantId);
 }
 
 /**
@@ -837,9 +720,7 @@ async function resetAllColorCustomizations(themeVariantId) {
  * @returns {Promise<void>} Completes when the bundle is stored for Settings Sync.
  */
 async function saveSettingsToVsSync(context) {
-  const bundle = await createSettingsBundle(context);
-  await context.globalState.update(SYNC_SETTINGS_STATE_KEY, bundle);
-  vscode.window.showInformationMessage("Kawaii VS Code Color settings saved to VS Code Settings Sync state.");
+  return settingsBundleActions.saveSettingsToVsSync(context);
 }
 
 /**
@@ -849,16 +730,7 @@ async function saveSettingsToVsSync(context) {
  * @returns {Promise<boolean>} True when a synced bundle was imported.
  */
 async function importSettingsFromVsSync(context) {
-  const bundle = context.globalState.get(SYNC_SETTINGS_STATE_KEY);
-
-  if (!bundle) {
-    vscode.window.showWarningMessage("No Kawaii VS Code Color settings bundle was found in VS Code Settings Sync state.");
-    return false;
-  }
-
-  await applySettingsBundle(context, bundle);
-  vscode.window.showInformationMessage("Kawaii VS Code Color settings restored from VS Code Settings Sync state.");
-  return true;
+  return settingsBundleActions.importSettingsFromVsSync(context);
 }
 
 /**
@@ -868,26 +740,7 @@ async function importSettingsFromVsSync(context) {
  * @returns {Promise<boolean>} True when the bundle was exported.
  */
 async function exportSettingsBundle(context) {
-  const targetUri = await vscode.window.showSaveDialog({
-    title: "Export Kawaii VS Code Color settings",
-    defaultUri: vscode.Uri.file(path.join(os.homedir(), SETTINGS_EXPORT_FILE_NAME)),
-    filters: {
-      JSON: ["json"]
-    }
-  });
-
-  if (!targetUri) {
-    return false;
-  }
-
-  if (!targetUri.fsPath) {
-    throw new Error("Selected export target does not expose a local file path.");
-  }
-
-  const bundle = await createSettingsBundle(context);
-  await fs.promises.writeFile(targetUri.fsPath, `${JSON.stringify(bundle, null, 2)}\n`, "utf8");
-  vscode.window.showInformationMessage("Kawaii VS Code Color settings exported.");
-  return true;
+  return settingsBundleActions.exportSettingsBundle(context);
 }
 
 /**
@@ -897,232 +750,7 @@ async function exportSettingsBundle(context) {
  * @returns {Promise<boolean>} True when a bundle was imported.
  */
 async function importSettingsBundle(context) {
-  const selectedUris = await vscode.window.showOpenDialog({
-    canSelectFiles: true,
-    canSelectFolders: false,
-    canSelectMany: false,
-    title: "Import Kawaii VS Code Color settings",
-    filters: {
-      JSON: ["json"]
-    }
-  });
-
-  if (!selectedUris || selectedUris.length === 0) {
-    return false;
-  }
-
-  const sourcePath = selectedUris[0].fsPath;
-
-  if (!sourcePath) {
-    throw new Error("Selected import file does not expose a local file path.");
-  }
-
-  const bundle = JSON.parse(await fs.promises.readFile(sourcePath, "utf8"));
-  await applySettingsBundle(context, bundle);
-  vscode.window.showInformationMessage("Kawaii VS Code Color settings imported.");
-  return true;
-}
-
-/**
- * Creates the portable Kawaii VS Code Color settings bundle.
- *
- * @param {vscode.ExtensionContext} context - Extension context.
- * @returns {Promise<Record<string, unknown>>} Exportable settings bundle.
- */
-async function createSettingsBundle(context) {
-  const activeThemeVariant = getActiveThemeVariant();
-
-  return {
-    schema: SETTINGS_EXPORT_SCHEMA,
-    schemaVersion: SETTINGS_EXPORT_SCHEMA_VERSION,
-    exportedAt: new Date().toISOString(),
-    activeThemeVariantId: activeThemeVariant.id,
-    activeThemeLabel: activeThemeVariant.label,
-    extensionConfiguration: getExtensionConfigurationExport(),
-    colorCustomizations: getColorCustomizationsExport(),
-    effects: await getEffectsExport(context)
-  };
-}
-
-/**
- * Applies a portable Kawaii VS Code Color settings bundle.
- *
- * @param {vscode.ExtensionContext} context - Extension context.
- * @param {unknown} bundle - Imported bundle.
- * @returns {Promise<void>} Completes when settings are restored.
- */
-async function applySettingsBundle(context, bundle) {
-  const normalizedBundle = normalizeSettingsBundle(bundle);
-
-  await applyExtensionConfigurationExport(normalizedBundle.extensionConfiguration);
-  await applyColorCustomizationsExport(normalizedBundle.colorCustomizations);
-  await applyEffectsExport(context, normalizedBundle.effects);
-
-  if (normalizedBundle.activeThemeVariantId) {
-    await changeThemeVariant(normalizedBundle.activeThemeVariantId);
-  }
-}
-
-/**
- * Validates and normalizes an imported settings bundle.
- *
- * @param {unknown} bundle - Candidate bundle.
- * @returns {Record<string, unknown>} Normalized bundle.
- */
-function normalizeSettingsBundle(bundle) {
-  if (!bundle || typeof bundle !== "object" || Array.isArray(bundle)) {
-    throw new Error("Invalid Kawaii VS Code Color settings file.");
-  }
-
-  if (![SETTINGS_EXPORT_SCHEMA, LEGACY_SETTINGS_EXPORT_SCHEMA].includes(bundle.schema)) {
-    throw new Error("This JSON file is not a Kawaii VS Code Color settings export.");
-  }
-
-  if (bundle.schemaVersion !== SETTINGS_EXPORT_SCHEMA_VERSION) {
-    throw new Error(`Unsupported Kawaii VS Code Color settings version: ${String(bundle.schemaVersion)}`);
-  }
-
-  return bundle;
-}
-
-/**
- * Reads extension-owned VS Code configuration values.
- *
- * @returns {{brightness: unknown, disableGlow: unknown}} Exported configuration values.
- */
-function getExtensionConfigurationExport() {
-  return {
-    brightness: getConfigurationSettingValue(BRIGHTNESS_SETTING),
-    disableGlow: getConfigurationSettingValue(DISABLE_GLOW_SETTING)
-  };
-}
-
-/**
- * Applies extension-owned VS Code configuration values.
- *
- * @param {unknown} configuration - Exported configuration values.
- * @returns {Promise<void>} Completes when configuration is persisted.
- */
-async function applyExtensionConfigurationExport(configuration) {
-  const settings = ensurePlainObject(configuration);
-
-  if (Object.prototype.hasOwnProperty.call(settings, "brightness")) {
-    await vscode.workspace.getConfiguration().update(
-      BRIGHTNESS_SETTING,
-      normalizeBrightnessSetting(settings.brightness),
-      true
-    );
-  }
-
-  if (Object.prototype.hasOwnProperty.call(settings, "disableGlow")) {
-    await vscode.workspace.getConfiguration().update(
-      DISABLE_GLOW_SETTING,
-      Boolean(settings.disableGlow),
-      true
-    );
-  }
-}
-
-/**
- * Reads a VS Code configuration value, preferring explicit global user settings.
- *
- * @param {string} settingName - Setting name.
- * @returns {unknown} Setting value.
- */
-function getConfigurationSettingValue(settingName) {
-  const configuration = vscode.workspace.getConfiguration();
-  const inspection = typeof configuration.inspect === "function" ? configuration.inspect(settingName) : undefined;
-
-  if (inspection && Object.prototype.hasOwnProperty.call(inspection, "globalValue")) {
-    return inspection.globalValue !== undefined
-      ? inspection.globalValue
-      : configuration.get(settingName);
-  }
-
-  return configuration.get(settingName);
-}
-
-/**
- * Normalizes imported Neon Effect brightness.
- *
- * @param {unknown} brightness - Candidate brightness.
- * @returns {number} Safe brightness.
- */
-function normalizeBrightnessSetting(brightness) {
-  const numericBrightness = Number.parseFloat(String(brightness));
-
-  if (!Number.isFinite(numericBrightness)) {
-    return 0.45;
-  }
-
-  return Number(Math.min(1, Math.max(0, numericBrightness)).toFixed(2));
-}
-
-/**
- * Reads Kawaii VS Code Color theme customization blocks from global user settings.
- *
- * @returns {{workbench: Record<string, unknown>, token: Record<string, unknown>}} Exported color blocks.
- */
-function getColorCustomizationsExport() {
-  return {
-    workbench: getThemeCustomizationBlocksExport(WORKBENCH_CUSTOMIZATIONS_SETTING),
-    token: getThemeCustomizationBlocksExport(TOKEN_CUSTOMIZATIONS_SETTING)
-  };
-}
-
-/**
- * Reads all Kawaii VS Code Color theme blocks from one customization setting.
- *
- * @param {string} settingName - VS Code setting name.
- * @returns {Record<string, unknown>} Theme blocks keyed by variant id.
- */
-function getThemeCustomizationBlocksExport(settingName) {
-  const customizations = getTargetSettingsObject(settingName, true);
-
-  return THEME_VARIANTS.reduce(function reduceThemeBlocks(blocks, themeVariant) {
-    blocks[themeVariant.id] = ensurePlainObject(customizations[getThemeCustomizationKey(themeVariant)]);
-    return blocks;
-  }, {});
-}
-
-/**
- * Applies exported Kawaii VS Code Color theme customization blocks to global user settings.
- *
- * @param {unknown} colorCustomizations - Exported color customization blocks.
- * @returns {Promise<void>} Completes when customizations are persisted.
- */
-async function applyColorCustomizationsExport(colorCustomizations) {
-  const customizations = ensurePlainObject(colorCustomizations);
-
-  await applyThemeCustomizationBlocksExport(
-    WORKBENCH_CUSTOMIZATIONS_SETTING,
-    ensurePlainObject(customizations.workbench)
-  );
-  await applyThemeCustomizationBlocksExport(
-    TOKEN_CUSTOMIZATIONS_SETTING,
-    ensurePlainObject(customizations.token)
-  );
-}
-
-/**
- * Applies all exported Kawaii VS Code Color theme blocks to one customization setting.
- *
- * @param {string} settingName - VS Code setting name.
- * @param {Record<string, unknown>} blocks - Theme blocks keyed by variant id.
- * @returns {Promise<void>} Completes when settings are persisted.
- */
-async function applyThemeCustomizationBlocksExport(settingName, blocks) {
-  const customizations = getTargetSettingsObject(settingName, true);
-
-  THEME_VARIANTS.forEach(function applyThemeBlock(themeVariant) {
-    writeThemeCustomizationBlock(
-      customizations,
-      ensurePlainObject(blocks[themeVariant.id]),
-      themeVariant
-    );
-  });
-
-  await updateGlobalSetting(settingName, customizations);
+  return settingsBundleActions.importSettingsBundle(context);
 }
 
 /**
@@ -1154,31 +782,13 @@ async function getEffectsExport(context) {
  * @returns {Promise<Record<string, unknown> | undefined>} Exported image or undefined.
  */
 async function getStoredImageExport(context, metadata, resolvePath) {
-  if (!metadata) {
-    return undefined;
-  }
-
-  const imagePath = resolvePath(context, metadata.fileName);
-
-  if (!fs.existsSync(imagePath)) {
-    return undefined;
-  }
-
-  const imageBuffer = await fs.promises.readFile(imagePath);
-  const extension = getSupportedEditorBackgroundImageExtension(metadata.fileName);
-
-  if (!extension) {
-    return undefined;
-  }
-
-  return {
-    fileName: metadata.fileName,
-    originalName: metadata.originalName,
-    mimeType: metadata.mimeType,
-    extension,
-    size: imageBuffer.length,
-    dataBase64: imageBuffer.toString("base64")
-  };
+  return effectsPersistence.createStoredImageExport(metadata, {
+    exists: fs.existsSync,
+    readFile: fs.promises.readFile,
+    resolvePath(fileName) {
+      return resolvePath(context, fileName);
+    }
+  });
 }
 
 /**
@@ -1189,15 +799,23 @@ async function getStoredImageExport(context, metadata, resolvePath) {
  * @returns {Promise<void>} Completes when effects are restored.
  */
 async function applyEffectsExport(context, effects) {
-  const exportedEffects = ensurePlainObject(effects);
-  const editorBackground = ensurePlainObject(exportedEffects.editorBackground);
-  const emptyEditorLogo = ensurePlainObject(exportedEffects.emptyEditorLogo);
-
-  await updateEditorBackgroundOpacity(context, editorBackground.opacity);
-  await updateEditorBackgroundFit(context, editorBackground.fit);
-  await restoreEditorBackgroundImageExport(context, editorBackground.image);
-  await updateEmptyEditorLogoOpacity(context, emptyEditorLogo.opacity);
-  await restoreEmptyEditorLogoImageExport(context, emptyEditorLogo.image);
+  return effectsPersistence.applyEffectsExport(effects, {
+    updateEditorBackgroundOpacity(opacity) {
+      return updateEditorBackgroundOpacity(context, opacity);
+    },
+    updateEditorBackgroundFit(fit) {
+      return updateEditorBackgroundFit(context, fit);
+    },
+    restoreEditorBackgroundImage(image) {
+      return restoreEditorBackgroundImageExport(context, image);
+    },
+    updateEmptyEditorLogoOpacity(opacity) {
+      return updateEmptyEditorLogoOpacity(context, opacity);
+    },
+    restoreEmptyEditorLogoImage(image) {
+      return restoreEmptyEditorLogoImageExport(context, image);
+    }
+  });
 }
 
 /**
@@ -1208,14 +826,14 @@ async function applyEffectsExport(context, effects) {
  * @returns {Promise<void>} Completes when the image is restored.
  */
 async function restoreEditorBackgroundImageExport(context, image) {
-  const imageData = normalizeExportedImage(image);
-
-  if (!imageData) {
-    await removeStoredEditorBackgroundImage(context);
-    return;
-  }
-
-  await storeEditorBackgroundImage(context, imageData);
+  return effectsPersistence.restoreStoredImageExport(image, {
+    removeImage() {
+      return removeStoredEditorBackgroundImage(context);
+    },
+    storeImage(imageData) {
+      return storeEditorBackgroundImage(context, imageData);
+    }
+  });
 }
 
 /**
@@ -1226,80 +844,14 @@ async function restoreEditorBackgroundImageExport(context, image) {
  * @returns {Promise<void>} Completes when the image is restored.
  */
 async function restoreEmptyEditorLogoImageExport(context, image) {
-  const imageData = normalizeExportedImage(image);
-
-  if (!imageData) {
-    await removeStoredEmptyEditorLogoImage(context);
-    return;
-  }
-
-  await storeEmptyEditorLogoImage(context, imageData);
-}
-
-/**
- * Normalizes an exported image object into storeable image data.
- *
- * @param {unknown} image - Exported image object.
- * @returns {{imageBuffer: Buffer, extension: string, originalName: string, mimeType: string} | undefined} Normalized image data.
- */
-function normalizeExportedImage(image) {
-  const exportedImage = ensurePlainObject(image);
-  const dataBase64 = typeof exportedImage.dataBase64 === "string" ? exportedImage.dataBase64 : "";
-
-  if (!dataBase64) {
-    return undefined;
-  }
-
-  const extension = normalizeExportedImageExtension(exportedImage.extension || exportedImage.fileName);
-  const imageBuffer = Buffer.from(dataBase64, "base64");
-
-  if (imageBuffer.length > EDITOR_BACKGROUND_MAX_IMAGE_SIZE_BYTES) {
-    throw new Error(`Imported image must be ${formatFileSize(EDITOR_BACKGROUND_MAX_IMAGE_SIZE_BYTES)} or smaller.`);
-  }
-
-  return {
-    imageBuffer,
-    extension,
-    originalName: getExportedImageOriginalName(exportedImage, extension),
-    mimeType: getEditorBackgroundImageMimeType(extension)
-  };
-}
-
-/**
- * Normalizes the file extension from an exported image object.
- *
- * @param {unknown} extensionSource - Extension or file name.
- * @returns {string} Supported extension.
- */
-function normalizeExportedImageExtension(extensionSource) {
-  const rawSource = String(extensionSource || "");
-  const source = rawSource.includes(".")
-    ? rawSource
-    : `image.${rawSource}`;
-  const extension = getSupportedEditorBackgroundImageExtension(source);
-
-  if (!extension) {
-    throw new Error(`Imported image format is unsupported. Use ${EDITOR_BACKGROUND_SUPPORTED_FORMATS_LABEL}.`);
-  }
-
-  return extension;
-}
-
-/**
- * Gets a safe display name for an imported image.
- *
- * @param {Record<string, unknown>} exportedImage - Exported image object.
- * @param {string} extension - Image extension.
- * @returns {string} Safe original image name.
- */
-function getExportedImageOriginalName(exportedImage, extension) {
-  const originalName = path.basename(String(exportedImage.originalName || ""));
-
-  if (originalName && getSupportedEditorBackgroundImageExtension(originalName)) {
-    return originalName;
-  }
-
-  return `imported-kawaii-vscode-color-image.${extension}`;
+  return effectsPersistence.restoreStoredImageExport(image, {
+    removeImage() {
+      return removeStoredEmptyEditorLogoImage(context);
+    },
+    storeImage(imageData) {
+      return storeEmptyEditorLogoImage(context, imageData);
+    }
+  });
 }
 
 /**
@@ -1310,8 +862,14 @@ function getExportedImageOriginalName(exportedImage, extension) {
  */
 async function removeStoredEditorBackgroundImage(context) {
   const metadata = getStoredEditorBackgroundImageMetadata(context);
-  await deleteStoredEditorBackgroundImageFile(context, metadata);
-  await context.globalState.update(EDITOR_BACKGROUND_IMAGE_STATE_KEY, undefined);
+  await effectsPersistence.removeStoredImageState({
+    context,
+    stateKey: EDITOR_BACKGROUND_IMAGE_STATE_KEY,
+    metadata,
+    deleteFile(fileMetadata) {
+      return deleteStoredEditorBackgroundImageFile(context, fileMetadata);
+    }
+  });
 }
 
 /**
@@ -1322,8 +880,14 @@ async function removeStoredEditorBackgroundImage(context) {
  */
 async function removeStoredEmptyEditorLogoImage(context) {
   const metadata = getStoredEmptyEditorLogoImageMetadata(context);
-  await deleteStoredEmptyEditorLogoImageFile(context, metadata);
-  await context.globalState.update(EMPTY_EDITOR_LOGO_IMAGE_STATE_KEY, undefined);
+  await effectsPersistence.removeStoredImageState({
+    context,
+    stateKey: EMPTY_EDITOR_LOGO_IMAGE_STATE_KEY,
+    metadata,
+    deleteFile(fileMetadata) {
+      return deleteStoredEmptyEditorLogoImageFile(context, fileMetadata);
+    }
+  });
 }
 
 /**
@@ -1405,19 +969,22 @@ async function storeEditorBackgroundImage(context, imageData) {
   const previousMetadata = getStoredEditorBackgroundImageMetadata(context);
   const targetPath = getEditorBackgroundImagePath(context, fileName);
 
-  if (imageData.imageBuffer.length > EDITOR_BACKGROUND_MAX_IMAGE_SIZE_BYTES) {
-    throw new Error(`Editor background image must be ${formatFileSize(EDITOR_BACKGROUND_MAX_IMAGE_SIZE_BYTES)} or smaller.`);
-  }
-
-  await ensureGlobalStorageDirectory(context);
-  await deleteStoredEditorBackgroundImageFile(context, previousMetadata, fileName);
-  await fs.promises.writeFile(targetPath, imageData.imageBuffer);
-  await context.globalState.update(EDITOR_BACKGROUND_IMAGE_STATE_KEY, {
+  await effectsPersistence.storeImageState({
+    context,
+    stateKey: EDITOR_BACKGROUND_IMAGE_STATE_KEY,
+    imageData,
     fileName,
-    originalName: imageData.originalName,
-    mimeType: imageData.mimeType,
-    size: imageData.imageBuffer.length,
-    updatedAt: new Date().toISOString()
+    previousMetadata,
+    targetPath,
+    ensureStorageDirectory() {
+      return ensureGlobalStorageDirectory(context);
+    },
+    deletePreviousFile(metadata, preservedFileName) {
+      return deleteStoredEditorBackgroundImageFile(context, metadata, preservedFileName);
+    },
+    fileSystem: fs.promises,
+    maxSizeBytes: EDITOR_BACKGROUND_MAX_IMAGE_SIZE_BYTES,
+    maxSizeErrorMessage: `Editor background image must be ${formatFileSize(EDITOR_BACKGROUND_MAX_IMAGE_SIZE_BYTES)} or smaller.`
   });
 }
 
@@ -1763,19 +1330,22 @@ async function storeEmptyEditorLogoImage(context, imageData) {
   const previousMetadata = getStoredEmptyEditorLogoImageMetadata(context);
   const targetPath = getEmptyEditorLogoImagePath(context, fileName);
 
-  if (imageData.imageBuffer.length > EDITOR_BACKGROUND_MAX_IMAGE_SIZE_BYTES) {
-    throw new Error(`No-tab logo image must be ${formatFileSize(EDITOR_BACKGROUND_MAX_IMAGE_SIZE_BYTES)} or smaller.`);
-  }
-
-  await ensureGlobalStorageDirectory(context);
-  await deleteStoredEmptyEditorLogoImageFile(context, previousMetadata, fileName);
-  await fs.promises.writeFile(targetPath, imageData.imageBuffer);
-  await context.globalState.update(EMPTY_EDITOR_LOGO_IMAGE_STATE_KEY, {
+  await effectsPersistence.storeImageState({
+    context,
+    stateKey: EMPTY_EDITOR_LOGO_IMAGE_STATE_KEY,
+    imageData,
     fileName,
-    originalName: imageData.originalName,
-    mimeType: imageData.mimeType,
-    size: imageData.imageBuffer.length,
-    updatedAt: new Date().toISOString()
+    previousMetadata,
+    targetPath,
+    ensureStorageDirectory() {
+      return ensureGlobalStorageDirectory(context);
+    },
+    deletePreviousFile(metadata, preservedFileName) {
+      return deleteStoredEmptyEditorLogoImageFile(context, metadata, preservedFileName);
+    },
+    fileSystem: fs.promises,
+    maxSizeBytes: EDITOR_BACKGROUND_MAX_IMAGE_SIZE_BYTES,
+    maxSizeErrorMessage: `No-tab logo image must be ${formatFileSize(EDITOR_BACKGROUND_MAX_IMAGE_SIZE_BYTES)} or smaller.`
   });
 }
 
@@ -1844,16 +1414,10 @@ async function updateEmptyEditorLogoOpacity(context, opacity) {
 function getEditorBackgroundState(context, webview) {
   const metadata = getStoredEditorBackgroundImageMetadata(context);
   const fileExists = Boolean(metadata && isEditorBackgroundImageAvailable(context, metadata.fileName));
-  const size = metadata && typeof metadata.size === "number" ? metadata.size : 0;
 
-  return {
-    hasImage: fileExists,
-    missingImage: Boolean(metadata && !fileExists),
-    fileName: metadata ? metadata.fileName : "",
-    originalName: metadata ? metadata.originalName : "",
-    mimeType: metadata ? metadata.mimeType : "",
-    size,
-    sizeLabel: size > 0 ? formatFileSize(size) : "",
+  return effectsPersistence.createStoredImageState({
+    metadata,
+    fileExists,
     previewUri: fileExists ? getEditorBackgroundImagePreviewUri(context, metadata.fileName) : "",
     opacity: getStoredEditorBackgroundOpacity(context),
     minOpacity: EDITOR_BACKGROUND_MIN_OPACITY,
@@ -1863,8 +1427,8 @@ function getEditorBackgroundState(context, webview) {
     fitOptions: getEditorBackgroundFitOptions(),
     supportedFormats: EDITOR_BACKGROUND_SUPPORTED_FORMATS_LABEL,
     dataUrlWarning: IMAGE_DATA_URL_WARNING,
-    maxImageSizeLabel: formatFileSize(EDITOR_BACKGROUND_MAX_IMAGE_SIZE_BYTES)
-  };
+    maxImageSizeBytes: EDITOR_BACKGROUND_MAX_IMAGE_SIZE_BYTES
+  });
 }
 
 /**
@@ -1876,16 +1440,10 @@ function getEditorBackgroundState(context, webview) {
 function getEmptyEditorLogoState(context, webview) {
   const metadata = getStoredEmptyEditorLogoImageMetadata(context);
   const fileExists = Boolean(metadata && isEmptyEditorLogoImageAvailable(context, metadata.fileName));
-  const size = metadata && typeof metadata.size === "number" ? metadata.size : 0;
 
-  return {
-    hasImage: fileExists,
-    missingImage: Boolean(metadata && !fileExists),
-    fileName: metadata ? metadata.fileName : "",
-    originalName: metadata ? metadata.originalName : "",
-    mimeType: metadata ? metadata.mimeType : "",
-    size,
-    sizeLabel: size > 0 ? formatFileSize(size) : "",
+  return effectsPersistence.createStoredImageState({
+    metadata,
+    fileExists,
     previewUri: fileExists ? getEmptyEditorLogoImagePreviewUri(context, metadata.fileName) : "",
     opacity: getStoredEmptyEditorLogoOpacity(context),
     minOpacity: EMPTY_EDITOR_LOGO_MIN_OPACITY,
@@ -1893,8 +1451,8 @@ function getEmptyEditorLogoState(context, webview) {
     opacityStep: EMPTY_EDITOR_LOGO_OPACITY_STEP,
     supportedFormats: EDITOR_BACKGROUND_SUPPORTED_FORMATS_LABEL,
     dataUrlWarning: IMAGE_DATA_URL_WARNING,
-    maxImageSizeLabel: formatFileSize(EDITOR_BACKGROUND_MAX_IMAGE_SIZE_BYTES)
-  };
+    maxImageSizeBytes: EDITOR_BACKGROUND_MAX_IMAGE_SIZE_BYTES
+  });
 }
 
 /**
@@ -1904,24 +1462,9 @@ function getEmptyEditorLogoState(context, webview) {
  * @returns {{fileName: string, originalName: string, mimeType: string, size: number} | undefined} Stored image metadata.
  */
 function getStoredEditorBackgroundImageMetadata(context) {
-  const metadata = context.globalState.get(EDITOR_BACKGROUND_IMAGE_STATE_KEY);
-
-  if (!metadata || typeof metadata !== "object") {
-    return undefined;
-  }
-
-  const fileName = getSafeEditorBackgroundImageFileName(metadata.fileName);
-
-  if (!fileName) {
-    return undefined;
-  }
-
-  return {
-    fileName,
-    originalName: typeof metadata.originalName === "string" ? metadata.originalName : fileName,
-    mimeType: typeof metadata.mimeType === "string" ? metadata.mimeType : getEditorBackgroundImageMimeType(path.extname(fileName).slice(1)),
-    size: typeof metadata.size === "number" ? metadata.size : 0
-  };
+  return effectsPersistence.normalizeStoredEditorBackgroundMetadata(
+    context.globalState.get(EDITOR_BACKGROUND_IMAGE_STATE_KEY)
+  );
 }
 
 /**
@@ -1931,24 +1474,9 @@ function getStoredEditorBackgroundImageMetadata(context) {
  * @returns {{fileName: string, originalName: string, mimeType: string, size: number} | undefined} Stored logo metadata.
  */
 function getStoredEmptyEditorLogoImageMetadata(context) {
-  const metadata = context.globalState.get(EMPTY_EDITOR_LOGO_IMAGE_STATE_KEY);
-
-  if (!metadata || typeof metadata !== "object") {
-    return undefined;
-  }
-
-  const fileName = getSafeEmptyEditorLogoImageFileName(metadata.fileName);
-
-  if (!fileName) {
-    return undefined;
-  }
-
-  return {
-    fileName,
-    originalName: typeof metadata.originalName === "string" ? metadata.originalName : fileName,
-    mimeType: typeof metadata.mimeType === "string" ? metadata.mimeType : getEditorBackgroundImageMimeType(path.extname(fileName).slice(1)),
-    size: typeof metadata.size === "number" ? metadata.size : 0
-  };
+  return effectsPersistence.normalizeStoredEmptyEditorLogoMetadata(
+    context.globalState.get(EMPTY_EDITOR_LOGO_IMAGE_STATE_KEY)
+  );
 }
 
 /**
@@ -1988,18 +1516,7 @@ function getStoredEmptyEditorLogoOpacity(context) {
  * @returns {number} Clamped opacity value.
  */
 function normalizeEditorBackgroundOpacity(opacity) {
-  const numericOpacity = Number.parseFloat(String(opacity));
-
-  if (!Number.isFinite(numericOpacity)) {
-    return EDITOR_BACKGROUND_DEFAULT_OPACITY;
-  }
-
-  const clampedOpacity = Math.min(
-    EDITOR_BACKGROUND_MAX_OPACITY,
-    Math.max(EDITOR_BACKGROUND_MIN_OPACITY, numericOpacity)
-  );
-
-  return Number(clampedOpacity.toFixed(2));
+  return effectsPersistence.normalizeEditorBackgroundOpacity(opacity);
 }
 
 /**
@@ -2009,16 +1526,7 @@ function normalizeEditorBackgroundOpacity(opacity) {
  * @returns {string} Supported fit area id.
  */
 function normalizeEditorBackgroundFit(fit) {
-  const normalizedFit = String(fit || "")
-    .trim()
-    .toLowerCase()
-    .replace(/^botton/, "bottom");
-
-  return EDITOR_BACKGROUND_FIT_OPTIONS.some(function matchFitOption(option) {
-    return option.id === normalizedFit;
-  })
-    ? normalizedFit
-    : EDITOR_BACKGROUND_DEFAULT_FIT;
+  return effectsPersistence.normalizeEditorBackgroundFit(fit);
 }
 
 /**
@@ -2039,18 +1547,7 @@ function getEditorBackgroundFitOptions() {
  * @returns {number} Clamped opacity value.
  */
 function normalizeEmptyEditorLogoOpacity(opacity) {
-  const numericOpacity = Number.parseFloat(String(opacity));
-
-  if (!Number.isFinite(numericOpacity)) {
-    return EMPTY_EDITOR_LOGO_DEFAULT_OPACITY;
-  }
-
-  const clampedOpacity = Math.min(
-    EMPTY_EDITOR_LOGO_MAX_OPACITY,
-    Math.max(EMPTY_EDITOR_LOGO_MIN_OPACITY, numericOpacity)
-  );
-
-  return Number(clampedOpacity.toFixed(2));
+  return effectsPersistence.normalizeEmptyEditorLogoOpacity(opacity);
 }
 
 /**
@@ -2147,20 +1644,7 @@ function isEmptyEditorLogoImageAvailable(context, fileName) {
  * @returns {string} Absolute stored image path.
  */
 function getEditorBackgroundImagePath(context, fileName) {
-  const safeFileName = getSafeEditorBackgroundImageFileName(fileName);
-
-  if (!safeFileName) {
-    throw new Error(`Unsafe editor background image file name: ${String(fileName)}`);
-  }
-
-  const storageDirectory = path.resolve(getGlobalStoragePath(context));
-  const imagePath = path.resolve(storageDirectory, safeFileName);
-
-  if (!imagePath.startsWith(`${storageDirectory}${path.sep}`)) {
-    throw new Error(`Unsafe editor background image path: ${imagePath}`);
-  }
-
-  return imagePath;
+  return effectsPersistence.resolveStoredEditorBackgroundImagePath(getGlobalStoragePath(context), fileName);
 }
 
 /**
@@ -2185,20 +1669,7 @@ function getEditorBackgroundImagePreviewUri(context, fileName) {
  * @returns {string} Absolute stored logo path.
  */
 function getEmptyEditorLogoImagePath(context, fileName) {
-  const safeFileName = getSafeEmptyEditorLogoImageFileName(fileName);
-
-  if (!safeFileName) {
-    throw new Error(`Unsafe empty editor logo file name: ${String(fileName)}`);
-  }
-
-  const storageDirectory = path.resolve(getGlobalStoragePath(context));
-  const imagePath = path.resolve(storageDirectory, safeFileName);
-
-  if (!imagePath.startsWith(`${storageDirectory}${path.sep}`)) {
-    throw new Error(`Unsafe empty editor logo path: ${imagePath}`);
-  }
-
-  return imagePath;
+  return effectsPersistence.resolveStoredEmptyEditorLogoImagePath(getGlobalStoragePath(context), fileName);
 }
 
 /**
@@ -2341,55 +1812,13 @@ function getSettingsWebviewLocalResourceRoots(context) {
 }
 
 /**
- * Normalizes a stored editor background image file name.
- *
- * @param {unknown} fileName - Candidate file name.
- * @returns {string | undefined} Safe file name.
- */
-function getSafeEditorBackgroundImageFileName(fileName) {
-  const normalizedFileName = String(fileName || "");
-
-  if (
-    !normalizedFileName
-    || path.basename(normalizedFileName) !== normalizedFileName
-    || !normalizedFileName.startsWith(`${EDITOR_BACKGROUND_IMAGE_FILE_PREFIX}.`)
-  ) {
-    return undefined;
-  }
-
-  return normalizedFileName;
-}
-
-/**
- * Normalizes a stored empty editor logo file name.
- *
- * @param {unknown} fileName - Candidate file name.
- * @returns {string | undefined} Safe file name.
- */
-function getSafeEmptyEditorLogoImageFileName(fileName) {
-  const normalizedFileName = String(fileName || "");
-
-  if (
-    !normalizedFileName
-    || path.basename(normalizedFileName) !== normalizedFileName
-    || !normalizedFileName.startsWith(`${EMPTY_EDITOR_LOGO_IMAGE_FILE_PREFIX}.`)
-  ) {
-    return undefined;
-  }
-
-  return normalizedFileName;
-}
-
-/**
  * Gets a supported image file extension from a file path.
  *
  * @param {string} filePath - Source file path.
  * @returns {string | undefined} Supported lowercase extension.
  */
 function getSupportedEditorBackgroundImageExtension(filePath) {
-  const extension = path.extname(filePath).slice(1).toLowerCase();
-
-  return EDITOR_BACKGROUND_ALLOWED_EXTENSIONS.includes(extension) ? extension : undefined;
+  return effectsPersistence.getSupportedEditorBackgroundImageExtension(filePath);
 }
 
 /**
@@ -2399,7 +1828,7 @@ function getSupportedEditorBackgroundImageExtension(filePath) {
  * @returns {string} Image MIME type.
  */
 function getEditorBackgroundImageMimeType(extension) {
-  return EDITOR_BACKGROUND_MIME_TYPES[String(extension || "").toLowerCase()] || "application/octet-stream";
+  return effectsPersistence.getEditorBackgroundImageMimeType(extension);
 }
 
 /**
@@ -2409,17 +1838,7 @@ function getEditorBackgroundImageMimeType(extension) {
  * @returns {string} Human-readable file size.
  */
 function formatFileSize(bytes) {
-  if (bytes < 1024) {
-    return `${bytes} B`;
-  }
-
-  const kibibytes = bytes / 1024;
-
-  if (kibibytes < 1024) {
-    return `${kibibytes.toFixed(1)} KB`;
-  }
-
-  return `${(kibibytes / 1024).toFixed(1)} MB`;
+  return effectsPersistence.formatFileSize(bytes);
 }
 
 /**
@@ -2732,16 +2151,6 @@ function getThemeVariantById(themeVariantId) {
 }
 
 /**
- * Gets the VS Code theme-specific customization key for one variant.
- *
- * @param {Record<string, string>} themeVariant - Theme variant.
- * @returns {string} Theme-specific customization key.
- */
-function getThemeCustomizationKey(themeVariant) {
-  return `[${themeVariant.label}]`;
-}
-
-/**
  * Gets lightweight theme variant options for the settings webview.
  *
  * @returns {Record<string, string>[]} Theme options.
@@ -2763,7 +2172,7 @@ function getThemeVariantOptions() {
  * @returns {Record<string, unknown>} Settings object.
  */
 function getSettingsObject(settingName) {
-  return clonePlainObject(vscode.workspace.getConfiguration().get(settingName));
+  return settingsStore.getSettingsObject(settingName);
 }
 
 /**
@@ -2774,13 +2183,7 @@ function getSettingsObject(settingName) {
  * @returns {Record<string, unknown>} Settings object.
  */
 function getTargetSettingsObject(settingName, isGlobalTarget) {
-  const configuration = vscode.workspace.getConfiguration();
-  const inspection = typeof configuration.inspect === "function" ? configuration.inspect(settingName) : undefined;
-  const targetValue = isGlobalTarget
-    ? inspection && inspection.globalValue
-    : inspection && inspection.workspaceValue;
-
-  return clonePlainObject(targetValue);
+  return settingsStore.getTargetSettingsObject(settingName, isGlobalTarget);
 }
 
 /**
@@ -2803,7 +2206,7 @@ function getThemeCustomizationBlock(settingName, themeVariant) {
  * @returns {Thenable<void>} Completes when VS Code persists the setting.
  */
 function updateGlobalSetting(settingName, value) {
-  return updateSetting(settingName, value, true);
+  return settingsStore.updateGlobalSetting(settingName, value);
 }
 
 /**
@@ -2815,73 +2218,7 @@ function updateGlobalSetting(settingName, value) {
  * @returns {Thenable<void>} Completes when VS Code persists the setting.
  */
 function updateSetting(settingName, value, isGlobalTarget) {
-  const nextValue = Object.keys(value).length > 0 ? value : undefined;
-  return vscode.workspace.getConfiguration().update(settingName, nextValue, isGlobalTarget);
-}
-
-/**
- * Mutates one Kawaii VS Code Color variant customization block in one settings target.
- *
- * @param {string} settingName - VS Code setting name.
- * @param {boolean} isGlobalTarget - True for user settings, false for workspace settings.
- * @param {Record<string, string>} themeVariant - Theme variant.
- * @param {(themeCustomizations: Record<string, unknown>) => void} mutateThemeCustomizations - Mutation callback.
- * @returns {Thenable<void>} Completes when VS Code persists the setting.
- */
-function updateThemeCustomizationSetting(settingName, isGlobalTarget, themeVariant, mutateThemeCustomizations) {
-  const customizations = getTargetSettingsObject(settingName, isGlobalTarget);
-  const themeCustomizations = ensurePlainObject(customizations[getThemeCustomizationKey(themeVariant)]);
-
-  mutateThemeCustomizations(themeCustomizations);
-  writeThemeCustomizationBlock(customizations, themeCustomizations, themeVariant);
-
-  return updateSetting(settingName, customizations, isGlobalTarget);
-}
-
-/**
- * Removes the whole Kawaii VS Code Color variant customization block from one settings target.
- *
- * @param {string} settingName - VS Code setting name.
- * @param {boolean} isGlobalTarget - True for user settings, false for workspace settings.
- * @param {Record<string, string>} themeVariant - Theme variant.
- * @returns {Thenable<void>} Completes when VS Code persists the setting.
- */
-function removeThemeCustomizationBlock(settingName, isGlobalTarget, themeVariant) {
-  const customizations = getTargetSettingsObject(settingName, isGlobalTarget);
-
-  delete customizations[getThemeCustomizationKey(themeVariant)];
-
-  return updateSetting(settingName, customizations, isGlobalTarget);
-}
-
-/**
- * Removes one token color rule from one settings target.
- *
- * @param {Record<string, unknown>} tokenRule - Generated token rule.
- * @param {boolean} isGlobalTarget - True for user settings, false for workspace settings.
- * @param {Record<string, string>} themeVariant - Theme variant.
- * @returns {Thenable<void>} Completes when VS Code persists the setting.
- */
-function deleteTokenColorFromTarget(tokenRule, isGlobalTarget, themeVariant) {
-  return updateThemeCustomizationSetting(
-    TOKEN_CUSTOMIZATIONS_SETTING,
-    isGlobalTarget,
-    themeVariant,
-    function deleteTokenColor(themeCustomizations) {
-      const textMateRules = getTextMateRules(themeCustomizations);
-      const existingIndex = findMatchingTokenRuleIndex(textMateRules, tokenRule);
-
-      if (existingIndex >= 0) {
-        textMateRules.splice(existingIndex, 1);
-      }
-
-      if (textMateRules.length > 0) {
-        themeCustomizations.textMateRules = textMateRules;
-      } else {
-        delete themeCustomizations.textMateRules;
-      }
-    }
-  );
+  return settingsStore.updateSetting(settingName, value, isGlobalTarget);
 }
 
 /**
@@ -2890,72 +2227,7 @@ function deleteTokenColorFromTarget(tokenRule, isGlobalTarget, themeVariant) {
  * @returns {boolean} True when a workspace settings target exists.
  */
 function canUpdateWorkspaceSettings() {
-  return Boolean(
-    vscode.workspace.workspaceFile
-    || (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0)
-  );
-}
-
-/**
- * Writes or removes one Kawaii VS Code Color variant block in a customization object.
- *
- * @param {Record<string, unknown>} customizations - Settings object.
- * @param {Record<string, unknown>} themeCustomizations - Theme-specific block.
- * @param {Record<string, string>} themeVariant - Theme variant.
- * @returns {void}
- */
-function writeThemeCustomizationBlock(customizations, themeCustomizations, themeVariant) {
-  const themeCustomizationKey = getThemeCustomizationKey(themeVariant);
-
-  if (Object.keys(themeCustomizations).length > 0) {
-    customizations[themeCustomizationKey] = themeCustomizations;
-    return;
-  }
-
-  delete customizations[themeCustomizationKey];
-}
-
-/**
- * Returns a cloned plain object or a new object when the value is invalid.
- *
- * @param {unknown} value - Value to normalize.
- * @returns {Record<string, unknown>} Plain object.
- */
-function clonePlainObject(value) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return {};
-  }
-
-  try {
-    return JSON.parse(JSON.stringify(value));
-  } catch (error) {
-    logSettingsError("clonePlainObject", error, { valueType: typeof value });
-    return {};
-  }
-}
-
-/**
- * Returns a plain object or an empty object.
- *
- * @param {unknown} value - Value to normalize.
- * @returns {Record<string, unknown>} Plain object.
- */
-function ensurePlainObject(value) {
-  return value && typeof value === "object" && !Array.isArray(value) ? clonePlainObject(value) : {};
-}
-
-/**
- * Gets TextMate customization rules from a theme customization block.
- *
- * @param {Record<string, unknown>} themeCustomizations - Theme-specific token customizations.
- * @returns {Record<string, unknown>[]} TextMate rules.
- */
-function getTextMateRules(themeCustomizations) {
-  return Array.isArray(themeCustomizations.textMateRules)
-    ? themeCustomizations.textMateRules.filter(function filterRule(rule) {
-        return rule && typeof rule === "object" && !Array.isArray(rule);
-      })
-    : [];
+  return settingsStore.canUpdateWorkspaceSettings();
 }
 
 /**
@@ -2968,64 +2240,6 @@ function getTextMateRules(themeCustomizations) {
 function findMatchingTokenRule(textMateRules, tokenRule) {
   const index = findMatchingTokenRuleIndex(textMateRules, tokenRule);
   return index >= 0 ? textMateRules[index] : undefined;
-}
-
-/**
- * Finds the index of a matching custom TextMate rule.
- *
- * @param {Record<string, unknown>[]} textMateRules - Custom TextMate rules.
- * @param {Record<string, unknown>} tokenRule - Generated token rule.
- * @returns {number} Matching index, or -1.
- */
-function findMatchingTokenRuleIndex(textMateRules, tokenRule) {
-  return textMateRules.findIndex(function matchTokenRule(customRule) {
-    return areScopesEqual(customRule.scope, tokenRule.scope);
-  });
-}
-
-/**
- * Compares TextMate scope definitions.
- *
- * @param {unknown} leftScope - First scope.
- * @param {unknown} rightScope - Second scope.
- * @returns {boolean} True when both scopes are equal.
- */
-function areScopesEqual(leftScope, rightScope) {
-  return stringifyScope(leftScope) === stringifyScope(rightScope);
-}
-
-/**
- * Converts a TextMate scope value to a stable string.
- *
- * @param {unknown} scope - TextMate scope.
- * @returns {string} Stable scope string.
- */
-function stringifyScope(scope) {
-  if (Array.isArray(scope)) {
-    return scope.join(", ");
-  }
-
-  return typeof scope === "string" ? scope : "";
-}
-
-/**
- * Validates and normalizes a hex color.
- *
- * @param {unknown} value - Color value.
- * @returns {string} Normalized color value.
- */
-function normalizeHexColor(value) {
-  if (typeof value !== "string") {
-    throw new Error("Color value must be a hex string.");
-  }
-
-  const trimmedValue = value.trim();
-
-  if (!COLOR_HEX_PATTERN.test(trimmedValue)) {
-    throw new Error("Use #RGB, #RGBA, #RRGGBB, or #RRGGBBAA.");
-  }
-
-  return trimmedValue;
 }
 
 /**

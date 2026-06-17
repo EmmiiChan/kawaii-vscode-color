@@ -2,7 +2,7 @@
 
 Last reviewed: 2026-06-17
 
-Purpose: give Codex a stable, source-backed link index for the Kawaii VS Code Color VS Code theme extension. Use this file before changing `package.json`, `scripts/build-color-theme.js`, `src/extension.js`, `src/settings.js`, `src/settingsWebview.js`, `src/workbenchPatch.js`, `src/js/theme_template.js`, `src/css/editor_chrome.css`, `themes/kawaii_synthwave-color-theme-overrides.json`, packaging metadata, test tooling, or marketplace docs.
+Purpose: give Codex a stable, source-backed link index for the Kawaii VS Code Color VS Code theme extension. Use this file before changing `package.json`, `scripts/build-color-theme.js`, `src/extension.js`, `src/settings.js`, `src/settingsPersistence.js`, `src/settingsStore.js`, `src/settingsColorService.js`, `src/settingsBundle.js`, `src/settingsEffectsPersistence.js`, `src/settingsWebview.js`, `src/workbenchPatch.js`, `src/js/theme_template.js`, `src/css/editor_chrome.css`, `themes/kawaii_synthwave-color-theme-overrides.json`, packaging metadata, test tooling, or marketplace docs.
 
 ## Project Snapshot
 
@@ -13,7 +13,7 @@ Purpose: give Codex a stable, source-backed link index for the Kawaii VS Code Co
 | Upstream repository | `https://github.com/robb0wen/synthwave-vscode` | README attribution, user context | [Upstream GitHub repository](https://github.com/robb0wen/synthwave-vscode) |
 | Upstream Marketplace extension | `RobbOwen.synthwave-vscode` | README attribution | [Visual Studio Marketplace page](https://marketplace.visualstudio.com/items?itemName=RobbOwen.synthwave-vscode) |
 | Root package name | `kawaii-vscode-color` | `package.json`, `package-lock.json` | [VS Code extension manifest](https://code.visualstudio.com/api/references/extension-manifest), [npm package.json docs](https://docs.npmjs.com/cli/v11/configuring-npm/package-json/) |
-| Root package version | `0.1.28` | `package.json`, `package-lock.json` | [VS Code extension manifest docs](https://code.visualstudio.com/api/references/extension-manifest) |
+| Root package version | `0.1.29` | `package.json`, `package-lock.json` | [VS Code extension manifest docs](https://code.visualstudio.com/api/references/extension-manifest) |
 | Marketplace extension id | `ITEM-PIXEL.kawaii-vscode-color` | `package.json.publisher` + `package.json.name` | [VS Code extension manifest docs](https://code.visualstudio.com/api/references/extension-manifest) |
 | VS Code engine range | `^1.33.0` | `package.json.engines.vscode` | [VS Code manifest `engines` docs](https://code.visualstudio.com/api/references/extension-manifest), [VS Code 1.33 release notes](https://code.visualstudio.com/updates/v1_33), [VS Code 1.33.0 `vscode.d.ts`](https://raw.githubusercontent.com/microsoft/vscode/1.33.0/src/vs/vscode.d.ts) |
 | Extension kind | `ui` | `package.json.extensionKind` | [Extension manifest docs](https://code.visualstudio.com/api/references/extension-manifest) |
@@ -30,11 +30,11 @@ No runtime npm packages are installed or declared. Dev-only test packages are pi
 
 | Package/runtime surface | Exact detected version/range | Dependency type | Docs to use |
 | --- | --- | --- | --- |
-| Root extension package | `kawaii-vscode-color@0.1.28` | Local root package | [VS Code extension manifest](https://code.visualstudio.com/api/references/extension-manifest), [npm package.json](https://docs.npmjs.com/cli/v11/configuring-npm/package-json/) |
+| Root extension package | `kawaii-vscode-color@0.1.29` | Local root package | [VS Code extension manifest](https://code.visualstudio.com/api/references/extension-manifest), [npm package.json](https://docs.npmjs.com/cli/v11/configuring-npm/package-json/) |
 | VS Code extension host API | `engines.vscode: ^1.33.0` means minimum compatible VS Code API `1.33.0` | Host-provided API, imported as `require('vscode')` | Prefer [VS Code 1.33.0 `vscode.d.ts`](https://raw.githubusercontent.com/microsoft/vscode/1.33.0/src/vs/vscode.d.ts) for compatibility checks; use [current VS Code API reference](https://code.visualstudio.com/api/references/vscode-api) only after confirming the API existed in 1.33.0 |
 | Node.js built-ins | No `engines.node` declared; runtime code and `scripts/build-color-theme.js` use Node CommonJS built-ins | Built-in modules, not npm packages | [Node `fs`](https://nodejs.org/api/fs.html), [Node `path`](https://nodejs.org/api/path.html), [Node CommonJS modules](https://nodejs.org/api/modules.html). Avoid modern Node-only APIs unless verified against the target runtime |
 | npm lockfile | `lockfileVersion: 3`, root package plus test dependency tree | Package manager metadata | [npm package-lock.json](https://docs.npmjs.com/cli/v11/configuring-npm/package-lock-json/) |
-| npm semver parsing | Package version `0.1.28`, VS Code engine range `^1.33.0` | Version semantics | [npm package.json version field](https://docs.npmjs.com/cli/v11/configuring-npm/package-json/#version), [node-semver](https://github.com/npm/node-semver) |
+| npm semver parsing | Package version `0.1.29`, VS Code engine range `^1.33.0` | Version semantics | [npm package.json version field](https://docs.npmjs.com/cli/v11/configuring-npm/package-json/#version), [node-semver](https://github.com/npm/node-semver) |
 | Node test runner | Host Node runtime | Test runner for `npm run test:unit` and `npm run test:dom` | [Node.js test runner](https://nodejs.org/api/test.html) |
 | `jsdom` | `29.1.1` | Dev dependency for DOM UI tests | [jsdom repository and docs](https://github.com/jsdom/jsdom) |
 | `@vscode/test-cli` | `0.0.12` | Dev dependency exposing `vscode-test` | [`@vscode/test-cli` repository](https://github.com/microsoft/vscode-test-cli) |
@@ -62,7 +62,7 @@ Use these as primary references for manifest and runtime changes.
 | TextMate token colors | Edit `themes/kawaii_synthwave-color-theme-overrides.json.tokenColors`; build replaces matching base token rules by `name` or `scope`, and appends new token rules | [Syntax Highlight Guide](https://code.visualstudio.com/api/language-extensions/syntax-highlight-guide), [TextMate scope selectors](https://macromates.com/manual/en/scope_selectors) |
 | Main setup webview | `src/settings.js` opens `Kawaii VS Code Color: Settings`; `src/settingsWebview.js` renders Home, Settings, `Color Settings`, `Neon Effect`, `Image Customization`, `Sync/Files`, and `Help` pages | [Webview API](https://code.visualstudio.com/api/extension-guides/webview), [Commands guide](https://code.visualstudio.com/api/extension-guides/command) |
 | Settings webview color contract | `src/settingsWebview.js` uses VS Code webview color tokens such as `--vscode-editor-background`, not an independent palette | [Webview API](https://code.visualstudio.com/api/extension-guides/webview), [Theme Color reference](https://code.visualstudio.com/api/references/theme-color) |
-| Live user color settings | `src/settings.js` writes `[Kawaii VS Code Color]` and `[Kawaii VS Code Color Light]` blocks to `workbench.colorCustomizations` and `editor.tokenColorCustomizations` | [Themes customization](https://code.visualstudio.com/docs/configure/themes#_customize-a-color-theme), [User and workspace settings](https://code.visualstudio.com/docs/configure/settings), [WorkspaceConfiguration.update](https://code.visualstudio.com/api/references/vscode-api#WorkspaceConfiguration) |
+| Live user color settings | `src/settings.js` routes webview messages; `src/settingsColorService.js`, `src/settingsPersistence.js`, and `src/settingsStore.js` write `[Kawaii VS Code Color]` and `[Kawaii VS Code Color Light]` blocks to `workbench.colorCustomizations` and `editor.tokenColorCustomizations` | [Themes customization](https://code.visualstudio.com/docs/configure/themes#_customize-a-color-theme), [User and workspace settings](https://code.visualstudio.com/docs/configure/settings), [WorkspaceConfiguration.update](https://code.visualstudio.com/api/references/vscode-api#WorkspaceConfiguration) |
 | Semantic highlighting opt-in | Protected base currently defines `semanticHighlighting`; generated theme carries the merged value | [Semantic Highlight Guide](https://code.visualstudio.com/api/language-extensions/semantic-highlight-guide) |
 | Commands | `kawaii_synthwave.openSettings`, `vscode.commands.registerCommand`, `vscode.commands.executeCommand` | [Commands guide](https://code.visualstudio.com/api/extension-guides/command), [VS Code API reference](https://code.visualstudio.com/api/references/vscode-api) |
 | Activation | `onCommand:*` activation events | [Activation Events](https://code.visualstudio.com/api/references/activation-events) |
@@ -120,6 +120,17 @@ Implementation caution:
 
 - The settings webview must not edit `themes/kawaii_synthwave-generated-color-theme.json` at runtime. VS Code theme contributions are declared through static manifest paths, while per-user live changes belong in user settings.
 - Keep writes theme-scoped under `[Kawaii VS Code Color]` and `[Kawaii VS Code Color Light]` so reset operations do not erase unrelated user color customizations.
+
+### Extracted Settings Modules
+
+| Module | Responsibility | Validation |
+| --- | --- | --- |
+| `src/settingsPersistence.js` | Pure color customization block mutation, TextMate scope comparison, and hex validation | `test/unit/settings-persistence.test.js` |
+| `src/settingsStore.js` | VS Code configuration get/inspect/update adapter for global and workspace targets | `test/unit/settings-store.test.js` |
+| `src/settingsColorService.js` | Generated-theme-aware color update/reset/theme-switch orchestration | `test/unit/settings-color-service.test.js` |
+| `src/settingsBundle.js` | Portable bundle creation/application, Settings Sync state, and JSON import/export actions | `test/unit/settings-bundle.test.js` |
+| `src/settingsEffectsPersistence.js` | Effect/image normalization, safe storage paths, metadata/state, export/restore/store/remove helpers | `test/unit/settings-effects-persistence.test.js` |
+| `src/settings.js` message chain | Mocked `openSettings -> onDidReceiveMessage -> persistence` wiring | `test/unit/settings-message-persistence.test.js` |
 
 ### `src/js/theme_template.js`
 

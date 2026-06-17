@@ -117,7 +117,12 @@ Theme file ownership:
 The package ships runtime source files directly:
 
 - `src/extension.js` runs in the extension host.
-- `src/settings.js` owns settings state, persistence, sync/export/import, and webview message routing.
+- `src/settings.js` owns the settings webview orchestration, message routing, VS Code notifications/dialogs, and remaining UI-facing workflows.
+- `src/settingsPersistence.js` owns pure color customization block mutation and hex/scope helpers.
+- `src/settingsStore.js` owns the VS Code configuration adapter used by persistence services.
+- `src/settingsColorService.js` owns generated-theme-aware color customization orchestration.
+- `src/settingsBundle.js` owns settings bundle creation/application, Settings Sync, and JSON import/export actions.
+- `src/settingsEffectsPersistence.js` owns deterministic effect/image persistence helpers.
 - `src/settingsWebview.js` renders the setup webview HTML. It must use VS Code webview color tokens (`--vscode-*`) and must not define a separate hardcoded UI palette.
 - `src/workbenchPatch.js` contains pure workbench path and HTML patch helpers covered by unit tests.
 - `src/js/theme_template.js` is read as a template and written as generated `neondreams.js`.
@@ -127,7 +132,7 @@ The package ships runtime source files directly:
 
 | Layer | Command | Main coverage |
 | --- | --- | --- |
-| Unit without UI | `npm run test:unit` | Theme build merge behavior, version bump behavior, and workbench patch helpers. |
+| Unit without UI | `npm run test:unit` | Theme build merge behavior, version bump behavior, workbench patch helpers, settings persistence helpers, settings store adapter, color customization service, bundle/sync/file actions, effect/image persistence, and mocked settings message chains. |
 | DOM UI | `npm run test:dom` | Settings webview readiness, all safe webview events, app navigation, Help metadata, Color Settings inputs/debounce, image/logo state, incoming webview messages, warnings/errors, and `--vscode-*` color-token contract. |
 | VS Code integration | `npm run test:integration` | Extension manifest registration, activation, command registration, and opening settings in the Extension Development Host. |
 | Real VS Code UI E2E | `npm run test:e2e` | ExTester/WebDriver opens disposable VS Code, runs the Command Palette, switches into the real settings webview iframe, validates navigation, layout, and safe UI flows. |
