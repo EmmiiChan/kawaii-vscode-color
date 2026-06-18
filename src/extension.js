@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const vscode = require('vscode');
 const settings = require('./settings');
+const { createEmptyEditorLogoStyles } = require('./emptyEditorLogoStyles');
 const {
 	NEON_SCRIPT_FILE_NAME,
 	applyWorkbenchPatchScriptTag,
@@ -265,16 +266,7 @@ function getEmptyEditorLogoStyles(context) {
 		const dataUri = `data:${metadata.mimeType};base64,${logoBuffer.toString('base64')}`;
 		const opacity = getStoredEmptyEditorLogoOpacity(context);
 
-		return `
-.monaco-workbench .part.editor > .content .editor-group-container > .editor-group-watermark .letterpress {
-	background-image: url("${dataUri}") !important;
-	background-position: center !important;
-	background-size: contain !important;
-	background-repeat: no-repeat !important;
-	opacity: ${opacity};
-	filter: none !important;
-}
-`;
+		return createEmptyEditorLogoStyles(dataUri, opacity);
 	} catch (error) {
 		logExtensionError('getEmptyEditorLogoStyles', error, {});
 		return '';

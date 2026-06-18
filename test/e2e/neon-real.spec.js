@@ -16,6 +16,9 @@ const {
     removeWorkbenchPatchScriptTag,
     resolveWorkbenchPatchPaths
 } = require("../../src/workbenchPatch");
+const {
+    EMPTY_EDITOR_LOGO_LETTERPRESS_SELECTORS
+} = require("../../src/emptyEditorLogoStyles");
 
 const WORKSPACE_ROOT = path.resolve(__dirname, "..", "..");
 const DISPOSABLE_TEST_ROOT = path.join(WORKSPACE_ROOT, ".vscode-test");
@@ -105,6 +108,7 @@ describe("Neon real gated E2E @neon-real", function () {
         );
 
         assert.equal(runtimeEnabledState.hasThemeWrapperClass, true, "Expected Kawaii theme wrapper class after restart");
+        assert.equal(runtimeEnabledState.hasEmptyEditorLogoTarget, true, "Expected empty editor watermark selector to match current VS Code markup");
         assert.equal(runtimeEnabledState.hasOwnPaletteOnly, false, "Expected runtime CSS to keep VS Code editor tokens");
         await takeE2EScreenshot("neon-real-applied-after-full-restart");
 
@@ -258,6 +262,7 @@ async function waitForRuntimeNeonState(predicate, message, timeoutMs = 30000) {
 
 async function getRuntimeNeonState() {
     return VSBrowser.instance.driver.executeScript(`
+        const emptyEditorLogoSelectors = arguments[0];
         const themeSelectors = [
             '[class~="vs-dark"][class*="kawaii_synthwave-generated-color-theme-json"]',
             '[class~="vs-dark"][class*="kawaii-synthwave-generated-color-theme-json"]',
@@ -272,15 +277,17 @@ async function getRuntimeNeonState() {
         const chromeText = chromeStyles ? chromeStyles.textContent || '' : '';
         const themeText = themeStyles ? themeStyles.textContent || '' : '';
         const injectedText = chromeText + themeText;
+        const emptyEditorLogoTarget = document.querySelector(emptyEditorLogoSelectors.join(', '));
         return {
             hasChromeStyles: Boolean(chromeStyles),
             hasThemeStyles: Boolean(themeStyles),
             hasKawaiiThemeWrapper: Boolean(themeWrapper),
             hasThemeWrapperClass: Boolean(themeWrapper && /kawaii/i.test(themeWrapper.className || '')),
+            hasEmptyEditorLogoTarget: Boolean(emptyEditorLogoTarget),
             usesEditorTokens: /var\\(--vscode-/.test(injectedText),
             hasOwnPaletteOnly: Boolean(injectedText) && !/var\\(--vscode-/.test(injectedText)
         };
-    `);
+    `, EMPTY_EDITOR_LOGO_LETTERPRESS_SELECTORS);
 }
 
 function writeState(state) {

@@ -1,0 +1,47 @@
+changelog:
+  exclude:
+    labels:
+      - skip-changelog
+      - ignore-for-release
+      - duplicate
+      - invalid
+      - question
+      - wontfix
+  categories:
+    - title: Breaking Changes
+      labels:
+        - breaking-change
+        - breaking
+    - title: Added
+      labels:
+        - feature
+        - enhancement
+    - title: Changed
+      labels:
+        - change
+        - refactor
+        - maintenance
+    - title: Deprecated
+      labels:
+        - deprecated
+    - title: Removed
+      labels:
+        - removed
+    - title: Fixed
+      labels:
+        - bug
+        - fix
+    - title: Security
+      labels:
+        - security
+    - title: Documentation
+      labels:
+        - documentation
+        - docs
+    - title: Tests
+      labels:
+        - test
+        - testing
+    - title: Other Changes
+      labels:
+        - "*"
