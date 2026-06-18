@@ -46,7 +46,7 @@ Expected result:
 - `npm run test:e2e` should package the extension, open disposable VS Code `1.111.0` through ExTester/WebDriver, navigate the real settings webview, and avoid all real Neon patch actions.
 - `npm run build:theme` should regenerate the generated theme files from protected bases and overrides without unexpected diffs.
 
-`npm test` runs the unit, DOM, and VS Code integration layers in sequence. `npm run test:all` runs `npm test` plus the safe real VS Code E2E layer. There is no `tsc --noEmit` or lint command in the current project.
+`npm test` runs the unit, DOM, and VS Code integration layers in sequence. `npm run test:all` runs the unit, DOM, VS Code integration, and safe real VS Code E2E layers in sequence, then prints a final pass/fail/skipped summary for launch-terminal readability. There is no `tsc --noEmit` or lint command in the current project.
 
 ## Manual Theme Test
 
