@@ -2,7 +2,7 @@
 
 Last reviewed: 2026-06-17
 
-Purpose: give Codex a stable, source-backed link index for the Kawaii VS Code Color VS Code theme extension. Use this file before changing `package.json`, `scripts/build-color-theme.js`, `src/extension.js`, `src/settings.js`, `src/settingsWebview.js`, `src/workbenchPatch.js`, `src/js/theme_template.js`, `src/css/editor_chrome.css`, `themes/kawaii_synthwave-color-theme-overrides.json`, packaging metadata, test tooling, or marketplace docs.
+Purpose: give Codex a stable, source-backed link index for the Kawaii VS Code Color VS Code theme extension. Use this file before changing `package.json`, `scripts/build-color-theme.js`, `src/extension.js`, `src/settings.js`, `src/settingsPersistence.js`, `src/settingsStore.js`, `src/settingsColorService.js`, `src/settingsBundle.js`, `src/settingsEffectsPersistence.js`, `src/settingsWebview.js`, `src/workbenchPatch.js`, `src/js/theme_template.js`, `src/css/editor_chrome.css`, `themes/kawaii_synthwave-color-theme-overrides.json`, packaging metadata, test tooling, or marketplace docs.
 
 ## Project Snapshot
 
@@ -62,7 +62,7 @@ Use these as primary references for manifest and runtime changes.
 | TextMate token colors | Edit `themes/kawaii_synthwave-color-theme-overrides.json.tokenColors`; build replaces matching base token rules by `name` or `scope`, and appends new token rules | [Syntax Highlight Guide](https://code.visualstudio.com/api/language-extensions/syntax-highlight-guide), [TextMate scope selectors](https://macromates.com/manual/en/scope_selectors) |
 | Main setup webview | `src/settings.js` opens `Kawaii VS Code Color: Settings`; `src/settingsWebview.js` renders Home, Settings, `Color Settings`, `Neon Effect`, `Image Customization`, `Sync/Files`, and `Help` pages | [Webview API](https://code.visualstudio.com/api/extension-guides/webview), [Commands guide](https://code.visualstudio.com/api/extension-guides/command) |
 | Settings webview color contract | `src/settingsWebview.js` uses VS Code webview color tokens such as `--vscode-editor-background`, not an independent palette | [Webview API](https://code.visualstudio.com/api/extension-guides/webview), [Theme Color reference](https://code.visualstudio.com/api/references/theme-color) |
-| Live user color settings | `src/settings.js` writes `[Kawaii VS Code Color]` and `[Kawaii VS Code Color Light]` blocks to `workbench.colorCustomizations` and `editor.tokenColorCustomizations` | [Themes customization](https://code.visualstudio.com/docs/configure/themes#_customize-a-color-theme), [User and workspace settings](https://code.visualstudio.com/docs/configure/settings), [WorkspaceConfiguration.update](https://code.visualstudio.com/api/references/vscode-api#WorkspaceConfiguration) |
+| Live user color settings | `src/settings.js` routes webview messages; `src/settingsColorService.js`, `src/settingsPersistence.js`, and `src/settingsStore.js` write `[Kawaii VS Code Color]` and `[Kawaii VS Code Color Light]` blocks to `workbench.colorCustomizations` and `editor.tokenColorCustomizations` | [Themes customization](https://code.visualstudio.com/docs/configure/themes#_customize-a-color-theme), [User and workspace settings](https://code.visualstudio.com/docs/configure/settings), [WorkspaceConfiguration.update](https://code.visualstudio.com/api/references/vscode-api#WorkspaceConfiguration) |
 | Semantic highlighting opt-in | Protected base currently defines `semanticHighlighting`; generated theme carries the merged value | [Semantic Highlight Guide](https://code.visualstudio.com/api/language-extensions/semantic-highlight-guide) |
 | Commands | `kawaii_synthwave.openSettings`, `vscode.commands.registerCommand`, `vscode.commands.executeCommand` | [Commands guide](https://code.visualstudio.com/api/extension-guides/command), [VS Code API reference](https://code.visualstudio.com/api/references/vscode-api) |
 | Activation | `onCommand:*` activation events | [Activation Events](https://code.visualstudio.com/api/references/activation-events) |
@@ -120,6 +120,17 @@ Implementation caution:
 
 - The settings webview must not edit `themes/kawaii_synthwave-generated-color-theme.json` at runtime. VS Code theme contributions are declared through static manifest paths, while per-user live changes belong in user settings.
 - Keep writes theme-scoped under `[Kawaii VS Code Color]` and `[Kawaii VS Code Color Light]` so reset operations do not erase unrelated user color customizations.
+
+### Extracted Settings Modules
+
+| Module | Responsibility | Validation |
+| --- | --- | --- |
+| `src/settingsPersistence.js` | Pure color customization block mutation, TextMate scope comparison, and hex validation | `test/unit/settings-persistence.test.js` |
+| `src/settingsStore.js` | VS Code configuration get/inspect/update adapter for global and workspace targets | `test/unit/settings-store.test.js` |
+| `src/settingsColorService.js` | Generated-theme-aware color update/reset/theme-switch orchestration | `test/unit/settings-color-service.test.js` |
+| `src/settingsBundle.js` | Portable bundle creation/application, Settings Sync state, and JSON import/export actions | `test/unit/settings-bundle.test.js` |
+| `src/settingsEffectsPersistence.js` | Effect/image normalization, safe storage paths, metadata/state, export/restore/store/remove helpers | `test/unit/settings-effects-persistence.test.js` |
+| `src/settings.js` message chain | Mocked `openSettings -> onDidReceiveMessage -> persistence` wiring | `test/unit/settings-message-persistence.test.js` |
 
 ### `src/js/theme_template.js`
 
