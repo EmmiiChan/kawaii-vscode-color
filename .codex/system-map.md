@@ -91,7 +91,7 @@ Build behavior:
 | Module | Responsibility |
 | --- | --- |
 | `src/extension.ts` -> `out/src/extension.js` | Extension activation, command registration, Settings Sync setup, and composition of typed extension-host services. |
-| `src/extensionHost` -> `out/src/extensionHost` | VS Code adapters, Neon Effect controller, renderer template assembly, stored image CSS values, workbench patch apply/remove orchestration, reload prompts. |
+| `src/extensionHost` -> `out/src/extensionHost` | VS Code adapters, Neon Effect controller, Settings command/message controllers, renderer template assembly, stored image CSS values, settings host boundaries, workbench patch apply/remove orchestration, reload prompts. |
 | `src/extensionRoot.ts` -> `out/src/extensionRoot.js` | Resolves package-root asset paths from both source and compiled `out/src` runtime directories. |
 | `src/workbenchPatch.ts` -> `out/src/workbenchPatch.js` | Pure workbench path detection and marked HTML patch helpers for `neondreams.js`. |
 | `src/settings.js` | Settings webview lifecycle, message routing, Settings Sync/JSON orchestration, image workflows, color state composition, runtime read of `.codex/color_scheme_reference.md`. |
@@ -149,6 +149,7 @@ Extension host -> webview message types:
 Rules:
 
 - `ready` and `refresh` rebuild state with `createSettingsState()`.
+- Incoming settings webview messages are dispatched through `src/extensionHost/controllers/SettingsMessageController.ts`; legacy handlers in `src/settings.js` preserve existing payload names and side effects.
 - Color messages write VS Code settings, never repository theme JSON.
 - Image and opacity messages update `globalState`/global storage and require `apply-neon-customizations` to refresh injected effects.
 - `e2e-apply-settings-bundle` is test-only and must remain gated by `KAWAII_E2E_ALLOW_NEON_PATCH=1`.

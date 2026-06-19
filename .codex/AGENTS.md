@@ -145,7 +145,7 @@ Theme file ownership:
 The package loads compiled runtime JavaScript from `out/` and still ships source assets used by that runtime:
 
 - `out/src/extension.js` runs in the extension host and is compiled from `src/extension.ts`.
-- `src/extensionHost` contains typed extension-host adapters, the Neon Effect controller, and services for script assembly and workbench patch application/removal.
+- `src/extensionHost` contains typed extension-host adapters, Neon and Settings controllers, and services for script assembly, settings message dispatch, settings state boundaries, and workbench patch application/removal.
 - `src/extensionRoot.ts` owns source/compiled package-root asset resolution for runtime reads.
 - `src/settings.js` owns the settings webview orchestration, message routing, VS Code notifications/dialogs, and remaining UI-facing workflows.
 - `src/settingsPersistence.ts` owns pure color customization block mutation and hex/scope helpers.
@@ -164,7 +164,7 @@ The package loads compiled runtime JavaScript from `out/` and still ships source
 
 | Layer | Command | Main coverage |
 | --- | --- | --- |
-| Unit without UI | `npm run test:unit` | Theme build merge behavior, version bump behavior, workbench patch helpers, settings persistence helpers, settings store adapter, color customization service, bundle/sync/file actions including chained Settings Sync / JSON import-export restoration, effect/image persistence, and mocked settings message chains. |
+| Unit without UI | `npm run test:unit` | Theme build merge behavior, version bump behavior, workbench patch helpers, settings persistence helpers, settings store adapter, color customization service, bundle/sync/file actions including chained Settings Sync / JSON import-export restoration, effect/image persistence, typed host controllers/services, and mocked settings message chains. |
 | DOM UI | `npm run test:dom` | Settings webview readiness, all safe webview events, app navigation, Help metadata, Color Settings inputs/debounce, image/logo state, incoming webview messages, warnings/errors, and `--vscode-*` color-token contract. |
 | VS Code integration | `npm run test:integration` | Compile, extension manifest registration, activation, command registration, and opening settings in the Extension Development Host. |
 | Real VS Code UI E2E | `npm run test:e2e` | Compile, then ExTester/WebDriver opens disposable VS Code, runs the Command Palette, switches into the real settings webview iframe, validates navigation, layout, safe UI flows, color picker alpha persistence, controlled fixture dialog/Random Neko flows without native dialogs or network, screenshot artifacts for visible settings pages and dynamic visual UI states, and programmatic PNG analysis for Settings visual before/after states. |

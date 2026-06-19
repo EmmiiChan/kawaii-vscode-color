@@ -174,7 +174,7 @@ Current source of truth:
 - Renderer behavior lives in the JS template under `src/js`.
 - Settings webview orchestration, message routing, VS Code notifications/dialogs, native picker/download workflows, color-reference parsing, and state composition live in `src/settings.js`.
 - Runtime activation and command registration live in `src/extension.ts`.
-- Extension-host Neon controller, service, filesystem, storage, and notification boundaries live under `src/extensionHost`.
+- Extension-host Neon and Settings controllers plus service, filesystem, storage, and notification boundaries live under `src/extensionHost`.
 - Runtime asset resolution from source or `out/src` lives in `src/extensionRoot.ts`.
 - Random Neko payload parsing, URL resolution, guarded HTTPS fetch, and image response normalization live in `src/randomNekoImage.ts`.
 - Pure color customization block mutation, scope comparison, and hex validation live in `src/settingsPersistence.ts`.
@@ -196,7 +196,7 @@ Current source of truth:
 - Light Kawaii palette and token changes must be placed in `themes/kawaii_synthwave-color-theme-light-overrides.json`.
 - The public dark theme loaded by VS Code is generated at `themes/kawaii_synthwave-generated-color-theme.json`.
 - The public light theme loaded by VS Code is generated at `themes/kawaii_synthwave-generated-color-theme-light.json`.
-- Command registration lives in `src/extension.ts`; setting normalization, filesystem boundaries, generated script assembly, notifications, and workbench patching live in extracted host modules under `src/extensionHost`.
+- Command registration lives in `src/extension.ts`; setting normalization, settings message dispatch, filesystem boundaries, generated script assembly, notifications, and workbench patching live in extracted host modules under `src/extensionHost`.
 - Codex documentation drift checks live in `scripts/check-codex-docs.js` and are run by `npm run test:docs`.
 
 Settings webview visual rule:
@@ -434,7 +434,7 @@ Local source anchors:
 
 - `package.json`: manifest, contributions, activation, settings, extension entry.
 - `src/extension.ts`: extension host activation, command registration, and service composition, compiled to `out/src/extension.js`.
-- `src/extensionHost`: typed adapters, Neon Effect controller, script assembly service, and workbench patch service.
+- `src/extensionHost`: typed adapters, Neon Effect controller, Settings command/message controllers, script assembly service, settings host services, and workbench patch service.
 - `src/extensionRoot.ts`: package-root and asset path resolution for source and compiled runtime directories.
 - `src/emptyEditorLogoStyles.ts`: no-tab logo selector contract and generated logo replacement CSS.
 - `src/randomNekoImage.ts`: Random Neko payload parsing, URL resolution, guarded HTTPS fetching, and image normalization.

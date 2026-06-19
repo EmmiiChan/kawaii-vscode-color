@@ -2,6 +2,10 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const vscode = require("vscode");
+const { createSettingsMessageController } = require("./extensionHost/controllers/SettingsMessageController");
+const { createSettingsStateService } = require("./extensionHost/services/SettingsStateService");
+const { createSettingsBundleService } = require("./extensionHost/services/SettingsBundleService");
+const { createSettingsEffectsService } = require("./extensionHost/services/SettingsEffectsService");
 const { createRandomNekoImageFetcher } = require("./randomNekoImage");
 const { createSettingsBundleActions } = require("./settingsBundle");
 const { createSettingsColorService } = require("./settingsColorService");
@@ -74,6 +78,21 @@ const settingsBundleActions = createSettingsBundleActions({
   uri: vscode.Uri,
   window: createWindowAdapter(),
   workbenchCustomizationsSetting: WORKBENCH_CUSTOMIZATIONS_SETTING
+});
+const settingsStateService = createSettingsStateService({
+  createState: createSettingsState
+});
+const settingsBundleService = createSettingsBundleService({
+  applySettingsBundle(context, bundle) {
+    return settingsBundleActions.applySettingsBundle(context, bundle);
+  },
+  configureSettingsSync(context) {
+    return settingsBundleActions.configureSettingsSync(context);
+  },
+  exportSettingsBundle,
+  importSettingsBundle,
+  importSettingsFromVsSync,
+  saveSettingsToVsSync
 });
 const EDITOR_BACKGROUND_IMAGE_STATE_KEY = "kawaii_synthwave.editorBackgroundImage";
 const EDITOR_BACKGROUND_OPACITY_STATE_KEY = "kawaii_synthwave.editorBackgroundOpacity";
@@ -376,7 +395,7 @@ async function openSettings(context, actions) {
     context.subscriptions
   );
 
-  activePanel.webview.html = createSettingsWebviewHtml(activePanel.webview, createSettingsState(context, activePanel.webview));
+  activePanel.webview.html = createSettingsWebviewHtml(activePanel.webview, settingsStateService.createSettingsState(context, activePanel.webview));
 }
 
 /**
@@ -386,7 +405,7 @@ async function openSettings(context, actions) {
  * @returns {void}
  */
 function configureSettingsSync(context) {
-  return settingsBundleActions.configureSettingsSync(context);
+  return settingsBundleService.configureSettingsSync(context);
 }
 
 /**
@@ -397,165 +416,131 @@ function configureSettingsSync(context) {
  * @returns {Promise<void>} Completes when the action has been applied.
  */
 async function handleSettingsMessage(panel, message, context) {
-  if (!panel || !message || typeof message !== "object") {
+  if (!panel) {
     return;
   }
 
-  try {
-    switch (message.type) {
-      case "ready":
-      case "refresh":
-        await postSettingsState(panel, context);
-        return;
-      case "open-link":
-        await openDocumentationLink(message.url);
-        return;
-      case "enable-neon":
-        await runNeonEffectAction("enableNeon");
-        postNeonEffectStatus(panel, "Enable request sent. Follow the VS Code notification to restart the editor.");
-        return;
-      case "disable-neon":
-        await runNeonEffectAction("disableNeon");
-        postNeonEffectStatus(panel, "Disable request sent. Follow the VS Code notification to restart the editor.");
-        return;
-      case "change-theme-variant":
-        await changeThemeVariant(message.themeVariantId);
-        await postSettingsState(panel, context);
-        return;
-      case "save-settings-to-vssync":
-        await saveSettingsToVsSync(context);
-        await postSettingsState(panel, context);
-        return;
-      case "import-settings-from-vssync":
-        if (await importSettingsFromVsSync(context)) {
-          await postSettingsState(panel, context);
-          postEffectsPendingWarning(panel, "Settings restored from VSSync. Click Apply Effects, then reload VS Code to refresh image-backed effects.");
-          return;
-        }
-        await postSettingsState(panel, context);
-        return;
-      case "export-settings":
-        await exportSettingsBundle(context);
-        await postSettingsState(panel, context);
-        return;
-      case "import-settings":
-        if (await importSettingsBundle(context)) {
-          await postSettingsState(panel, context);
-          postEffectsPendingWarning(panel, "Settings imported. Click Apply Effects, then reload VS Code to refresh image-backed effects.");
-          return;
-        }
-        await postSettingsState(panel, context);
-        return;
-      case "e2e-apply-settings-bundle":
-        if (!isNeonE2ETestHookEnabled()) {
-          throw new Error("E2E settings bundle import is only available while KAWAII_E2E_ALLOW_NEON_PATCH=1.");
-        }
-        await settingsBundleActions.applySettingsBundle(context, message.bundle);
-        await postSettingsState(panel, context);
-        postEffectsPendingWarning(panel, "Settings restored from E2E bundle. Click Apply Effects, then reload VS Code to refresh image-backed effects.");
-        return;
-      case "e2e-set-test-fixtures":
-        if (!isSettingsE2ETestHookEnabled()) {
-          throw new Error("E2E test fixtures are only available while KAWAII_E2E_TEST_HOOKS=1 or KAWAII_E2E_ALLOW_NEON_PATCH=1.");
-        }
-        setE2ETestFixtures(message.fixtures);
-        await postSettingsState(panel, context);
-        return;
-      case "select-editor-background-image":
-        if (await selectEditorBackgroundImage(context)) {
-          await postSettingsState(panel, context);
-          postEffectsPendingWarning(panel, "Editor background image saved. Click Apply Effects, then reload VS Code. If the editor does not refresh cleanly, close and open VS Code manually.");
-          return;
-        }
-        await postSettingsState(panel, context);
-        return;
-      case "select-random-neko-editor-background-image":
-        await selectRandomNekoEditorBackgroundImage(context);
-        await postSettingsState(panel, context);
-        postEffectsPendingWarning(panel, "Random neko editor background image saved. Click Apply Effects, then reload VS Code. If the editor does not refresh cleanly, close and open VS Code manually.");
-        return;
-      case "remove-editor-background-image":
-        if (await removeEditorBackgroundImage(context)) {
-          await postSettingsState(panel, context);
-          postEffectsPendingWarning(panel, "Editor background image removed. Click Apply Effects, then reload VS Code. If the editor does not refresh cleanly, close and open VS Code manually.");
-          return;
-        }
-        await postSettingsState(panel, context);
-        return;
-      case "download-editor-background-image":
-        await downloadEditorBackgroundImage(context);
-        await postSettingsState(panel, context);
-        return;
-      case "update-editor-background-opacity":
-        await updateEditorBackgroundOpacity(context, message.opacity);
-        await postSettingsState(panel, context);
-        postEffectsPendingWarning(panel, "Editor background opacity saved. Click Apply Effects, then reload VS Code. If the editor does not refresh cleanly, close and open VS Code manually.");
-        return;
-      case "update-editor-background-fit":
-        await updateEditorBackgroundFit(context, message.fit);
-        await postSettingsState(panel, context);
-        postEffectsPendingWarning(panel, "Editor background fit area saved. Click Apply Effects, then reload VS Code. If the editor does not refresh cleanly, close and open VS Code manually.");
-        return;
-      case "select-empty-editor-logo-image":
-        if (await selectEmptyEditorLogoImage(context)) {
-          await postSettingsState(panel, context);
-          postEffectsPendingWarning(panel, "No-tab logo saved. Click Apply Effects, then reload VS Code. If the editor does not refresh cleanly, close and open VS Code manually.");
-          return;
-        }
-        await postSettingsState(panel, context);
-        return;
-      case "select-random-neko-empty-editor-logo-image":
-        await selectRandomNekoEmptyEditorLogoImage(context);
-        await postSettingsState(panel, context);
-        postEffectsPendingWarning(panel, "Random neko no-tab logo saved. Click Apply Effects, then reload VS Code. If the editor does not refresh cleanly, close and open VS Code manually.");
-        return;
-      case "remove-empty-editor-logo-image":
-        if (await removeEmptyEditorLogoImage(context)) {
-          await postSettingsState(panel, context);
-          postEffectsPendingWarning(panel, "No-tab logo removed. Click Apply Effects, then reload VS Code. If the editor does not refresh cleanly, close and open VS Code manually.");
-          return;
-        }
-        await postSettingsState(panel, context);
-        return;
-      case "download-empty-editor-logo-image":
-        await downloadEmptyEditorLogoImage(context);
-        await postSettingsState(panel, context);
-        return;
-      case "update-empty-editor-logo-opacity":
-        await updateEmptyEditorLogoOpacity(context, message.opacity);
-        await postSettingsState(panel, context);
-        postEffectsPendingWarning(panel, "No-tab logo opacity saved. Click Apply Effects, then reload VS Code. If the editor does not refresh cleanly, close and open VS Code manually.");
-        return;
-      case "apply-neon-customizations":
-        await updateEditorBackgroundOpacity(context, message.editorBackgroundOpacity);
-        await updateEditorBackgroundFit(context, message.editorBackgroundFit);
-        await updateEmptyEditorLogoOpacity(context, message.emptyEditorLogoOpacity);
-        await applyAllEffects(panel);
-        await postSettingsState(panel, context);
-        return;
-      case "update-color":
-        await updateColorCustomization(message.section, message.id, message.value, message.themeVariantId);
-        await postSettingsState(panel, context);
-        return;
-      case "reset-color":
-        await resetColorCustomization(message.section, message.id, message.themeVariantId);
-        await postSettingsState(panel, context);
-        return;
-      case "reset-all":
-        await resetAllColorCustomizations(message.themeVariantId);
-        await postSettingsState(panel, context);
-        return;
-      default:
-        return;
+  const controller = createSettingsMessageController({
+    handlers: createSettingsMessageHandlers(panel, context),
+    isNeonE2ETestHookEnabled,
+    isSettingsE2ETestHookEnabled,
+    logError: logSettingsError,
+    async reportError(error) {
+      panel.webview.postMessage({
+        type: "error",
+        message: getErrorMessage(error)
+      });
+      await vscode.window.showErrorMessage(`Kawaii VS Code Color settings failed: ${getErrorMessage(error)}`);
     }
-  } catch (error) {
-    logSettingsError("handleSettingsMessage", error, { message });
-    panel.webview.postMessage({
-      type: "error",
-      message: getErrorMessage(error)
-    });
-    vscode.window.showErrorMessage(`Kawaii VS Code Color settings failed: ${getErrorMessage(error)}`);
-  }
+  });
+
+  await controller.handleMessage(message);
+}
+
+/**
+ * Creates legacy settings handlers consumed by the typed message controller.
+ *
+ * @param {vscode.WebviewPanel} panel - Active webview panel.
+ * @param {vscode.ExtensionContext} context - Extension context.
+ * @returns {Record<string, Function>} Settings message handlers.
+ */
+function createSettingsMessageHandlers(panel, context) {
+  const settingsEffectsService = createSettingsEffectsService({
+    applyAllEffects() {
+      return applyAllEffects(panel);
+    },
+    downloadEditorBackgroundImage,
+    downloadEmptyEditorLogoImage,
+    removeEditorBackgroundImage,
+    removeEmptyEditorLogoImage,
+    selectEditorBackgroundImage,
+    selectEmptyEditorLogoImage,
+    selectRandomNekoEditorBackgroundImage,
+    selectRandomNekoEmptyEditorLogoImage,
+    updateEditorBackgroundFit,
+    updateEditorBackgroundOpacity,
+    updateEmptyEditorLogoOpacity
+  });
+
+  return {
+    applyAllEffects() {
+      return settingsEffectsService.applyAllEffects();
+    },
+    async applyNeonCustomizations(message) {
+      await settingsEffectsService.updateEditorBackgroundOpacity(context, message.editorBackgroundOpacity);
+      await settingsEffectsService.updateEditorBackgroundFit(context, message.editorBackgroundFit);
+      await settingsEffectsService.updateEmptyEditorLogoOpacity(context, message.emptyEditorLogoOpacity);
+    },
+    applySettingsBundle(bundle) {
+      return settingsBundleService.applySettingsBundle(context, bundle);
+    },
+    changeThemeVariant,
+    downloadEditorBackgroundImage() {
+      return settingsEffectsService.downloadEditorBackgroundImage(context);
+    },
+    downloadEmptyEditorLogoImage() {
+      return settingsEffectsService.downloadEmptyEditorLogoImage(context);
+    },
+    disableNeon() {
+      return runNeonEffectAction("disableNeon");
+    },
+    enableNeon() {
+      return runNeonEffectAction("enableNeon");
+    },
+    exportSettingsBundle() {
+      return settingsBundleService.exportSettingsBundle(context);
+    },
+    importSettingsBundle() {
+      return settingsBundleService.importSettingsBundle(context);
+    },
+    importSettingsFromVsSync() {
+      return settingsBundleService.importSettingsFromVsSync(context);
+    },
+    openDocumentationLink,
+    postEffectsPendingWarning(message) {
+      postEffectsPendingWarning(panel, message);
+    },
+    postNeonEffectStatus(message) {
+      postNeonEffectStatus(panel, message);
+    },
+    postSettingsState() {
+      return postSettingsState(panel, context);
+    },
+    removeEditorBackgroundImage() {
+      return settingsEffectsService.removeEditorBackgroundImage(context);
+    },
+    removeEmptyEditorLogoImage() {
+      return settingsEffectsService.removeEmptyEditorLogoImage(context);
+    },
+    resetAllColorCustomizations,
+    resetColorCustomization,
+    saveSettingsToVsSync() {
+      return settingsBundleService.saveSettingsToVsSync(context);
+    },
+    selectEditorBackgroundImage() {
+      return settingsEffectsService.selectEditorBackgroundImage(context);
+    },
+    selectEmptyEditorLogoImage() {
+      return settingsEffectsService.selectEmptyEditorLogoImage(context);
+    },
+    selectRandomNekoEditorBackgroundImage() {
+      return settingsEffectsService.selectRandomNekoEditorBackgroundImage(context);
+    },
+    selectRandomNekoEmptyEditorLogoImage() {
+      return settingsEffectsService.selectRandomNekoEmptyEditorLogoImage(context);
+    },
+    setE2ETestFixtures,
+    updateColorCustomization,
+    updateEditorBackgroundFit(fit) {
+      return settingsEffectsService.updateEditorBackgroundFit(context, fit);
+    },
+    updateEditorBackgroundOpacity(opacity) {
+      return settingsEffectsService.updateEditorBackgroundOpacity(context, opacity);
+    },
+    updateEmptyEditorLogoOpacity(opacity) {
+      return settingsEffectsService.updateEmptyEditorLogoOpacity(context, opacity);
+    }
+  };
 }
 
 /**
@@ -1885,7 +1870,7 @@ function formatFileSize(bytes) {
 async function postSettingsState(panel, context) {
   panel.webview.postMessage({
     type: "state",
-    state: createSettingsState(context, panel.webview)
+    state: settingsStateService.createSettingsState(context, panel.webview)
   });
 }
 

@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import settings = require("./settings");
 import { createNeonEffectController, type NeonEffectController } from "./extensionHost/controllers/NeonEffectController";
+import { createSettingsCommandController } from "./extensionHost/controllers/SettingsCommandController";
 import { nodeFileSystem } from "./extensionHost/adapters/NodeFileSystem";
 import { createVscodeExtensionStorage } from "./extensionHost/adapters/VscodeExtensionStorage";
 import { createVscodeNotificationService } from "./extensionHost/adapters/VscodeNotificationService";
@@ -9,15 +10,19 @@ import { createWorkbenchPatchService } from "./extensionHost/services/WorkbenchP
 import { resolveExtensionRoot } from "./extensionRoot";
 
 let neonEffectController: NeonEffectController | undefined;
+const settingsCommandController = createSettingsCommandController({
+  configureSettingsSync: (context) => settings.configureSettingsSync(context as vscode.ExtensionContext),
+  openSettings: (context, actions) => settings.openSettings(context as vscode.ExtensionContext, actions)
+});
 
 export function activate(context: vscode.ExtensionContext): void {
   const controller = createController(context);
   neonEffectController = controller;
 
-  settings.configureSettingsSync(context);
+  settingsCommandController.configureSettingsSync(context);
 
   const openSettings = vscode.commands.registerCommand("kawaii_synthwave.openSettings", () => {
-    return settings.openSettings(context, controller.getSettingsActions());
+    return settingsCommandController.openSettings(context, controller.getSettingsActions());
   });
 
   context.subscriptions.push(openSettings);
