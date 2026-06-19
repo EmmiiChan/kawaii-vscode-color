@@ -39,6 +39,7 @@ const TOKEN_CUSTOMIZATIONS_SETTING = "editor.tokenColorCustomizations";
 const BRIGHTNESS_SETTING = "kawaii_synthwave.brightness";
 const DISABLE_GLOW_SETTING = "kawaii_synthwave.disableGlow";
 const SETTINGS_EXPORT_FILE_NAME = "kawaii-vscode-color-settings.json";
+const NEON_E2E_ALLOW_PATCH_ENV = "KAWAII_E2E_ALLOW_NEON_PATCH";
 const COLOR_SCHEME_REFERENCE_PATH = path.join(__dirname, "..", ".codex", "color_scheme_reference.md");
 const settingsStore = createSettingsStore(vscode.workspace);
 const settingsColorService = createSettingsColorService({
@@ -429,6 +430,14 @@ async function handleSettingsMessage(panel, message, context) {
         }
         await postSettingsState(panel, context);
         return;
+      case "e2e-apply-settings-bundle":
+        if (!isNeonE2ETestHookEnabled()) {
+          throw new Error("E2E settings bundle import is only available while KAWAII_E2E_ALLOW_NEON_PATCH=1.");
+        }
+        await settingsBundleActions.applySettingsBundle(context, message.bundle);
+        await postSettingsState(panel, context);
+        postEffectsPendingWarning(panel, "Settings restored from E2E bundle. Click Apply Effects, then reload VS Code to refresh image-backed effects.");
+        return;
       case "select-editor-background-image":
         if (await selectEditorBackgroundImage(context)) {
           await postSettingsState(panel, context);
@@ -632,6 +641,15 @@ function postEffectsPendingWarning(panel, message) {
     type: "effects-pending",
     message
   });
+}
+
+/**
+ * Checks whether the gated Neon E2E test hook may be exposed.
+ *
+ * @returns {boolean} True only for explicit destructive-control E2E runs.
+ */
+function isNeonE2ETestHookEnabled() {
+  return process.env[NEON_E2E_ALLOW_PATCH_ENV] === "1";
 }
 
 /**
@@ -1917,6 +1935,7 @@ function createSettingsState(context, webview) {
     projectLinks: PROJECT_LINKS,
     corruptionWarningLinks: CORRUPTION_WARNING_LINKS,
     checksumFixLink: CHECKSUM_FIX_LINK,
+    e2eTestApiEnabled: isNeonE2ETestHookEnabled(),
     editorBackground: getEditorBackgroundState(context, webview),
     emptyEditorLogo: getEmptyEditorLogoState(context, webview),
     workbenchColors,

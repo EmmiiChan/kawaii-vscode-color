@@ -6,6 +6,7 @@ const Module = require("node:module");
 const test = require("node:test");
 
 const workspaceRoot = path.resolve(__dirname, "..", "..");
+const settingsFixturePath = path.join(workspaceRoot, "test", "fixtures", "settings", "settings-dark-light-customized.json");
 
 function createUri(filePath) {
   return {
@@ -291,6 +292,63 @@ test("settings webview messages reach persistence services without touching real
     assert.equal(harness.postedMessages.at(-1).type, "error");
     assert.match(harness.errorMessages.at(-1), /Kawaii VS Code Color settings failed/);
   } finally {
+    harness.cleanup();
+  }
+});
+
+test("settings E2E bundle hook is rejected by default and applies fixture only with Neon flag", async () => {
+  const originalFlag = process.env.KAWAII_E2E_ALLOW_NEON_PATCH;
+  const harness = createSettingsHarness();
+
+  try {
+    delete process.env.KAWAII_E2E_ALLOW_NEON_PATCH;
+
+    await harness.settings.openSettings(harness.context, {
+      enableNeon: async () => {
+        harness.actions.enable += 1;
+      },
+      disableNeon: async () => {
+        harness.actions.disable += 1;
+      }
+    });
+
+    const messageHandler = harness.getMessageHandler();
+    const fixtureBundle = JSON.parse(fs.readFileSync(settingsFixturePath, "utf8"));
+
+    await messageHandler({
+      type: "e2e-apply-settings-bundle",
+      bundle: fixtureBundle
+    });
+
+    assert.equal(harness.postedMessages.at(-1).type, "error");
+    assert.match(harness.postedMessages.at(-1).message, /only available while KAWAII_E2E_ALLOW_NEON_PATCH=1/);
+
+    process.env.KAWAII_E2E_ALLOW_NEON_PATCH = "1";
+    await messageHandler({
+      type: "e2e-apply-settings-bundle",
+      bundle: fixtureBundle
+    });
+
+    assert.equal(harness.configurationValues.get("kawaii_synthwave.brightness"), 0.72);
+    assert.equal(harness.configurationValues.get("kawaii_synthwave.disableGlow"), true);
+    assert.equal(harness.configurationValues.get("workbench.colorTheme"), "Kawaii VS Code Color Light");
+    assert.equal(
+      harness.configurationValues.get("workbench.colorCustomizations")["[Kawaii VS Code Color]"]["editor.background"],
+      "#101820"
+    );
+    assert.equal(harness.globalStateValues.get("kawaii_synthwave.editorBackgroundOpacity"), 0.23);
+    assert.equal(harness.globalStateValues.get("kawaii_synthwave.editorBackgroundFit"), "left");
+    assert.equal(harness.globalStateValues.get("kawaii_synthwave.emptyEditorLogoOpacity"), 0.64);
+    assert.equal(harness.globalStateValues.get("kawaii_synthwave.editorBackgroundImage").originalName, "editor-background.png");
+    assert.equal(harness.globalStateValues.get("kawaii_synthwave.emptyEditorLogoImage").originalName, "empty-editor-logo.png");
+    assert.ok(fs.existsSync(path.join(harness.context.globalStorageUri.fsPath, "editor-background-image.png")));
+    assert.ok(fs.existsSync(path.join(harness.context.globalStorageUri.fsPath, "empty-editor-logo-image.png")));
+  } finally {
+    if (originalFlag === undefined) {
+      delete process.env.KAWAII_E2E_ALLOW_NEON_PATCH;
+    } else {
+      process.env.KAWAII_E2E_ALLOW_NEON_PATCH = originalFlag;
+    }
     harness.cleanup();
   }
 });

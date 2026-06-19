@@ -133,6 +133,34 @@ async function getWebviewElementCount(css) {
     );
 }
 
+async function getWebviewElementAttribute(css, attributeName) {
+    await waitForWebviewCss(css);
+
+    return VSBrowser.instance.driver.executeScript(
+        `
+        const element = document.querySelector(arguments[0]);
+        if (!element) {
+            return null;
+        }
+        return element.getAttribute(arguments[1]);
+        `,
+        css,
+        attributeName
+    );
+}
+
+async function getWebviewInputValue(css) {
+    await waitForWebviewCss(css);
+
+    return VSBrowser.instance.driver.executeScript(
+        `
+        const input = document.querySelector(arguments[0]);
+        return input ? input.value : null;
+        `,
+        css
+    );
+}
+
 async function setWebviewInputValue(css, value) {
     await waitForWebviewCss(css);
 
@@ -238,7 +266,9 @@ module.exports = {
     assertWebviewPageVisible,
     assertWebviewTextIncludes,
     clickWebviewCss,
+    getWebviewElementAttribute,
     getWebviewElementCount,
+    getWebviewInputValue,
     getWebviewText,
     openSettingsWebview,
     runCommand,

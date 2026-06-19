@@ -5,6 +5,7 @@ const {
     assertWebviewPageVisible,
     clickWebviewCss,
     getWebviewElementCount,
+    getWebviewInputValue,
     getWebviewText,
     selectWebviewOptionByText,
     setWebviewInputValue,
@@ -16,6 +17,7 @@ async function openColorSettingsPage() {
     await clickWebviewCss('.nav-button[data-page="color-settings"]');
     await assertWebviewPageVisible("color-settings-page");
     await waitForWebviewTextIncludes("#color-settings-page", "THEME MODE");
+    await clickWebviewCss('.tab[data-section="workbench"]');
     await setWebviewInputValue("#search", "");
 }
 
@@ -59,11 +61,27 @@ describe("Settings safe flows E2E", function () {
         });
     });
 
+    it("updates editor.background color in the isolated profile and refreshes the UI", async function () {
+        await withSettingsWebview(async () => {
+            await openColorSettingsPage();
+            await setWebviewInputValue("#search", "editor.background");
+            await waitForWebviewTextIncludes("#content", "editor.background");
+
+            await setWebviewInputValue("#content .row .hex", "#123456");
+            await waitForWebviewTextIncludes("#status", "Saved", 20000);
+
+            assert.equal(await getWebviewInputValue("#content .row .hex"), "#123456");
+        });
+    });
+
     it("shows safe action controls without invoking native dialogs", async function () {
         await withSettingsWebview(async () => {
+            await assertWebviewCssVisible("#home-apply-effects");
+
             await openColorSettingsPage();
 
             for (const css of [
+                "#apply-effects",
                 "#save-vssync",
                 "#import-vssync",
                 "#export-settings",
@@ -79,6 +97,11 @@ describe("Settings safe flows E2E", function () {
             ]) {
                 await assertWebviewCssVisible(css);
             }
+
+            await clickWebviewCss('.nav-button[data-page="neon-effect"]');
+            await assertWebviewPageVisible("neon-effect-page");
+            await assertWebviewCssVisible("#enable-neon");
+            await assertWebviewCssVisible("#disable-neon");
         });
     });
 });

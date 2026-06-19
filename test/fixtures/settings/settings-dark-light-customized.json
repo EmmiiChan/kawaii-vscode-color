@@ -1,0 +1,70 @@
+{
+  "schema": "kawaii-vscode-color-settings",
+  "schemaVersion": 1,
+  "exportedAt": "2026-06-17T12:00:00.000Z",
+  "activeThemeVariantId": "light",
+  "activeThemeLabel": "Kawaii VS Code Color Light",
+  "extensionConfiguration": {
+    "brightness": 0.72,
+    "disableGlow": true
+  },
+  "colorCustomizations": {
+    "workbench": {
+      "dark": {
+        "editor.background": "#101820",
+        "activityBar.background": "#202830"
+      },
+      "light": {
+        "editor.background": "#f7f1ff",
+        "sideBar.background": "#ede7f6"
+      }
+    },
+    "token": {
+      "dark": {
+        "textMateRules": [
+          {
+            "scope": "keyword",
+            "settings": {
+              "foreground": "#ff77cc"
+            }
+          }
+        ]
+      },
+      "light": {
+        "textMateRules": [
+          {
+            "scope": "string",
+            "settings": {
+              "foreground": "#118855"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "effects": {
+    "editorBackground": {
+      "opacity": 0.23,
+      "fit": "left",
+      "image": {
+        "fileName": "editor-background-image.png",
+        "originalName": "editor-background.png",
+        "mimeType": "image/png",
+        "extension": "png",
+        "size": 68,
+        "dataBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII="
+      }
+    },
+    "emptyEditorLogo": {
+      "opacity": 0.64,
+      "image": {
+        "fileName": "empty-editor-logo-image.png",
+        "originalName": "empty-editor-logo.png",
+        "mimeType": "image/png",
+        "extension": "png",
+        "size": 68,
+        "dataBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII="
+      }
+    }
+  }
+}

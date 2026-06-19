@@ -86,13 +86,13 @@ const baseState = {
         description: "100% x 100%"
       },
       {
-        id: "left-half",
-        label: "Left Half",
+        id: "left",
+        label: "Left",
         description: "50% x 100%"
       },
       {
-        id: "top-left-corner",
-        label: "Top Left Corner",
+        id: "top-left",
+        label: "Top Left",
         description: "50% x 50%"
       }
     ]
@@ -277,20 +277,81 @@ function getLastPostedMessage(postedMessages, type) {
   return messages[messages.length - 1];
 }
 
+function expectPostedMessage(postedMessages, type, expectedPayload = {}) {
+  const message = getLastPostedMessage(postedMessages, type);
+  assert.ok(message, `Expected a "${type}" message`);
+  assert.equal(message.type, type);
+
+  Object.entries(expectedPayload).forEach(([key, expectedValue]) => {
+    assert.deepEqual(message[key], expectedValue, `Expected "${type}.${key}" to match`);
+  });
+
+  return message;
+}
+
 function assertNoPostedMessage(postedMessages, type) {
   assert.equal(getPostedMessagesByType(postedMessages, type).length, 0, `Expected no "${type}" messages`);
+}
+
+function expectNoPostedMessage(postedMessages, type) {
+  assertNoPostedMessage(postedMessages, type);
+}
+
+function clearPostedMessages(postedMessages) {
+  postedMessages.length = 0;
 }
 
 function countActiveNavItems(document) {
   return document.querySelectorAll(".nav-button.active").length;
 }
 
+function expectVisiblePage(document, pageId) {
+  const resolvedPageId = pageId.endsWith("-page") ? pageId : `${pageId}-page`;
+  const page = getRequiredElement(document, `#${resolvedPageId}`);
+  assert.equal(page.classList.contains("hidden"), false, `Expected #${resolvedPageId} to be visible`);
+  return page;
+}
+
+function expectStatusText(document, pattern) {
+  const statusText = getRequiredElement(document, "#status").textContent;
+
+  if (pattern instanceof RegExp) {
+    assert.match(statusText, pattern);
+    return;
+  }
+
+  assert.equal(statusText, pattern);
+}
+
+function expectElementDisabled(document, selector, expected) {
+  assert.equal(getRequiredElement(document, selector).disabled, expected, `Expected ${selector}.disabled to be ${expected}`);
+}
+
+function expectInputValue(document, selector, expected) {
+  assert.equal(getRequiredElement(document, selector).value, expected, `Expected ${selector}.value to match`);
+}
+
+function closeRenderedWebview(rendered) {
+  if (rendered && rendered.dom && rendered.dom.window) {
+    rendered.dom.window.close();
+  }
+}
+
 module.exports = {
   assertNoPostedMessage,
   click,
+  clearPostedMessages,
+  closeRenderedWebview,
   countActiveNavItems,
   createInitialState,
+  expectElementDisabled,
+  expectInputValue,
+  expectNoPostedMessage,
+  expectPostedMessage,
+  expectStatusText,
+  expectVisiblePage,
   flushTimers,
+  getRequiredElement,
   getLastPostedMessage,
   getPostedMessagesByType,
   renderWebview,

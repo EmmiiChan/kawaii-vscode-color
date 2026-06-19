@@ -1,4 +1,5 @@
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 
@@ -23,6 +24,8 @@ const {
   restoreStoredImageExport,
   storeImageState
 } = require("../../src/settingsEffectsPersistence");
+
+const FIXTURES_DIR = path.resolve(__dirname, "..", "fixtures", "settings");
 
 function createContext() {
   const state = new Map();
@@ -209,6 +212,55 @@ test("exports stored image bytes when metadata and file are available", async ()
   }), undefined);
 });
 
+test("exports PNG fixture images as stable bundle image payloads", async () => {
+  const editorBackgroundPath = path.join(FIXTURES_DIR, "editor-background.png");
+  const emptyEditorLogoPath = path.join(FIXTURES_DIR, "empty-editor-logo.png");
+  const editorBackgroundBuffer = fs.readFileSync(editorBackgroundPath);
+  const emptyEditorLogoBuffer = fs.readFileSync(emptyEditorLogoPath);
+
+  assert.equal(editorBackgroundBuffer.length, 68);
+  assert.equal(emptyEditorLogoBuffer.length, 68);
+
+  const exportedEditorBackground = await createStoredImageExport({
+    fileName: "editor-background-image.png",
+    originalName: "editor-background.png",
+    mimeType: "image/png",
+    size: editorBackgroundBuffer.length
+  }, {
+    exists(filePath) {
+      return fs.existsSync(filePath);
+    },
+    readFile(filePath) {
+      return fs.promises.readFile(filePath);
+    },
+    resolvePath() {
+      return editorBackgroundPath;
+    }
+  });
+
+  const exportedEmptyEditorLogo = await createStoredImageExport({
+    fileName: "empty-editor-logo-image.png",
+    originalName: "empty-editor-logo.png",
+    mimeType: "image/png",
+    size: emptyEditorLogoBuffer.length
+  }, {
+    exists(filePath) {
+      return fs.existsSync(filePath);
+    },
+    readFile(filePath) {
+      return fs.promises.readFile(filePath);
+    },
+    resolvePath() {
+      return emptyEditorLogoPath;
+    }
+  });
+
+  assert.equal(exportedEditorBackground.extension, "png");
+  assert.equal(exportedEditorBackground.dataBase64, editorBackgroundBuffer.toString("base64"));
+  assert.equal(exportedEmptyEditorLogo.extension, "png");
+  assert.equal(exportedEmptyEditorLogo.dataBase64, emptyEditorLogoBuffer.toString("base64"));
+});
+
 test("restores exported image by removing missing data or storing valid data", async () => {
   const calls = [];
 
@@ -352,4 +404,3 @@ test("removes stored image state and applies effects exports in order", async ()
     "logo-image:logo"
   ]);
 });
-

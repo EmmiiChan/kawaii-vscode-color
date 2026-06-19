@@ -27,6 +27,8 @@ const phases = mode === "neon"
     ? [
         { name: "neon apply", mochaConfig: "test/e2e/.mocharc.neon-apply.js" },
         { name: "neon applied after full restart", mochaConfig: "test/e2e/.mocharc.neon-applied.js" },
+        { name: "neon alternate after full restart", mochaConfig: "test/e2e/.mocharc.neon-alternate.js" },
+        { name: "neon dstgroup reverted after full restart", mochaConfig: "test/e2e/.mocharc.neon-reverted.js" },
         { name: "neon restored after full restart", mochaConfig: "test/e2e/.mocharc.neon-restored.js" }
     ]
     : [

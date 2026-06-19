@@ -982,6 +982,15 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
     const editorBackgroundOpacityPendingKey = "editor-background-opacity";
     const emptyEditorLogoOpacityPendingKey = "empty-editor-logo-opacity";
 
+    if (state.e2eTestApiEnabled) {
+      Object.defineProperty(window, "kawaiiVsCodeColorE2EPostMessage", {
+        configurable: true,
+        value(message) {
+          vscode.postMessage(message);
+        }
+      });
+    }
+
     const pages = {
       home: document.getElementById("home-page"),
       "neon-effect": document.getElementById("neon-effect-page"),

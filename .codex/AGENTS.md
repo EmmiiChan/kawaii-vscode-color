@@ -136,7 +136,7 @@ The package ships runtime source files directly:
 | DOM UI | `npm run test:dom` | Settings webview readiness, all safe webview events, app navigation, Help metadata, Color Settings inputs/debounce, image/logo state, incoming webview messages, warnings/errors, and `--vscode-*` color-token contract. |
 | VS Code integration | `npm run test:integration` | Extension manifest registration, activation, command registration, and opening settings in the Extension Development Host. |
 | Real VS Code UI E2E | `npm run test:e2e` | ExTester/WebDriver opens disposable VS Code, runs the Command Palette, switches into the real settings webview iframe, validates navigation, layout, and safe UI flows. |
-| Gated Neon E2E | `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` | Applies the real workbench patch only inside `.vscode-test`, validates applied runtime state after full restart, disables the patch, and validates restored state after another full restart. |
+| Gated Neon E2E | `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` | Applies the real workbench patch only inside `.vscode-test`, validates dstgroup runtime state after full restart, switches to an alternate image and validates it after restart, reverts to dstgroup after restart, disables the patch, and validates restored state after another full restart. |
 
 Do not fold the gated Neon E2E into the safe suite. It must stay behind `KAWAII_E2E_ALLOW_NEON_PATCH=1`.
 

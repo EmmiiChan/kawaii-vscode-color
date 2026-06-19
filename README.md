@@ -62,7 +62,7 @@ Open the extension settings:
 
 1. Open the Command Palette.
 2. Run `Kawaii VS Code Color: Settings`.
-3. Use the side menu to switch between `Home`, `Settings`, `Color Settings`, `Neon Effect`, `Image Customization`, `Sync/Files`, and `Help`.
+3. Use the side menu to switch between `Home`, `Color Settings`, `Neon Effect`, `Image Customization`, `Sync/Files`, and `Help`.
 
 The settings window opens as a normal editor tab.
 
@@ -71,7 +71,6 @@ The settings window opens as a normal editor tab.
 | Area | Purpose |
 | --- | --- |
 | `Home` | Shows project links and extension information. |
-| `Settings` | Groups the main configuration controls for the active theme mode. |
 | `Color Settings` | Changes theme mode and workbench or syntax color overrides. |
 | `Neon Effect` | Enables or disables the unsupported VS Code workbench patch used for glow and image effects. |
 | `Image Customization` | Stores editor background and no-tab logo image inputs used by the Neon Effect patch. |
@@ -215,7 +214,19 @@ The project has four regular automated test layers, plus one gated Neon Effect E
 | `npm test` | Full suite | Runs unit, DOM, and VS Code integration tests in sequence. |
 | `npm run test:all` | Full suite plus safe E2E | Runs unit, DOM, integration, and safe E2E layers in order, then prints a final pass/fail/skipped summary. |
 
-The integration suite opens `Kawaii VS Code Color: Settings`, but it does not control the rendered VS Code window. The E2E suite does control the real window and webview, but it is still safe by default: it does not click `Enable Neon Effect`, `Disable Neon Effect`, `Apply Effects`, upload/import/export/download controls, or network-backed random image controls. E2E screenshots and state notes are written under `test-results/e2e`.
+Safety matrix:
+
+| Command | Safe by default | Applies real patch | Use |
+| --- | --- | --- | --- |
+| `npm run test:unit` | Yes | No | Logic, settings persistence, bundles, effects, fixtures, and mocked message chains. |
+| `npm run test:dom` | Yes | No | Isolated settings webview DOM and `--vscode-*` token contract. |
+| `npm run test:integration` | Yes | No | Extension Host activation and command smoke tests. |
+| `npm run test:e2e` | Yes | No | Real disposable VS Code UI without destructive actions. |
+| `npm test` | Yes | No | Unit, DOM, and integration layers. |
+| `npm run test:all` | Yes | No | Unit, DOM, integration, and safe E2E local gate. |
+| `npm run test:e2e:neon` | No, requires flag | Yes, only under `.vscode-test/extest-111-neon` | Real `Apply Effects`, Neon patch, injected CSS, restart, image switch/revert, disable, and restore lifecycle. |
+
+The integration suite opens `Kawaii VS Code Color: Settings`, but it does not control the rendered VS Code window. The safe E2E suite does control the real window and webview, but it is still safe by default: it does not click `Enable Neon Effect`, `Disable Neon Effect`, `Apply Effects`, upload/import/export/download controls, or network-backed random image controls. E2E screenshots and state notes are written under `test-results/e2e`.
 
 The real Neon Effect patch has its own gated command:
 
@@ -224,7 +235,9 @@ $env:KAWAII_E2E_ALLOW_NEON_PATCH = "1"
 npm run test:e2e:neon
 ```
 
-`npm run test:e2e:neon` patches only the disposable VS Code installation under `.vscode-test/extest-111-neon`. It runs three separate VS Code launches to validate the same lifecycle users may need manually: before applying, after applying and reopening VS Code, and after removing and reopening VS Code. It verifies the workbench HTML hash returns to the original baseline and that injected runtime CSS uses editor-provided `--vscode-*` tokens rather than a standalone UI palette.
+`npm run test:e2e:neon` patches only the disposable VS Code installation under `.vscode-test/extest-111-neon`. It runs five separate VS Code launches to validate the same lifecycle users may need manually: before applying, after applying dstgroup images and reopening VS Code, after switching to an alternate image and reopening VS Code, after reverting to dstgroup and reopening VS Code, and after removing the patch and reopening VS Code. It verifies the workbench HTML hash returns to the original baseline and that injected runtime CSS uses editor-provided `--vscode-*` tokens rather than a standalone UI palette.
+
+The gated Neon suite imports controlled settings fixtures through an internal test hook that is exposed only when `KAWAII_E2E_ALLOW_NEON_PATCH=1`. It validates `Apply Effects` against real workbench files, generated `neondreams.js`, image data URLs, editor background opacity/fit, no-tab logo opacity, runtime style tags, screenshots, image replacement, dstgroup logo restoration, and final HTML restoration.
 
 ### Build a Local VSIX
 

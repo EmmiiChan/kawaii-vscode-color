@@ -310,7 +310,8 @@ Current mechanics:
 - It inserts a versioned script tag before the closing `</html>` marker.
 - The inserted script is wrapped with marker comments so it can be removed later.
 - The gated E2E command `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` validates this only inside `.vscode-test/extest-111-neon`.
-- The gated E2E uses three separate VS Code launches: capture baseline/apply patch, validate applied runtime after full restart and disable, then validate restored runtime after another full restart.
+- The gated E2E uses five separate VS Code launches: capture baseline/apply dstgroup patch, validate dstgroup runtime after full restart and apply an alternate image, validate the alternate image after full restart and reapply dstgroup, validate dstgroup after full restart and disable, then validate restored runtime after another full restart.
+- The gated E2E captures screenshots of the default watermark, dstgroup no-tab logo, alternate no-tab image, and reverted dstgroup logo; it also checks runtime CSS data URLs and `--vscode-*` token usage.
 
 Patch marker contract:
 

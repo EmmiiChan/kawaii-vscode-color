@@ -123,6 +123,38 @@ test("updateColorCustomization writes a validated workbench color to the global 
   ]);
 });
 
+test("updateColorCustomization accepts supported hex formats and rejects invalid values without writing", async () => {
+  const { store, globalSettings, updates } = createMemoryStore();
+  const service = createService(store);
+
+  for (const value of ["#abc", "#abcd", "#aabbcc", "#aabbccdd"]) {
+    await service.updateColorCustomization("workbench", "editor.background", value, "dark");
+    assert.equal(globalSettings[WORKBENCH_SETTING]["[Kawaii VS Code Color]"]["editor.background"], value);
+  }
+
+  const updateCountBeforeInvalidValue = updates.length;
+
+  await assert.rejects(
+    service.updateColorCustomization("workbench", "editor.background", "not-a-color", "dark"),
+    /Use #RGB, #RGBA, #RRGGBB, or #RRGGBBAA\./
+  );
+
+  assert.equal(updates.length, updateCountBeforeInvalidValue);
+});
+
+test("updateColorCustomization keeps dark and light customizations isolated", async () => {
+  const { store, globalSettings } = createMemoryStore();
+  const service = createService(store);
+
+  await service.updateColorCustomization("workbench", "editor.background", "#101820", "dark");
+  await service.updateColorCustomization("workbench", "editor.background", "#f7f1ff", "light");
+
+  assert.deepEqual(globalSettings[WORKBENCH_SETTING], {
+    "[Kawaii VS Code Color]": { "editor.background": "#101820" },
+    "[Kawaii VS Code Color Light]": { "editor.background": "#f7f1ff" }
+  });
+});
+
 test("updateColorCustomization rejects unknown workbench colors without writing settings", async () => {
   const { store, updates } = createMemoryStore();
   const service = createService(store);

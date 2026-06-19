@@ -1,4 +1,6 @@
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
 const test = require("node:test");
 
 const { createSettingsStore } = require("../../src/settingsStore");
@@ -19,9 +21,14 @@ const DISABLE_GLOW_SETTING = "kawaii_synthwave.disableGlow";
 const WORKBENCH_SETTING = "workbench.colorCustomizations";
 const TOKEN_SETTING = "editor.tokenColorCustomizations";
 const EXPORT_FILE_NAME = "kawaii-vscode-color-settings.json";
+const FIXTURES_DIR = path.resolve(__dirname, "..", "fixtures", "settings");
 const darkVariant = { id: "dark", label: "Kawaii VS Code Color" };
 const lightVariant = { id: "light", label: "Kawaii VS Code Color Light" };
 const themeVariants = [darkVariant, lightVariant];
+
+function readSettingsFixture(fileName) {
+  return JSON.parse(fs.readFileSync(path.join(FIXTURES_DIR, fileName), "utf8"));
+}
 
 function clone(value) {
   if (value === undefined) {
@@ -158,6 +165,19 @@ test("normalizeSettingsBundle validates schema and supported versions", () => {
   assert.equal(normalizeSettingsBundle({ schema: "kawaii-synthwave-settings", schemaVersion: 1 }).schema, "kawaii-synthwave-settings");
 });
 
+test("normalizeSettingsBundle accepts current fixtures and rejects invalid fixture inputs", () => {
+  const validBundle = readSettingsFixture("settings-dark-light-customized.json");
+  const unsupportedVersionBundle = readSettingsFixture("settings-unsupported-version.json");
+  const invalidJson = fs.readFileSync(path.join(FIXTURES_DIR, "settings-invalid-json.json"), "utf8");
+
+  assert.equal(normalizeSettingsBundle(validBundle).activeThemeVariantId, "light");
+  assert.throws(() => JSON.parse(invalidJson), SyntaxError);
+  assert.throws(
+    () => normalizeSettingsBundle(unsupportedVersionBundle),
+    /Unsupported Kawaii VS Code Color settings version: 999/
+  );
+});
+
 test("extension configuration export prefers explicit global values and falls back to effective values", () => {
   const { settingsStore } = createWorkspaceMock({
     values: {
@@ -272,6 +292,46 @@ test("createSettingsBundle exports active theme, configuration, colors, and effe
   assert.deepEqual(calls, ["effects-export:ctx"]);
 });
 
+test("createSettingsBundle exports dark/light colors and image-backed effects", async () => {
+  const fixtureBundle = readSettingsFixture("settings-dark-light-customized.json");
+  const { settingsStore } = createWorkspaceMock({
+    values: {
+      [BRIGHTNESS_SETTING]: 0.72,
+      [DISABLE_GLOW_SETTING]: true
+    },
+    inspections: {
+      [BRIGHTNESS_SETTING]: { globalValue: 0.72 },
+      [DISABLE_GLOW_SETTING]: { globalValue: true },
+      [WORKBENCH_SETTING]: {
+        globalValue: {
+          "[Kawaii VS Code Color]": fixtureBundle.colorCustomizations.workbench.dark,
+          "[Kawaii VS Code Color Light]": fixtureBundle.colorCustomizations.workbench.light
+        }
+      },
+      [TOKEN_SETTING]: {
+        globalValue: {
+          "[Kawaii VS Code Color]": fixtureBundle.colorCustomizations.token.dark,
+          "[Kawaii VS Code Color Light]": fixtureBundle.colorCustomizations.token.light
+        }
+      }
+    }
+  });
+  const { dependencies } = createBundleDependencies({
+    activeThemeVariant: lightVariant,
+    effectsExport: fixtureBundle.effects,
+    settingsStore
+  });
+
+  const bundle = await createSettingsBundle({ id: "ctx" }, dependencies);
+
+  assert.equal(bundle.activeThemeVariantId, "light");
+  assert.deepEqual(bundle.extensionConfiguration, fixtureBundle.extensionConfiguration);
+  assert.deepEqual(bundle.colorCustomizations, fixtureBundle.colorCustomizations);
+  assert.equal(bundle.effects.editorBackground.image.originalName, "editor-background.png");
+  assert.equal(bundle.effects.emptyEditorLogo.image.originalName, "empty-editor-logo.png");
+  assert.match(bundle.effects.editorBackground.image.dataBase64, /^iVBORw0KGgo/);
+});
+
 test("applySettingsBundle applies config, colors, effects, then active theme", async () => {
   const order = [];
   const settingsStore = {
@@ -311,6 +371,70 @@ test("applySettingsBundle applies config, colors, effects, then active theme", a
     `setting:${TOKEN_SETTING}`,
     "effects",
     "theme:dark"
+  ]);
+});
+
+test("applySettingsBundle restores fixture config, dark/light colors, effects, and active theme", async () => {
+  const fixtureBundle = readSettingsFixture("settings-dark-light-customized.json");
+  const { settingsStore, updates } = createWorkspaceMock({
+    inspections: {
+      [WORKBENCH_SETTING]: {
+        globalValue: {
+          "[Unrelated Theme]": { "editor.background": "#000000" }
+        }
+      },
+      [TOKEN_SETTING]: {
+        globalValue: {
+          "[Unrelated Theme]": { textMateRules: [{ scope: "comment" }] }
+        }
+      }
+    }
+  });
+  const calls = [];
+  const { dependencies } = createBundleDependencies({
+    settingsStore
+  });
+
+  dependencies.effectsService.applyEffectsExport = function applyEffectsExport(context, effects) {
+    calls.push({
+      contextId: context.id,
+      editorOpacity: effects.editorBackground.opacity,
+      editorFit: effects.editorBackground.fit,
+      editorImage: effects.editorBackground.image.originalName,
+      logoOpacity: effects.emptyEditorLogo.opacity,
+      logoImage: effects.emptyEditorLogo.image.originalName
+    });
+    return Promise.resolve();
+  };
+  dependencies.activeThemeService.changeThemeVariant = function changeThemeVariant(themeVariantId) {
+    calls.push(`theme:${themeVariantId}`);
+    return Promise.resolve();
+  };
+
+  await applySettingsBundle({ id: "ctx" }, fixtureBundle, dependencies);
+
+  assert.deepEqual(updates[0], { settingName: BRIGHTNESS_SETTING, value: 0.72, target: true });
+  assert.deepEqual(updates[1], { settingName: DISABLE_GLOW_SETTING, value: true, target: true });
+  assert.deepEqual(updates[2].value, {
+    "[Unrelated Theme]": { "editor.background": "#000000" },
+    "[Kawaii VS Code Color]": fixtureBundle.colorCustomizations.workbench.dark,
+    "[Kawaii VS Code Color Light]": fixtureBundle.colorCustomizations.workbench.light
+  });
+  assert.deepEqual(updates[3].value, {
+    "[Unrelated Theme]": { textMateRules: [{ scope: "comment" }] },
+    "[Kawaii VS Code Color]": fixtureBundle.colorCustomizations.token.dark,
+    "[Kawaii VS Code Color Light]": fixtureBundle.colorCustomizations.token.light
+  });
+  assert.deepEqual(calls, [
+    {
+      contextId: "ctx",
+      editorOpacity: 0.23,
+      editorFit: "left",
+      editorImage: "editor-background.png",
+      logoOpacity: 0.64,
+      logoImage: "empty-editor-logo.png"
+    },
+    "theme:light"
   ]);
 });
 
@@ -380,3 +504,33 @@ test("settings bundle file actions handle cancellations and read/write JSON file
   ]);
 });
 
+test("settings bundle file actions reject invalid JSON and unsupported schema versions", async () => {
+  const { dependencies, memoryFiles } = createBundleDependencies();
+  const actions = createSettingsBundleActions(dependencies);
+  const context = {
+    id: "ctx",
+    globalState: {
+      get() {},
+      update() {
+        return Promise.resolve();
+      }
+    }
+  };
+
+  memoryFiles.set("C:\\Temp\\invalid.json", fs.readFileSync(path.join(FIXTURES_DIR, "settings-invalid-json.json"), "utf8"));
+  dependencies.window.openDialogResult = [{ fsPath: "C:\\Temp\\invalid.json" }];
+  await assert.rejects(
+    actions.importSettingsBundle(context),
+    SyntaxError
+  );
+
+  memoryFiles.set(
+    "C:\\Temp\\unsupported.json",
+    fs.readFileSync(path.join(FIXTURES_DIR, "settings-unsupported-version.json"), "utf8")
+  );
+  dependencies.window.openDialogResult = [{ fsPath: "C:\\Temp\\unsupported.json" }];
+  await assert.rejects(
+    actions.importSettingsBundle(context),
+    /Unsupported Kawaii VS Code Color settings version: 999/
+  );
+});
