@@ -1,0 +1,29 @@
+{
+    "extends": "./tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "out-tests",
+        "types": [
+            "node"
+        ],
+        "lib": [
+            "ES2018",
+            "DOM"
+        ],
+        "allowJs": true,
+        "checkJs": false
+    },
+    "include": [
+        "test/**/*.ts",
+        "test/**/*.js",
+        "scripts/**/*.test.ts",
+        "scripts/**/*.test.js"
+    ],
+    "exclude": [
+        "node_modules/**",
+        "test-results/**",
+        "playwright-report/**",
+        "out/**",
+        "out-tests/**",
+        "out-scripts/**"
+    ]
+}

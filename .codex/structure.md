@@ -224,7 +224,7 @@ Avoid these unless the project is deliberately refactored:
 - Build output folders such as `dist` or `out` without adding a build pipeline and updating `package.json.main`.
 - New dependencies without updating `package-lock.json`, `.codex/docs.md`, and compatibility notes.
 
-If TypeScript is introduced later:
+During the TypeScript migration:
 
 - Add an explicit build flow.
 - Move source to TypeScript deliberately instead of mixing random `.ts` and `.js` files.
@@ -395,6 +395,7 @@ Useful checks for this repository:
 
 - `npm pkg get name version publisher dependencies devDependencies engines`
 - `npm run test:docs`
+- `npm run type-check`
 - `npm run test:check`
 - `npm run test:unit`
 - `npm run test:dom`
@@ -409,7 +410,7 @@ Useful checks for this repository:
 - Manual inspection of `package.json` contribution points.
 - Manual theme validation in VS Code with `Developer: Inspect Editor Tokens and Scopes`.
 
-There is no TypeScript config or lint script. Tests are split across unit, DOM, and VS Code integration layers, and the only build step is the theme merge script.
+TypeScript compatibility configs now exist for migration validation, and there is still no lint script. Tests are split across unit, DOM, and VS Code integration layers, and the only behavior-changing build step remains the theme merge script.
 
 ## Packaging and Release Boundaries
 

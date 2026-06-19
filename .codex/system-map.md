@@ -22,8 +22,11 @@ Dev dependency contract:
 
 - `@vscode/test-cli@0.0.12`
 - `@vscode/test-electron@3.0.0`
+- `@types/node@^26.0.0`
+- `@types/vscode@^1.33.0`
 - `jsdom@29.1.1`
 - `mocha@11.7.6`
+- `typescript@^6.0.3`
 - `vscode-extension-tester@8.23.0`
 
 ## Critical Source Anchors
@@ -59,6 +62,11 @@ Dev dependency contract:
 - `test/e2e`
 - `test/integration`
 - `test/unit`
+- `tsconfig.base.json`
+- `tsconfig.extension.json`
+- `tsconfig.json`
+- `tsconfig.scripts.json`
+- `tsconfig.tests.json`
 
 ## Theme Build Contract
 
@@ -215,6 +223,7 @@ The renderer code must keep using VS Code workbench/theme tokens and must not de
 | Layer | Command | Contract |
 | --- | --- | --- |
 | Codex docs guard | `npm run test:docs` | Verifies this map and `.codex` guides still match critical repo facts. |
+| TypeScript compatibility check | `npm run type-check` | Runs TypeScript no-emit checks for current JavaScript-compatible migration configs. |
 | Syntax check | `npm run test:check` | Runs `test:docs`, then Node syntax checks for selected scripts/runtime/E2E files. |
 | Unit | `npm run test:unit` | Node test runner for scripts and dependency-light runtime helpers. |
 | DOM | `npm run test:dom` | jsdom settings webview behavior and visual-state DOM contracts. |

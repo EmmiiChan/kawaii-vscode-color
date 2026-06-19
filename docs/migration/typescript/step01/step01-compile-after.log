@@ -1,0 +1,6 @@
+Step 01 compile validation: npm run compile
+
+> kawaii-vscode-color@0.1.31 compile
+> tsc -p tsconfig.extension.json && tsc -p tsconfig.scripts.json
+
+ExitCode: 0

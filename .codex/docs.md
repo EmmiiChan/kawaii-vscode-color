@@ -27,7 +27,7 @@ Purpose: give Codex a stable, source-backed link index for the Kawaii VS Code Co
 
 ## Exact Package Inventory
 
-No runtime npm packages are installed or declared. Dev-only test packages are pinned in `package.json` and `package-lock.json`.
+No runtime npm packages are installed or declared. Dev-only tooling and test packages are pinned in `package.json` and `package-lock.json`.
 
 | Package/runtime surface | Exact detected version/range | Dependency type | Docs to use |
 | --- | --- | --- | --- |
@@ -41,8 +41,11 @@ No runtime npm packages are installed or declared. Dev-only test packages are pi
 | `jsdom` | `29.1.1` | Dev dependency for DOM UI tests | [jsdom repository and docs](https://github.com/jsdom/jsdom) |
 | `@vscode/test-cli` | `0.0.12` | Dev dependency exposing `vscode-test` | [`@vscode/test-cli` repository](https://github.com/microsoft/vscode-test-cli) |
 | `@vscode/test-electron` | `3.0.0` | Dev dependency used by VS Code integration tests | [`@vscode/test-electron` repository](https://github.com/microsoft/vscode-test) |
+| `@types/node` | `^26.0.0` | Dev dependency for TypeScript migration checks over Node APIs | [DefinitelyTyped `@types/node`](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node) |
+| `@types/vscode` | `^1.33.0` | Dev dependency for TypeScript migration checks against the VS Code extension API type surface | [VS Code API reference](https://code.visualstudio.com/api/references/vscode-api), [VS Code 1.33.0 `vscode.d.ts`](https://raw.githubusercontent.com/microsoft/vscode/1.33.0/src/vs/vscode.d.ts) |
 | `vscode-extension-tester` | `8.23.0` | Dev dependency for real VS Code UI E2E through Selenium WebDriver | [ExTester repository](https://github.com/redhat-developer/vscode-extension-tester) |
 | `mocha` | `11.7.6` | Dev dependency used as the ExTester test runner | [Mocha docs](https://mochajs.org/) |
+| `typescript` | `^6.0.3` | Dev dependency for migration type-check and compile scripts | [TypeScript docs](https://www.typescriptlang.org/docs/) |
 
 When adding any dependency later, update this table with:
 
@@ -76,6 +79,7 @@ Use these as primary references for manifest and runtime changes.
 | Random Neko image fetcher | `src/randomNekoImage.js` and fixture-backed E2E hooks in `src/settings.js`; safe tests must mock or fixture network responses and avoid external API calls in gates | [Node https](https://nodejs.org/api/https.html), [Node URL](https://nodejs.org/api/url.html), [Nekos.moe API docs](https://docs.nekos.moe/) |
 | Safe all-tests orchestration | `scripts/run-test-all.js` and `npm run test:all`; intentionally excludes gated Neon E2E | [Node child_process.spawn](https://nodejs.org/api/child_process.html#child_processspawncommand-args-options), [npm scripts](https://docs.npmjs.com/cli/v11/using-npm/scripts) |
 | Codex documentation drift guard | `scripts/check-codex-docs.js`, `scripts/check-codex-docs.test.js`, `npm run test:docs`, and `npm run test:check` | [Node `fs`](https://nodejs.org/api/fs.html), [Node `path`](https://nodejs.org/api/path.html), [Node.js test runner](https://nodejs.org/api/test.html), [npm scripts](https://docs.npmjs.com/cli/v11/using-npm/scripts) |
+| TypeScript migration checks | `tsconfig.base.json`, `tsconfig.extension.json`, `tsconfig.scripts.json`, `tsconfig.tests.json`, `npm run type-check`, and `npm run compile` | [TypeScript TSConfig reference](https://www.typescriptlang.org/tsconfig/), [TypeScript command line compiler](https://www.typescriptlang.org/docs/handbook/compiler-options.html) |
 | Packaging/publishing | Marketplace release workflow | [Publishing Extensions](https://code.visualstudio.com/api/working-with-extensions/publishing-extension), [@vscode/vsce repository](https://github.com/microsoft/vscode-vsce) |
 
 Compatibility rule:
