@@ -48,6 +48,13 @@ Expected result:
 
 `npm test` runs the unit, DOM, and VS Code integration layers in sequence. `npm run test:all` runs the unit, DOM, VS Code integration, and safe real VS Code E2E layers in sequence, then prints a final pass/fail/skipped summary for launch-terminal readability. There is no `tsc --noEmit` or lint command in the current project.
 
+Visual validation rule:
+
+- Require screenshot artifacts for behavior that changes visible UI, theme appearance, logos, image previews, editor backgrounds, layout, or visual state.
+- Do not add screenshots for behavior that is purely data, filesystem, manifest, persistence, command routing, or non-visual validation.
+- When a test changes a visual state, keep before/after screenshots or an equivalent baseline/after pair and inspect the images, not only DOM or CSS state.
+- The gated Neon E2E must keep visual evidence for no-tab logo replacement, editor-page background replacement, and every supported editor background fit area.
+
 ## Manual Theme Test
 
 Use this when changing `package.json`, `themes`, or any visual theme behavior.
@@ -135,8 +142,8 @@ The package ships runtime source files directly:
 | Unit without UI | `npm run test:unit` | Theme build merge behavior, version bump behavior, workbench patch helpers, settings persistence helpers, settings store adapter, color customization service, bundle/sync/file actions, effect/image persistence, and mocked settings message chains. |
 | DOM UI | `npm run test:dom` | Settings webview readiness, all safe webview events, app navigation, Help metadata, Color Settings inputs/debounce, image/logo state, incoming webview messages, warnings/errors, and `--vscode-*` color-token contract. |
 | VS Code integration | `npm run test:integration` | Extension manifest registration, activation, command registration, and opening settings in the Extension Development Host. |
-| Real VS Code UI E2E | `npm run test:e2e` | ExTester/WebDriver opens disposable VS Code, runs the Command Palette, switches into the real settings webview iframe, validates navigation, layout, and safe UI flows. |
-| Gated Neon E2E | `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` | Applies the real workbench patch only inside `.vscode-test`, validates dstgroup runtime state after full restart, captures no-tab logo and editor-page background screenshots, checks editor background fit area CSS variables, switches to an alternate image and validates it after restart, reverts to dstgroup after restart, disables the patch, and validates restored state after another full restart. |
+| Real VS Code UI E2E | `npm run test:e2e` | ExTester/WebDriver opens disposable VS Code, runs the Command Palette, switches into the real settings webview iframe, validates navigation, layout, safe UI flows, and screenshot artifacts for visible settings pages and dynamic visual UI states. |
+| Gated Neon E2E | `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` | Applies the real workbench patch only inside `.vscode-test`, validates dstgroup runtime state after full restart, captures no-tab logo and editor-page background screenshots, checks editor background fit area CSS variables, switches to an alternate image and validates it after restart, captures a baseline plus screenshots for the complete editor background fit matrix, reverts to dstgroup after restart, disables the patch, and validates restored state after another full restart. |
 
 Do not fold the gated Neon E2E into the safe suite. It must stay behind `KAWAII_E2E_ALLOW_NEON_PATCH=1`.
 

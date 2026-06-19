@@ -62,6 +62,7 @@ async function openSettingsWebview() {
     await runCommand(SETTINGS_COMMAND_LABEL);
 
     const webview = await waitForSettingsEditor();
+    await clearTransientWorkbenchNotifications();
     await webview.switchToFrame(15000);
     await waitForWebviewElement(By.css(".app"));
 
@@ -253,6 +254,48 @@ async function takeE2EScreenshot(name) {
     return outputPath;
 }
 
+async function clearTransientWorkbenchNotifications() {
+    await VSBrowser.instance.driver.switchTo().defaultContent();
+
+    for (let attempt = 0; attempt < 4; attempt++) {
+        const result = await VSBrowser.instance.driver.executeScript(`
+            const closeSelectors = [
+                '.notifications-toasts .codicon-close',
+                '.notifications-toasts [aria-label="Close"]',
+                '.notifications-toasts [title="Close"]',
+                '.notifications-toasts .action-label.codicon-close'
+            ];
+            let clicked = 0;
+
+            for (const element of Array.from(document.querySelectorAll(closeSelectors.join(', ')))) {
+                const rect = element.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0) {
+                    element.click();
+                    clicked += 1;
+                }
+            }
+
+            return {
+                clicked,
+                remaining: document.querySelectorAll('.notifications-toasts .notification-toast').length
+            };
+        `);
+
+        if (!result || result.remaining === 0) {
+            return;
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+
+    await VSBrowser.instance.driver.executeScript(`
+        for (const element of Array.from(document.querySelectorAll('.notifications-toasts, .notifications-center'))) {
+            element.setAttribute('data-kawaii-e2e-hidden-notification-layer', 'true');
+            element.style.display = 'none';
+        }
+    `);
+}
+
 function escapeRegExp(value) {
     return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -265,6 +308,7 @@ module.exports = {
     assertWebviewCssVisible,
     assertWebviewPageVisible,
     assertWebviewTextIncludes,
+    clearTransientWorkbenchNotifications,
     clickWebviewCss,
     getWebviewElementAttribute,
     getWebviewElementCount,

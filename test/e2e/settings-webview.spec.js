@@ -39,6 +39,7 @@ describe("Settings webview E2E", function () {
                 await clickWebviewCss(`.nav-button[data-page="${navPage}"]`);
                 await assertWebviewPageVisible(pageId);
                 await assertWebviewTextIncludes(`#${pageId}`, expectedText);
+                await takeE2EScreenshot(`settings-page-${navPage}`);
             }
         });
     });

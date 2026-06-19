@@ -228,6 +228,8 @@ Safety matrix:
 
 The integration suite opens `Kawaii VS Code Color: Settings`, but it does not control the rendered VS Code window. The safe E2E suite does control the real window and webview, but it is still safe by default: it does not click `Enable Neon Effect`, `Disable Neon Effect`, `Apply Effects`, upload/import/export/download controls, or network-backed random image controls. E2E screenshots and state notes are written under `test-results/e2e`.
 
+Visual test rule: tests should create screenshots only for behavior that changes a visible UI or theme state. When a visual state changes, keep before/after evidence, or a baseline/after pair, so the rendered result can be inspected alongside DOM/CSS assertions.
+
 The real Neon Effect patch has its own gated command:
 
 ```powershell
@@ -237,7 +239,7 @@ npm run test:e2e:neon
 
 `npm run test:e2e:neon` patches only the disposable VS Code installation under `.vscode-test/extest-111-neon`. It runs five separate VS Code launches to validate the same lifecycle users may need manually: before applying, after applying dstgroup images and reopening VS Code, after switching to an alternate image and reopening VS Code, after reverting to dstgroup and reopening VS Code, and after removing the patch and reopening VS Code. It verifies the workbench HTML hash returns to the original baseline and that injected runtime CSS uses editor-provided `--vscode-*` tokens rather than a standalone UI palette.
 
-The gated Neon suite imports controlled settings fixtures through an internal test hook that is exposed only when `KAWAII_E2E_ALLOW_NEON_PATCH=1`. It validates `Apply Effects` against real workbench files, generated `neondreams.js`, image data URLs, editor background opacity/fit, no-tab logo opacity, runtime style tags, screenshots, image replacement, dstgroup logo restoration, and final HTML restoration.
+The gated Neon suite imports controlled settings fixtures through an internal test hook that is exposed only when `KAWAII_E2E_ALLOW_NEON_PATCH=1`. It validates `Apply Effects` against real workbench files, generated `neondreams.js`, image data URLs, editor background opacity/fit, no-tab logo opacity, runtime style tags, screenshots, image replacement, dstgroup logo restoration, and final HTML restoration. It also writes a visual editor-background fit matrix under `test-results/e2e` with a no-overlay baseline plus one screenshot for each supported fit area: `full`, `top`, `bottom`, `left`, `right`, `top-left`, `top-right`, `bottom-left`, and `bottom-right`.
 
 ### Build a Local VSIX
 
