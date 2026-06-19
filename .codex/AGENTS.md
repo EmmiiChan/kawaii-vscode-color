@@ -45,7 +45,7 @@ Expected result:
 - `npm run test:docs` should confirm `.codex` docs match package metadata, themes, message contracts, state keys, schemas, renderer placeholders, and `semanticTokenColors`.
 - `npm run type-check` should run the TypeScript compatibility configs in no-emit mode for current JS migration source, scripts, and tests.
 - `npm run test:check` should run `test:docs` first, then exit without syntax errors.
-- `npm run test:unit` should pass build, version, workbench patch, settings persistence, Settings Sync / JSON import-export chain, and mocked settings message-chain unit tests.
+- `npm run test:unit` should compile the TypeScript-compatible migration output first, then pass build, version, workbench patch, shared contract, settings persistence, Settings Sync / JSON import-export chain, and mocked settings message-chain unit tests.
 - `npm run test:dom` should pass settings webview DOM tests covering all safe webview events, app navigation, Help metadata, Color Settings inputs/debounce, image/logo state, incoming webview messages, warnings/errors, and editor-provided `--vscode-*` tokens instead of a standalone UI palette.
 - `npm run test:integration` should activate the extension in the Extension Development Host and execute `kawaii_synthwave.openSettings` without running the real Neon Effect patch.
 - `npm run test:e2e` should package the extension, open disposable VS Code `1.111.0` through ExTester/WebDriver, navigate the real settings webview, avoid all real Neon patch actions, cover safe fixture-backed upload/import/export/download and Random Neko flows without native dialogs or network, write safe Settings visual screenshots plus PNG analysis under `test-results/e2e`, and update `test-results/e2e/kawaii-last-run.json`.
@@ -155,6 +155,7 @@ The package ships runtime source files directly:
 - `src/workbenchPatch.js` contains pure workbench path and HTML patch helpers covered by unit tests.
 - `src/js/theme_template.js` is read as a template and written as generated `neondreams.js`.
 - `src/css/editor_chrome.css` is injected into the generated renderer script.
+- `src/shared` contains TypeScript migration contracts, models, and runtime guards used as the typed boundary for later source migration.
 
 ## Test Architecture
 

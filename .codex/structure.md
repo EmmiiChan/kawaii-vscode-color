@@ -153,6 +153,7 @@ Keep changes inside the existing responsibility boundaries.
 | --- | --- | --- |
 | Root manifest/package files | Extension identity, commands, settings, theme contribution, marketplace metadata, package lock | Runtime implementation details that should live under `src` |
 | `src` | Extension host code and source assets used to generate the runtime injection | Marketplace screenshots, published theme JSON, Codex docs |
+| `src/shared` | TypeScript migration contracts, models, branded primitive types, and runtime guards | VS Code API calls, filesystem writes, DOM rendering, network access |
 | `src/js` | Source templates for generated renderer scripts | Extension host command handlers or Node filesystem code |
 | `src/css` | CSS that the generated renderer script injects into the workbench | VS Code theme color definitions and TextMate token colors |
 | `themes` | Protected base theme, editable Kawaii overrides, and generated VS Code theme output | Runtime patching code |
@@ -181,6 +182,7 @@ Current source of truth:
 - Setup webview HTML generation lives in `src/settingsWebview.js`.
 - Workbench path detection and marked HTML patch helpers live in `src/workbenchPatch.js`.
 - E2E last-run marker normalization lives in `scripts/e2e-last-run.js`; `test-results/e2e/kawaii-last-run.json` is the authoritative project marker and `.last-run.json` is ExTester diagnostics only.
+- Shared TypeScript migration contracts and guards live under `src/shared`; keep them free of VS Code, filesystem, DOM, and network dependencies.
 - Real VS Code E2E helpers live in `test/e2e/helpers/extester-app.js`.
 - Safe E2E PNG parsing and visual-difference assertions live in `test/e2e/helpers/png-analysis.js`.
 - Safe Settings visual before/after coverage lives in `test/e2e/settings-visual-states.spec.js`.
@@ -441,6 +443,7 @@ Local source anchors:
 - `src/workbenchPatch.js`: testable workbench path detection and HTML patch helpers.
 - `src/js/theme_template.js`: renderer bootstrap, theme detection, token replacement, style injection.
 - `src/css/editor_chrome.css`: injected workbench chrome styles.
+- `src/shared`: TypeScript migration contracts, models, and validation helpers for typed boundaries.
 - `themes/kawaii_synthwave-color-theme.json`: protected base color theme definition.
 - `themes/kawaii_synthwave-color-theme-light.json`: protected light base color theme definition.
 - `themes/kawaii_synthwave-color-theme-overrides.json`: editable Kawaii color and token overrides.

@@ -1,0 +1,23 @@
+export const RENDERER_PLACEHOLDERS = [
+    "CHROME_STYLES",
+    "DISABLE_GLOW",
+    "EDITOR_BACKGROUND_AREA_BOTTOM",
+    "EDITOR_BACKGROUND_AREA_HEIGHT",
+    "EDITOR_BACKGROUND_AREA_LEFT",
+    "EDITOR_BACKGROUND_AREA_RIGHT",
+    "EDITOR_BACKGROUND_AREA_TOP",
+    "EDITOR_BACKGROUND_AREA_WIDTH",
+    "EDITOR_BACKGROUND_IMAGE",
+    "EDITOR_BACKGROUND_IMAGE_OPACITY",
+    "EDITOR_BACKGROUND_IMAGE_POSITION",
+    "EDITOR_BACKGROUND_IMAGE_REPEAT",
+    "EDITOR_BACKGROUND_IMAGE_SIZE",
+    "EMPTY_EDITOR_LOGO_STYLES",
+    "NEON_BRIGHTNESS"
+] as const;
+
+export type RendererPlaceholder = typeof RENDERER_PLACEHOLDERS[number];
+
+export function isRendererPlaceholder(value: unknown): value is RendererPlaceholder {
+    return typeof value === "string" && RENDERER_PLACEHOLDERS.includes(value as RendererPlaceholder);
+}

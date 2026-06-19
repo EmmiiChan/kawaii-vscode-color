@@ -57,6 +57,7 @@ Dev dependency contract:
 - `src/settingsPersistence.js`
 - `src/settingsStore.js`
 - `src/settingsWebview.js`
+- `src/shared`
 - `src/workbenchPatch.js`
 - `test/dom`
 - `test/e2e`
@@ -100,6 +101,7 @@ Build behavior:
 | `src/randomNekoImage.js` | Testable Random Neko API payload parsing, URL resolution, guarded HTTPS fetch, and image response normalization. |
 | `src/js/theme_template.js` | Renderer-side token CSS detection, theme matching, glow transformation, style-tag management. |
 | `src/css/editor_chrome.css` | CSS injected into the VS Code workbench renderer after placeholder replacement. |
+| `src/shared` | TypeScript migration contracts, models, branded primitives, and runtime guards for external inputs. |
 
 ## Webview Message Contract
 
@@ -225,7 +227,7 @@ The renderer code must keep using VS Code workbench/theme tokens and must not de
 | Codex docs guard | `npm run test:docs` | Verifies this map and `.codex` guides still match critical repo facts. |
 | TypeScript compatibility check | `npm run type-check` | Runs TypeScript no-emit checks for current JavaScript-compatible migration configs. |
 | Syntax check | `npm run test:check` | Runs `test:docs`, then Node syntax checks for selected scripts/runtime/E2E files. |
-| Unit | `npm run test:unit` | Node test runner for scripts and dependency-light runtime helpers. |
+| Unit | `npm run test:unit` | Compiles TypeScript-compatible migration output, then runs the Node test runner for scripts, shared contracts, and dependency-light runtime helpers. |
 | DOM | `npm run test:dom` | jsdom settings webview behavior and visual-state DOM contracts. |
 | Integration | `npm run test:integration` | VS Code Extension Development Host activation and command smoke tests. |
 | Safe E2E | `npm run test:e2e` | Disposable VS Code UI automation without applying the real Neon patch. |
