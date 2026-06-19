@@ -40,18 +40,19 @@ const CRITICAL_FILES = [
   "scripts/run-e2e.js",
   "scripts/run-test-all.js",
   "src/css/editor_chrome.css",
-  "src/emptyEditorLogoStyles.js",
+  "src/emptyEditorLogoStyles.ts",
   "src/extension.js",
+  "src/extensionRoot.ts",
   "src/js/theme_template.js",
-  "src/randomNekoImage.js",
+  "src/randomNekoImage.ts",
   "src/settings.js",
-  "src/settingsBundle.js",
-  "src/settingsColorService.js",
-  "src/settingsEffectsPersistence.js",
-  "src/settingsPersistence.js",
-  "src/settingsStore.js",
+  "src/settingsBundle.ts",
+  "src/settingsColorService.ts",
+  "src/settingsEffectsPersistence.ts",
+  "src/settingsPersistence.ts",
+  "src/settingsStore.ts",
   "src/settingsWebview.js",
-  "src/workbenchPatch.js",
+  "src/workbenchPatch.ts",
   "test/dom",
   "test/e2e",
   "test/integration",
@@ -70,7 +71,7 @@ function collectProjectFacts(workspaceRoot = process.cwd()) {
   const packageLock = readJsonFile(path.join(workspaceRoot, "package-lock.json"));
   const settingsSource = readTextFile(path.join(workspaceRoot, "src", "settings.js"));
   const extensionSource = readTextFile(path.join(workspaceRoot, "src", "extension.js"));
-  const settingsBundleSource = readTextFile(path.join(workspaceRoot, "src", "settingsBundle.js"));
+  const settingsBundleSource = readTextFile(path.join(workspaceRoot, "src", "settingsBundle.ts"));
   const themeTemplateSource = readTextFile(path.join(workspaceRoot, "src", "js", "theme_template.js"));
   const editorChromeSource = readTextFile(path.join(workspaceRoot, "src", "css", "editor_chrome.css"));
 

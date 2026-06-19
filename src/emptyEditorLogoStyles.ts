@@ -1,4 +1,9 @@
-const EMPTY_EDITOR_LOGO_FALLBACK_VERSION_CASES = [
+export interface EmptyEditorLogoFallbackVersionCase {
+  readonly id: string;
+  readonly selector: string;
+}
+
+export const EMPTY_EDITOR_LOGO_FALLBACK_VERSION_CASES: readonly EmptyEditorLogoFallbackVersionCase[] = [
   {
     id: "legacy-editor-group-watermark",
     selector: ".monaco-workbench .part.editor > .content .editor-group-container > .editor-group-watermark .letterpress"
@@ -8,16 +13,16 @@ const EMPTY_EDITOR_LOGO_FALLBACK_VERSION_CASES = [
     selector: ".monaco-workbench .part.editor > .content .editor-group-container > .editor-group-watermark-wrapper .editor-group-watermark .letterpress"
   }
 ];
-const EMPTY_EDITOR_LOGO_LETTERPRESS_SELECTORS = EMPTY_EDITOR_LOGO_FALLBACK_VERSION_CASES.map((fallbackCase) => fallbackCase.selector);
+export const EMPTY_EDITOR_LOGO_LETTERPRESS_SELECTORS: readonly string[] = EMPTY_EDITOR_LOGO_FALLBACK_VERSION_CASES.map((fallbackCase) => fallbackCase.selector);
 
 /**
  * Builds CSS rules for replacing the empty editor watermark logo.
  *
- * @param {string} dataUri - Image data URI.
- * @param {number | string} opacity - CSS opacity value.
- * @returns {string} CSS rule block.
+ * @param dataUri Image data URI.
+ * @param opacity CSS opacity value.
+ * @returns CSS rule block.
  */
-function createEmptyEditorLogoStyles(dataUri, opacity) {
+export function createEmptyEditorLogoStyles(dataUri: string, opacity: number | string): string {
   const escapedDataUri = String(dataUri).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 
   return `
@@ -31,9 +36,3 @@ ${EMPTY_EDITOR_LOGO_LETTERPRESS_SELECTORS.join(",\n")} {
 }
 `;
 }
-
-module.exports = {
-  EMPTY_EDITOR_LOGO_FALLBACK_VERSION_CASES,
-  EMPTY_EDITOR_LOGO_LETTERPRESS_SELECTORS,
-  createEmptyEditorLogoStyles
-};

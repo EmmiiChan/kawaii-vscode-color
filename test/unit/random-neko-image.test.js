@@ -6,7 +6,7 @@ const {
   getImageExtensionFromResponse,
   getRandomNekoImageFromPayload,
   getRandomNekoImageUrl
-} = require("../../src/randomNekoImage");
+} = require("../../out/src/randomNekoImage");
 
 test("random neko fetcher normalizes a mocked API image without using external network", async () => {
   const fetchRandomNekoImage = createRandomNekoImageFetcher({

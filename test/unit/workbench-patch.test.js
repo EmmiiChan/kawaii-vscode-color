@@ -8,7 +8,7 @@ const {
   removeWorkbenchPatchScriptTag,
   resolveWorkbenchPatchPaths,
   resolveWorkbenchPaths
-} = require("../../src/workbenchPatch");
+} = require("../../out/src/workbenchPatch");
 
 test("applyWorkbenchPatchScriptTag inserts a cache-busted script before the closing html tag", () => {
   const html = "<html><body>Workbench</body></html>\n";

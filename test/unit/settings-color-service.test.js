@@ -1,7 +1,7 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 
-const { createSettingsColorService } = require("../../src/settingsColorService");
+const { createSettingsColorService } = require("../../out/src/settingsColorService");
 
 const WORKBENCH_SETTING = "workbench.colorCustomizations";
 const TOKEN_SETTING = "editor.tokenColorCustomizations";

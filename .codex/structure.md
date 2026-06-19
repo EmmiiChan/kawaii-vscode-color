@@ -170,17 +170,18 @@ Keep changes inside the existing responsibility boundaries.
 Current source of truth:
 
 - Workbench chrome injection lives in `src/css/editor_chrome.css`.
-- No-tab logo selector/style generation lives in `src/emptyEditorLogoStyles.js`.
+- No-tab logo selector/style generation lives in `src/emptyEditorLogoStyles.ts`.
 - Renderer behavior lives in the JS template under `src/js`.
 - Settings webview orchestration, message routing, VS Code notifications/dialogs, native picker/download workflows, color-reference parsing, and state composition live in `src/settings.js`.
-- Random Neko payload parsing, URL resolution, guarded HTTPS fetch, and image response normalization live in `src/randomNekoImage.js`.
-- Pure color customization block mutation, scope comparison, and hex validation live in `src/settingsPersistence.js`.
-- VS Code configuration get/inspect/update target handling lives in `src/settingsStore.js`.
-- Generated-theme-aware color customization updates/resets live in `src/settingsColorService.js`.
-- Settings bundle creation/application, Settings Sync state, and JSON import/export actions live in `src/settingsBundle.js`.
-- Deterministic effect/image persistence helpers live in `src/settingsEffectsPersistence.js`.
+- Runtime asset resolution from source or `out/src` lives in `src/extensionRoot.ts`.
+- Random Neko payload parsing, URL resolution, guarded HTTPS fetch, and image response normalization live in `src/randomNekoImage.ts`.
+- Pure color customization block mutation, scope comparison, and hex validation live in `src/settingsPersistence.ts`.
+- VS Code configuration get/inspect/update target handling lives in `src/settingsStore.ts`.
+- Generated-theme-aware color customization updates/resets live in `src/settingsColorService.ts`.
+- Settings bundle creation/application, Settings Sync state, and JSON import/export actions live in `src/settingsBundle.ts`.
+- Deterministic effect/image persistence helpers live in `src/settingsEffectsPersistence.ts`.
 - Setup webview HTML generation lives in `src/settingsWebview.js`.
-- Workbench path detection and marked HTML patch helpers live in `src/workbenchPatch.js`.
+- Workbench path detection and marked HTML patch helpers live in `src/workbenchPatch.ts`.
 - E2E last-run marker normalization lives in `scripts/e2e-last-run.js`; `test-results/e2e/kawaii-last-run.json` is the authoritative project marker and `.last-run.json` is ExTester diagnostics only.
 - Shared TypeScript migration contracts and guards live under `src/shared`; keep them free of VS Code, filesystem, DOM, and network dependencies.
 - Real VS Code E2E helpers live in `test/e2e/helpers/extester-app.js`.
@@ -217,20 +218,20 @@ Recommended extraction boundaries if the runtime grows:
 | Generated JS assembly | `src/neon/...` or a focused helper | Keep placeholders documented and validated |
 | Notification messages | A constants/helper module | Preserve user-facing clarity and avoid duplicated strings |
 | Token replacement rules | Renderer template or a focused renderer data file | Keep in sync with theme token foreground colors |
-| Settings UI and persistence | `src/settings.js`, `src/settingsPersistence.js`, `src/settingsStore.js`, `src/settingsColorService.js`, `src/settingsBundle.js`, `src/settingsEffectsPersistence.js` | Keep Home and Color Settings in the same setup webview; keep user overrides in VS Code settings, not generated theme files; keep deterministic persistence logic unit-testable without a VS Code Extension Host |
+| Settings UI and persistence | `src/settings.js`, `src/settingsPersistence.ts`, `src/settingsStore.ts`, `src/settingsColorService.ts`, `src/settingsBundle.ts`, `src/settingsEffectsPersistence.ts` | Keep Home and Color Settings in the same setup webview; keep user overrides in VS Code settings, not generated theme files; keep deterministic persistence logic unit-testable without a VS Code Extension Host |
 
 Avoid these unless the project is deliberately refactored:
 
 - `components`, `views`, `pages`, or frontend app folders.
 - MVC-style `models/controllers/views`.
-- Build output folders such as `dist` or `out` without adding a build pipeline and updating `package.json.main`.
+- Untracked build output folders other than the established `out`, `out-scripts`, `out-tests`, and `dist` paths.
 - New dependencies without updating `package-lock.json`, `.codex/docs.md`, and compatibility notes.
 
 During the TypeScript migration:
 
 - Add an explicit build flow.
 - Move source to TypeScript deliberately instead of mixing random `.ts` and `.js` files.
-- Update `package.json.main` to point to compiled output.
+- Keep `package.json.main` pointed at compiled output and keep runtime asset paths rooted through `src/extensionRoot.ts`.
 - Add exact `devDependencies`, scripts, and validation commands.
 - Add TSDoc blocks for exported or non-trivial functions.
 
@@ -297,7 +298,7 @@ Treat these as negation prompts. Do not cross these boundaries unless the user e
 - Do not re-add direct commands or menu contributions for `Color Settings`, `Enable Neon Effect`, or `Disable Neon Effect`. The public command opens `Kawaii VS Code Color: Settings`; Color Settings and Neon Effect are internal pages selected from that webview's side menu.
 - Do not use any theme JSON file to register commands, settings, activation events, views, keybindings, menus, or extension behavior. Those belong in `package.json` contribution points and extension host code.
 - Do not use a color theme file to change file icons, product icons, activity bar icons, codicons, or custom UI surfaces. Color themes are not icon themes or webviews.
-- Do not use theme JSON to add runtime logic, filesystem access, reload behavior, notifications, or command handling. Runtime behavior belongs in `src/extension.js` or extracted extension host modules.
+- Do not use theme JSON to add runtime logic, filesystem access, reload behavior, notifications, or command handling. Runtime behavior belongs in `src/extension.js`, its compiled `out/src/extension.js`, or extracted extension host modules.
 - Do not expect normal theme changes to update Neon Dreams behavior automatically. The glow map in `src/js/theme_template.js` is coupled to specific foreground colors and must be updated when glow-driving token colors change.
 - Do not use workbench HTML patching as a normal theming mechanism. It is an unsupported workaround used only for Neon Dreams effects that the official theme API cannot express.
 - Do not hide or remove user-facing warnings around Neon Dreams patching. Users must know that enabling glow modifies installed VS Code workbench files.
@@ -430,17 +431,18 @@ Before packaging or publishing:
 Local source anchors:
 
 - `package.json`: manifest, contributions, activation, settings, extension entry.
-- `src/extension.js`: extension host command flow, setting normalization, patch/unpatch mechanics.
-- `src/emptyEditorLogoStyles.js`: no-tab logo selector contract and generated logo replacement CSS.
-- `src/randomNekoImage.js`: Random Neko payload parsing, URL resolution, guarded HTTPS fetching, and image normalization.
+- `src/extension.js`: extension host command flow, setting normalization, patch/unpatch mechanics, compiled to `out/src/extension.js`.
+- `src/extensionRoot.ts`: package-root and asset path resolution for source and compiled runtime directories.
+- `src/emptyEditorLogoStyles.ts`: no-tab logo selector contract and generated logo replacement CSS.
+- `src/randomNekoImage.ts`: Random Neko payload parsing, URL resolution, guarded HTTPS fetching, and image normalization.
 - `src/settings.js`: settings webview orchestration, message handling, VS Code notifications/dialogs, native picker/download workflows, and state composition.
-- `src/settingsPersistence.js`: pure color customization block mutation, scope comparison, and hex validation.
-- `src/settingsStore.js`: VS Code configuration adapter for global/workspace settings reads and writes.
-- `src/settingsColorService.js`: generated-theme-aware color customization update/reset orchestration.
-- `src/settingsBundle.js`: settings bundle, Settings Sync, and JSON import/export orchestration.
-- `src/settingsEffectsPersistence.js`: effect/image persistence normalization, safe paths, metadata/state, export/restore/store/remove helpers.
+- `src/settingsPersistence.ts`: pure color customization block mutation, scope comparison, and hex validation.
+- `src/settingsStore.ts`: VS Code configuration adapter for global/workspace settings reads and writes.
+- `src/settingsColorService.ts`: generated-theme-aware color customization update/reset orchestration.
+- `src/settingsBundle.ts`: settings bundle, Settings Sync, and JSON import/export orchestration.
+- `src/settingsEffectsPersistence.ts`: effect/image persistence normalization, safe paths, metadata/state, export/restore/store/remove helpers.
 - `src/settingsWebview.js`: setup webview HTML, Home, Settings, Color Settings, Neon Effect, Image Customization, Sync/Files, and Help pages.
-- `src/workbenchPatch.js`: testable workbench path detection and HTML patch helpers.
+- `src/workbenchPatch.ts`: testable workbench path detection and HTML patch helpers.
 - `src/js/theme_template.js`: renderer bootstrap, theme detection, token replacement, style injection.
 - `src/css/editor_chrome.css`: injected workbench chrome styles.
 - `src/shared`: TypeScript migration contracts, models, and validation helpers for typed boundaries.

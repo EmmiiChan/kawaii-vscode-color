@@ -1,16 +1,87 @@
-const path = require("path");
-const {
+import path = require("path");
+import {
   ensurePlainObject,
   getThemeCustomizationBlocksExportFromObject,
+  type PlainRecord,
+  type ThemeVariant,
   writeThemeCustomizationBlock
-} = require("./settingsPersistence");
+} from "./settingsPersistence";
+import type { SettingsStore } from "./settingsStore";
 
 const SETTINGS_EXPORT_SCHEMA = "kawaii-vscode-color-settings";
 const LEGACY_SETTINGS_EXPORT_SCHEMA = "kawaii-synthwave-settings";
 const SETTINGS_EXPORT_SCHEMA_VERSION = 1;
 const SYNC_SETTINGS_STATE_KEY = "kawaii_synthwave.syncedSettingsBundle";
 
-function normalizeBrightnessSetting(brightness) {
+interface SettingsBundle {
+  readonly schema: string;
+  readonly schemaVersion: number;
+  readonly exportedAt?: string;
+  readonly activeThemeVariantId?: unknown;
+  readonly activeThemeLabel?: string;
+  readonly extensionConfiguration?: unknown;
+  readonly colorCustomizations?: unknown;
+  readonly effects?: unknown;
+}
+
+interface ActiveThemeService {
+  getActiveThemeVariant(): ThemeVariant;
+  changeThemeVariant(themeVariantId: unknown): Promise<void> | void;
+}
+
+interface EffectsService {
+  getEffectsExport(context: unknown): Promise<unknown> | unknown;
+  applyEffectsExport(context: unknown, effects: unknown): Promise<void> | void;
+}
+
+interface FileSystemLike {
+  readFile(filePath: string, encoding: BufferEncoding): Promise<string> | string;
+  writeFile(filePath: string, content: string, encoding: BufferEncoding): Promise<void> | void;
+}
+
+interface UriLike {
+  readonly fsPath?: string;
+}
+
+interface UriFactory {
+  file(filePath: string): UriLike;
+}
+
+interface WindowLike {
+  showInformationMessage(message: string): Promise<unknown> | unknown;
+  showWarningMessage(message: string): Promise<unknown> | unknown;
+  showSaveDialog(options: unknown): Promise<UriLike | undefined> | UriLike | undefined;
+  showOpenDialog(options: unknown): Promise<UriLike[] | undefined> | UriLike[] | undefined;
+}
+
+interface GlobalStateLike {
+  get(key: string): unknown;
+  setKeysForSync?(keys: string[]): void;
+  update(key: string, value: unknown): Promise<void> | void;
+}
+
+interface ExtensionContextLike {
+  readonly globalState: GlobalStateLike;
+}
+
+interface SettingsBundleDependencies {
+  readonly activeThemeService: ActiveThemeService;
+  readonly brightnessSetting: string;
+  readonly disableGlowSetting: string;
+  readonly effectsService: EffectsService;
+  readonly fileSystem: FileSystemLike;
+  readonly homeDirectory: () => string;
+  readonly now?: () => Date | string | number;
+  readonly settingsExportFileName: string;
+  readonly settingsStore: SettingsStore;
+  readonly themeVariants: readonly ThemeVariant[];
+  readonly tokenCustomizationsSetting: string;
+  readonly uri: UriFactory;
+  readonly window: WindowLike;
+  readonly workbenchCustomizationsSetting: string;
+}
+
+export function normalizeBrightnessSetting(brightness: unknown): number {
   const numericBrightness = Number.parseFloat(String(brightness));
 
   if (!Number.isFinite(numericBrightness)) {
@@ -20,30 +91,39 @@ function normalizeBrightnessSetting(brightness) {
   return Number(Math.min(1, Math.max(0, numericBrightness)).toFixed(2));
 }
 
-function normalizeSettingsBundle(bundle) {
+export function normalizeSettingsBundle(bundle: unknown): SettingsBundle {
   if (!bundle || typeof bundle !== "object" || Array.isArray(bundle)) {
     throw new Error("Invalid Kawaii VS Code Color settings file.");
   }
 
-  if (![SETTINGS_EXPORT_SCHEMA, LEGACY_SETTINGS_EXPORT_SCHEMA].includes(bundle.schema)) {
+  const normalizedBundle = bundle as SettingsBundle;
+
+  if (![SETTINGS_EXPORT_SCHEMA, LEGACY_SETTINGS_EXPORT_SCHEMA].includes(normalizedBundle.schema)) {
     throw new Error("This JSON file is not a Kawaii VS Code Color settings export.");
   }
 
-  if (bundle.schemaVersion !== SETTINGS_EXPORT_SCHEMA_VERSION) {
-    throw new Error(`Unsupported Kawaii VS Code Color settings version: ${String(bundle.schemaVersion)}`);
+  if (normalizedBundle.schemaVersion !== SETTINGS_EXPORT_SCHEMA_VERSION) {
+    throw new Error(`Unsupported Kawaii VS Code Color settings version: ${String(normalizedBundle.schemaVersion)}`);
   }
 
-  return bundle;
+  return normalizedBundle;
 }
 
-function getExtensionConfigurationExportFromStore(settingsStore, options) {
+export function getExtensionConfigurationExportFromStore(
+  settingsStore: SettingsStore,
+  options: Pick<SettingsBundleDependencies, "brightnessSetting" | "disableGlowSetting">
+): PlainRecord {
   return {
     brightness: settingsStore.getConfigurationSettingValue(options.brightnessSetting),
     disableGlow: settingsStore.getConfigurationSettingValue(options.disableGlowSetting)
   };
 }
 
-async function applyExtensionConfigurationExportToStore(settingsStore, configuration, options) {
+export async function applyExtensionConfigurationExportToStore(
+  settingsStore: SettingsStore,
+  configuration: unknown,
+  options: Pick<SettingsBundleDependencies, "brightnessSetting" | "disableGlowSetting">
+): Promise<void> {
   const settings = ensurePlainObject(configuration);
 
   if (Object.prototype.hasOwnProperty.call(settings, "brightness")) {
@@ -61,7 +141,10 @@ async function applyExtensionConfigurationExportToStore(settingsStore, configura
   }
 }
 
-function getColorCustomizationsExportFromStore(settingsStore, options) {
+export function getColorCustomizationsExportFromStore(
+  settingsStore: SettingsStore,
+  options: Pick<SettingsBundleDependencies, "workbenchCustomizationsSetting" | "tokenCustomizationsSetting" | "themeVariants">
+): { readonly workbench: Record<string, PlainRecord>; readonly token: Record<string, PlainRecord> } {
   return {
     workbench: getThemeCustomizationBlocksExportFromStore(
       settingsStore,
@@ -76,14 +159,22 @@ function getColorCustomizationsExportFromStore(settingsStore, options) {
   };
 }
 
-function getThemeCustomizationBlocksExportFromStore(settingsStore, settingName, themeVariants) {
+function getThemeCustomizationBlocksExportFromStore(
+  settingsStore: SettingsStore,
+  settingName: string,
+  themeVariants: readonly ThemeVariant[]
+): Record<string, PlainRecord> {
   return getThemeCustomizationBlocksExportFromObject(
     settingsStore.getTargetSettingsObject(settingName, true),
     themeVariants
   );
 }
 
-async function applyColorCustomizationsExportToStore(settingsStore, colorCustomizations, options) {
+export async function applyColorCustomizationsExportToStore(
+  settingsStore: SettingsStore,
+  colorCustomizations: unknown,
+  options: Pick<SettingsBundleDependencies, "workbenchCustomizationsSetting" | "tokenCustomizationsSetting" | "themeVariants">
+): Promise<void> {
   const customizations = ensurePlainObject(colorCustomizations);
 
   await applyThemeCustomizationBlocksExportToStore(
@@ -100,10 +191,19 @@ async function applyColorCustomizationsExportToStore(settingsStore, colorCustomi
   );
 }
 
-async function applyThemeCustomizationBlocksExportToStore(settingsStore, settingName, blocks, themeVariants) {
+async function applyThemeCustomizationBlocksExportToStore(
+  settingsStore: SettingsStore,
+  settingName: string,
+  blocks: PlainRecord,
+  themeVariants: readonly ThemeVariant[]
+): Promise<void> {
   const customizations = settingsStore.getTargetSettingsObject(settingName, true);
 
-  themeVariants.forEach(function applyThemeBlock(themeVariant) {
+  themeVariants.forEach((themeVariant) => {
+    if (!themeVariant.id) {
+      return;
+    }
+
     writeThemeCustomizationBlock(
       customizations,
       ensurePlainObject(blocks[themeVariant.id]),
@@ -114,7 +214,7 @@ async function applyThemeCustomizationBlocksExportToStore(settingsStore, setting
   await settingsStore.updateGlobalSetting(settingName, customizations);
 }
 
-async function createSettingsBundle(context, dependencies) {
+export async function createSettingsBundle(context: unknown, dependencies: SettingsBundleDependencies): Promise<SettingsBundle> {
   const activeThemeVariant = dependencies.activeThemeService.getActiveThemeVariant();
 
   return {
@@ -135,7 +235,11 @@ async function createSettingsBundle(context, dependencies) {
   };
 }
 
-async function applySettingsBundle(context, bundle, dependencies) {
+export async function applySettingsBundle(
+  context: unknown,
+  bundle: unknown,
+  dependencies: SettingsBundleDependencies
+): Promise<void> {
   const normalizedBundle = normalizeSettingsBundle(bundle);
 
   await applyExtensionConfigurationExportToStore(
@@ -155,8 +259,8 @@ async function applySettingsBundle(context, bundle, dependencies) {
   }
 }
 
-function createSettingsBundleActions(dependencies) {
-  function configureSettingsSync(context) {
+export function createSettingsBundleActions(dependencies: SettingsBundleDependencies) {
+  function configureSettingsSync(context: ExtensionContextLike): void {
     if (
       context
       && context.globalState
@@ -166,13 +270,13 @@ function createSettingsBundleActions(dependencies) {
     }
   }
 
-  async function saveSettingsToVsSync(context) {
+  async function saveSettingsToVsSync(context: ExtensionContextLike): Promise<void> {
     const bundle = await createSettingsBundle(context, dependencies);
     await context.globalState.update(SYNC_SETTINGS_STATE_KEY, bundle);
     dependencies.window.showInformationMessage("Kawaii VS Code Color settings saved to VS Code Settings Sync state.");
   }
 
-  async function importSettingsFromVsSync(context) {
+  async function importSettingsFromVsSync(context: ExtensionContextLike): Promise<boolean> {
     const bundle = context.globalState.get(SYNC_SETTINGS_STATE_KEY);
 
     if (!bundle) {
@@ -185,7 +289,7 @@ function createSettingsBundleActions(dependencies) {
     return true;
   }
 
-  async function exportSettingsBundle(context) {
+  async function exportSettingsBundle(context: ExtensionContextLike): Promise<boolean> {
     const targetUri = await dependencies.window.showSaveDialog({
       title: "Export Kawaii VS Code Color settings",
       defaultUri: dependencies.uri.file(path.join(dependencies.homeDirectory(), dependencies.settingsExportFileName)),
@@ -208,7 +312,7 @@ function createSettingsBundleActions(dependencies) {
     return true;
   }
 
-  async function importSettingsBundle(context) {
+  async function importSettingsBundle(context: ExtensionContextLike): Promise<boolean> {
     const selectedUris = await dependencies.window.showOpenDialog({
       canSelectFiles: true,
       canSelectFolders: false,
@@ -223,24 +327,24 @@ function createSettingsBundleActions(dependencies) {
       return false;
     }
 
-    const sourcePath = selectedUris[0].fsPath;
+    const sourceUri = selectedUris[0];
 
-    if (!sourcePath) {
+    if (!sourceUri || !sourceUri.fsPath) {
       throw new Error("Selected import file does not expose a local file path.");
     }
 
-    const bundle = JSON.parse(await dependencies.fileSystem.readFile(sourcePath, "utf8"));
+    const bundle = JSON.parse(await dependencies.fileSystem.readFile(sourceUri.fsPath, "utf8")) as unknown;
     await applySettingsBundle(context, bundle, dependencies);
     dependencies.window.showInformationMessage("Kawaii VS Code Color settings imported.");
     return true;
   }
 
   return {
-    applySettingsBundle(context, bundle) {
+    applySettingsBundle(context: ExtensionContextLike, bundle: unknown): Promise<void> {
       return applySettingsBundle(context, bundle, dependencies);
     },
     configureSettingsSync,
-    createSettingsBundle(context) {
+    createSettingsBundle(context: ExtensionContextLike): Promise<SettingsBundle> {
       return createSettingsBundle(context, dependencies);
     },
     exportSettingsBundle,
@@ -250,21 +354,8 @@ function createSettingsBundleActions(dependencies) {
   };
 }
 
-function getIsoTimestamp(dependencies) {
+function getIsoTimestamp(dependencies: Pick<SettingsBundleDependencies, "now">): string {
   const value = typeof dependencies.now === "function" ? dependencies.now() : new Date();
 
   return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
 }
-
-module.exports = {
-  applyColorCustomizationsExportToStore,
-  applyExtensionConfigurationExportToStore,
-  applySettingsBundle,
-  createSettingsBundle,
-  createSettingsBundleActions,
-  getColorCustomizationsExportFromStore,
-  getExtensionConfigurationExportFromStore,
-  normalizeBrightnessSetting,
-  normalizeSettingsBundle
-};
-

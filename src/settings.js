@@ -6,6 +6,7 @@ const { createRandomNekoImageFetcher } = require("./randomNekoImage");
 const { createSettingsBundleActions } = require("./settingsBundle");
 const { createSettingsColorService } = require("./settingsColorService");
 const effectsPersistence = require("./settingsEffectsPersistence");
+const { resolveExtensionAssetPath } = require("./extensionRoot");
 const { createSettingsStore } = require("./settingsStore");
 const { createSettingsWebviewHtml } = require("./settingsWebview");
 const {
@@ -15,7 +16,7 @@ const {
   getThemeCustomizationKey,
   stringifyScope
 } = require("./settingsPersistence");
-const packageManifest = require("../package.json");
+const packageManifest = JSON.parse(fs.readFileSync(resolveExtensionAssetPath(__dirname, "package.json"), "utf8"));
 
 const PANEL_VIEW_TYPE = "kawaiiVsCodeColor.settings";
 const THEME_VARIANTS = [
@@ -23,13 +24,13 @@ const THEME_VARIANTS = [
     id: "dark",
     label: "Kawaii VS Code Color",
     modeLabel: "Dark",
-    generatedThemePath: path.join(__dirname, "..", "themes", "kawaii_synthwave-generated-color-theme.json")
+    generatedThemePath: resolveExtensionAssetPath(__dirname, "themes", "kawaii_synthwave-generated-color-theme.json")
   },
   {
     id: "light",
     label: "Kawaii VS Code Color Light",
     modeLabel: "Light",
-    generatedThemePath: path.join(__dirname, "..", "themes", "kawaii_synthwave-generated-color-theme-light.json")
+    generatedThemePath: resolveExtensionAssetPath(__dirname, "themes", "kawaii_synthwave-generated-color-theme-light.json")
   }
 ];
 const DEFAULT_THEME_VARIANT_ID = "dark";
@@ -41,7 +42,7 @@ const DISABLE_GLOW_SETTING = "kawaii_synthwave.disableGlow";
 const SETTINGS_EXPORT_FILE_NAME = "kawaii-vscode-color-settings.json";
 const NEON_E2E_ALLOW_PATCH_ENV = "KAWAII_E2E_ALLOW_NEON_PATCH";
 const SETTINGS_E2E_TEST_HOOKS_ENV = "KAWAII_E2E_TEST_HOOKS";
-const COLOR_SCHEME_REFERENCE_PATH = path.join(__dirname, "..", ".codex", "color_scheme_reference.md");
+const COLOR_SCHEME_REFERENCE_PATH = resolveExtensionAssetPath(__dirname, ".codex", "color_scheme_reference.md");
 const e2eTestFixtures = {};
 const settingsStore = createSettingsStore(vscode.workspace);
 const settingsColorService = createSettingsColorService({

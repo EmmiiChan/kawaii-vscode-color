@@ -4,7 +4,8 @@ const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
 
-const EXTENSION_PATH = path.resolve(__dirname, "..", "..", "src", "extension.js");
+const WORKSPACE_ROOT = path.resolve(__dirname, "..", "..");
+const EXTENSION_PATH = path.join(WORKSPACE_ROOT, "out", "src", "extension.js");
 const EXPECTED_EDITOR_BACKGROUND_FIT_AREAS = {
   full: { top: "0", right: "auto", bottom: "auto", left: "0", width: "100%", height: "100%" },
   top: { top: "0", right: "auto", bottom: "auto", left: "0", width: "100%", height: "50%" },
@@ -91,6 +92,17 @@ function createSandboxRequire() {
         },
         resolveWorkbenchPatchPaths() {
           return null;
+        }
+      };
+    }
+
+    if (request === "./extensionRoot") {
+      return {
+        resolveExtensionAssetPath(_currentDirName, ...segments) {
+          return path.join(WORKSPACE_ROOT, ...segments);
+        },
+        resolveExtensionRoot() {
+          return WORKSPACE_ROOT;
         }
       };
     }

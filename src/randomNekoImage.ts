@@ -1,4 +1,4 @@
-const https = require("https");
+import https = require("https");
 
 const DEFAULT_RANDOM_IMAGE_ENDPOINT = "https://nekos.moe/api/v1/random/image?nsfw=false";
 const DEFAULT_IMAGE_BASE_URL = "https://nekos.moe/image/";
@@ -8,15 +8,48 @@ const DEFAULT_REDIRECT_LIMIT = 3;
 const DEFAULT_JSON_MAX_BYTES = 1024 * 1024;
 const DEFAULT_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
 
-function createRandomNekoImageFetcher(options = {}) {
+export interface RandomNekoImage {
+  readonly id: string;
+  readonly image_url?: string;
+}
+
+export interface RandomNekoImageResponse {
+  readonly imageBuffer: Buffer;
+  readonly extension: string;
+  readonly originalName: string;
+  readonly mimeType: string;
+}
+
+export interface RequestBufferResponse {
+  readonly body: Buffer;
+  readonly contentType: string;
+}
+
+export interface RandomNekoImageFetcherOptions {
+  readonly endpoint?: string;
+  readonly imageBaseUrl?: string;
+  readonly imageMaxBytes?: number;
+  readonly redirectLimit?: number;
+  readonly requestJson?: (url: string, redirectsRemaining: number) => Promise<unknown>;
+  readonly requestBuffer?: (url: string, maxBytes: number, redirectsRemaining: number) => Promise<RequestBufferResponse>;
+  readonly jsonMaxBytes?: number;
+  readonly userAgent?: string;
+  readonly timeoutMs?: number;
+  readonly mimeTypes?: Record<string, string>;
+  readonly getSupportedImageExtension?: (filePath: string) => string | undefined;
+  readonly getMimeType?: (extension: string) => string;
+  readonly formatFileSize?: (bytes: number) => string;
+}
+
+export function createRandomNekoImageFetcher(options: RandomNekoImageFetcherOptions = {}): () => Promise<RandomNekoImageResponse> {
   const endpoint = options.endpoint || DEFAULT_RANDOM_IMAGE_ENDPOINT;
   const imageBaseUrl = options.imageBaseUrl || DEFAULT_IMAGE_BASE_URL;
   const imageMaxBytes = options.imageMaxBytes || DEFAULT_IMAGE_MAX_BYTES;
   const redirectLimit = typeof options.redirectLimit === "number" ? options.redirectLimit : DEFAULT_REDIRECT_LIMIT;
-  const requestJsonImpl = options.requestJson || ((url, redirectsRemaining) => requestJson(url, redirectsRemaining, options));
-  const requestBufferImpl = options.requestBuffer || ((url, maxBytes, redirectsRemaining) => requestBuffer(url, maxBytes, redirectsRemaining, options));
+  const requestJsonImpl = options.requestJson || ((url: string, redirectsRemaining: number) => requestJson(url, redirectsRemaining, options));
+  const requestBufferImpl = options.requestBuffer || ((url: string, maxBytes: number, redirectsRemaining: number) => requestBuffer(url, maxBytes, redirectsRemaining, options));
 
-  return async function fetchRandomNekoImage() {
+  return async function fetchRandomNekoImage(): Promise<RandomNekoImageResponse> {
     const payload = await requestJsonImpl(endpoint, redirectLimit);
     const image = getRandomNekoImageFromPayload(payload);
     const imageUrl = getRandomNekoImageUrl(image, imageBaseUrl);
@@ -34,21 +67,21 @@ function createRandomNekoImageFetcher(options = {}) {
   };
 }
 
-function getRandomNekoImageFromPayload(payload) {
-  if (!payload || typeof payload !== "object" || !Array.isArray(payload.images) || payload.images.length === 0) {
+export function getRandomNekoImageFromPayload(payload: unknown): RandomNekoImage {
+  if (!payload || typeof payload !== "object" || !Array.isArray((payload as { images?: unknown }).images) || (payload as { images: unknown[] }).images.length === 0) {
     throw new Error("Nekos.moe returned no images.");
   }
 
-  const image = payload.images[0];
+  const [image] = (payload as { images: unknown[] }).images;
 
-  if (!image || typeof image !== "object" || typeof image.id !== "string" || !image.id) {
+  if (!image || typeof image !== "object" || typeof (image as { id?: unknown }).id !== "string" || !(image as { id: string }).id) {
     throw new Error("Nekos.moe returned an image without a valid id.");
   }
 
-  return image;
+  return image as RandomNekoImage;
 }
 
-function getRandomNekoImageUrl(image, imageBaseUrl = DEFAULT_IMAGE_BASE_URL) {
+export function getRandomNekoImageUrl(image: RandomNekoImage, imageBaseUrl = DEFAULT_IMAGE_BASE_URL): string {
   if (typeof image.image_url === "string" && image.image_url.startsWith("https://nekos.moe/")) {
     return image.image_url;
   }
@@ -56,25 +89,30 @@ function getRandomNekoImageUrl(image, imageBaseUrl = DEFAULT_IMAGE_BASE_URL) {
   return `${imageBaseUrl}${encodeURIComponent(image.id)}`;
 }
 
-async function requestJson(url, redirectsRemaining, options = {}) {
+export async function requestJson(url: string, redirectsRemaining: number, options: RandomNekoImageFetcherOptions = {}): Promise<unknown> {
   const maxBytes = options.jsonMaxBytes || DEFAULT_JSON_MAX_BYTES;
   const response = await requestBuffer(url, maxBytes, redirectsRemaining, options);
 
   try {
-    return JSON.parse(response.body.toString("utf8"));
+    return JSON.parse(response.body.toString("utf8")) as unknown;
   } catch (error) {
     throw new Error(`Failed to parse JSON from ${url}: ${getErrorMessage(error)}`);
   }
 }
 
-function requestBuffer(url, maxBytes, redirectsRemaining, options = {}) {
+export function requestBuffer(
+  url: string,
+  maxBytes: number,
+  redirectsRemaining: number,
+  options: RandomNekoImageFetcherOptions = {}
+): Promise<RequestBufferResponse> {
   const parsedUrl = new URL(url);
 
   if (parsedUrl.protocol !== "https:") {
     return Promise.reject(new Error(`Unsupported request protocol: ${parsedUrl.protocol}`));
   }
 
-  return new Promise(function createRequest(resolve, reject) {
+  return new Promise<RequestBufferResponse>(function createRequest(resolve, reject) {
     const request = https.get(
       url,
       {
@@ -114,18 +152,19 @@ function requestBuffer(url, maxBytes, redirectsRemaining, options = {}) {
           return;
         }
 
-        const chunks = [];
+        const chunks: Buffer[] = [];
         let receivedBytes = 0;
 
-        response.on("data", function handleChunk(chunk) {
-          receivedBytes += chunk.length;
+        response.on("data", function handleChunk(chunk: Buffer | string) {
+          const chunkBuffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+          receivedBytes += chunkBuffer.length;
 
           if (receivedBytes > maxBytes) {
             request.destroy(new Error(`Downloaded image must be ${formatFileSize(maxBytes, options)} or smaller.`));
             return;
           }
 
-          chunks.push(chunk);
+          chunks.push(chunkBuffer);
         });
 
         response.on("end", function handleEnd() {
@@ -145,7 +184,7 @@ function requestBuffer(url, maxBytes, redirectsRemaining, options = {}) {
   });
 }
 
-function getImageExtensionFromResponse(contentType, imageUrl, options = {}) {
+export function getImageExtensionFromResponse(contentType: string, imageUrl: string, options: RandomNekoImageFetcherOptions = {}): string {
   const mimeExtension = getSupportedImageExtensionFromMimeType(contentType, options);
 
   if (mimeExtension) {
@@ -157,8 +196,8 @@ function getImageExtensionFromResponse(contentType, imageUrl, options = {}) {
   return pathExtension || "jpg";
 }
 
-function getSupportedImageExtensionFromMimeType(mimeType, options = {}) {
-  const normalizedMimeType = String(mimeType || "").split(";")[0].trim().toLowerCase();
+function getSupportedImageExtensionFromMimeType(mimeType: string, options: RandomNekoImageFetcherOptions = {}): string | undefined {
+  const normalizedMimeType = String(mimeType || "").split(";")[0]?.trim().toLowerCase() || "";
   const mimeTypes = options.mimeTypes || {
     png: "image/png",
     jpg: "image/jpeg",
@@ -166,23 +205,21 @@ function getSupportedImageExtensionFromMimeType(mimeType, options = {}) {
     webp: "image/webp",
     svg: "image/svg+xml"
   };
-  const extension = Object.keys(mimeTypes).find(function matchMimeType(candidateExtension) {
-    return mimeTypes[candidateExtension] === normalizedMimeType;
-  });
+  const extension = Object.keys(mimeTypes).find((candidateExtension) => mimeTypes[candidateExtension] === normalizedMimeType);
 
   return extension === "jpeg" ? "jpg" : extension;
 }
 
-function getSupportedImageExtension(filePath, options = {}) {
+function getSupportedImageExtension(filePath: string, options: RandomNekoImageFetcherOptions = {}): string | undefined {
   if (typeof options.getSupportedImageExtension === "function") {
     return options.getSupportedImageExtension(filePath);
   }
 
-  const extension = String(filePath || "").split(".").pop().toLowerCase();
+  const extension = String(filePath || "").split(".").pop()?.toLowerCase() || "";
   return ["png", "jpg", "jpeg", "webp", "svg"].includes(extension) ? extension : undefined;
 }
 
-function getMimeType(extension, options = {}) {
+function getMimeType(extension: string, options: RandomNekoImageFetcherOptions = {}): string {
   if (typeof options.getMimeType === "function") {
     return options.getMimeType(extension);
   }
@@ -198,7 +235,7 @@ function getMimeType(extension, options = {}) {
   return mimeTypes[extension] || "application/octet-stream";
 }
 
-function formatFileSize(bytes, options = {}) {
+function formatFileSize(bytes: number, options: RandomNekoImageFetcherOptions = {}): string {
   if (typeof options.formatFileSize === "function") {
     return options.formatFileSize(bytes);
   }
@@ -206,15 +243,6 @@ function formatFileSize(bytes, options = {}) {
   return `${bytes} bytes`;
 }
 
-function getErrorMessage(error) {
+function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
-
-module.exports = {
-  createRandomNekoImageFetcher,
-  getImageExtensionFromResponse,
-  getRandomNekoImageFromPayload,
-  getRandomNekoImageUrl,
-  requestBuffer,
-  requestJson
-};

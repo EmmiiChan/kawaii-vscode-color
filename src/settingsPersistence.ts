@@ -1,10 +1,31 @@
 const COLOR_HEX_PATTERN = /^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 
-function getThemeCustomizationKey(themeVariant) {
+export interface ThemeVariant {
+  readonly id?: string;
+  readonly label: string;
+}
+
+export type PlainRecord = Record<string, unknown>;
+
+export interface TextMateRule extends PlainRecord {
+  scope?: unknown;
+  settings?: PlainRecord;
+}
+
+export interface TokenRule extends PlainRecord {
+  scope?: unknown;
+  settings?: PlainRecord;
+}
+
+export function getThemeCustomizationKey(themeVariant: ThemeVariant): string {
   return `[${themeVariant.label}]`;
 }
 
-function writeThemeCustomizationBlock(customizations, themeCustomizations, themeVariant) {
+export function writeThemeCustomizationBlock(
+  customizations: PlainRecord,
+  themeCustomizations: PlainRecord,
+  themeVariant: ThemeVariant
+): void {
   const themeCustomizationKey = getThemeCustomizationKey(themeVariant);
 
   if (Object.keys(themeCustomizations).length > 0) {
@@ -15,42 +36,38 @@ function writeThemeCustomizationBlock(customizations, themeCustomizations, theme
   delete customizations[themeCustomizationKey];
 }
 
-function clonePlainObject(value) {
+export function clonePlainObject(value: unknown): PlainRecord {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return {};
   }
 
   try {
-    const clone = JSON.parse(JSON.stringify(value));
-    return clone && typeof clone === "object" && !Array.isArray(clone) ? clone : {};
+    const clone = JSON.parse(JSON.stringify(value)) as unknown;
+    return clone && typeof clone === "object" && !Array.isArray(clone) ? clone as PlainRecord : {};
   } catch (error) {
     return {};
   }
 }
 
-function ensurePlainObject(value) {
+export function ensurePlainObject(value: unknown): PlainRecord {
   return value && typeof value === "object" && !Array.isArray(value) ? clonePlainObject(value) : {};
 }
 
-function getTextMateRules(themeCustomizations) {
+export function getTextMateRules(themeCustomizations: PlainRecord): TextMateRule[] {
   return Array.isArray(themeCustomizations.textMateRules)
-    ? themeCustomizations.textMateRules.filter(function filterRule(rule) {
-        return rule && typeof rule === "object" && !Array.isArray(rule);
-      })
+    ? themeCustomizations.textMateRules.filter(isTextMateRule)
     : [];
 }
 
-function findMatchingTokenRuleIndex(textMateRules, tokenRule) {
-  return textMateRules.findIndex(function matchTokenRule(customRule) {
-    return areScopesEqual(customRule.scope, tokenRule.scope);
-  });
+export function findMatchingTokenRuleIndex(textMateRules: readonly TextMateRule[], tokenRule: TokenRule): number {
+  return textMateRules.findIndex((customRule) => areScopesEqual(customRule.scope, tokenRule.scope));
 }
 
-function areScopesEqual(leftScope, rightScope) {
+export function areScopesEqual(leftScope: unknown, rightScope: unknown): boolean {
   return stringifyScope(leftScope) === stringifyScope(rightScope);
 }
 
-function stringifyScope(scope) {
+export function stringifyScope(scope: unknown): string {
   if (Array.isArray(scope)) {
     return scope.join(", ");
   }
@@ -58,7 +75,7 @@ function stringifyScope(scope) {
   return typeof scope === "string" ? scope : "";
 }
 
-function normalizeHexColor(value) {
+export function normalizeHexColor(value: unknown): string {
   if (typeof value !== "string") {
     throw new Error("Color value must be a hex string.");
   }
@@ -72,7 +89,12 @@ function normalizeHexColor(value) {
   return trimmedValue;
 }
 
-function updateWorkbenchColorBlock(customizations, colorId, colorValue, themeVariant) {
+export function updateWorkbenchColorBlock(
+  customizations: unknown,
+  colorId: string,
+  colorValue: string,
+  themeVariant: ThemeVariant
+): PlainRecord {
   const nextCustomizations = ensurePlainObject(customizations);
   const themeCustomizations = ensurePlainObject(nextCustomizations[getThemeCustomizationKey(themeVariant)]);
 
@@ -82,7 +104,11 @@ function updateWorkbenchColorBlock(customizations, colorId, colorValue, themeVar
   return nextCustomizations;
 }
 
-function resetWorkbenchColorBlock(customizations, colorId, themeVariant) {
+export function resetWorkbenchColorBlock(
+  customizations: unknown,
+  colorId: string,
+  themeVariant: ThemeVariant
+): PlainRecord {
   const nextCustomizations = ensurePlainObject(customizations);
   const themeCustomizations = ensurePlainObject(nextCustomizations[getThemeCustomizationKey(themeVariant)]);
 
@@ -92,11 +118,16 @@ function resetWorkbenchColorBlock(customizations, colorId, themeVariant) {
   return nextCustomizations;
 }
 
-function updateTokenColorBlock(customizations, tokenRule, colorValue, themeVariant) {
+export function updateTokenColorBlock(
+  customizations: unknown,
+  tokenRule: TokenRule,
+  colorValue: string,
+  themeVariant: ThemeVariant
+): PlainRecord {
   const nextCustomizations = ensurePlainObject(customizations);
   const themeCustomizations = ensurePlainObject(nextCustomizations[getThemeCustomizationKey(themeVariant)]);
   const textMateRules = getTextMateRules(themeCustomizations);
-  const customRule = {
+  const customRule: TextMateRule = {
     scope: tokenRule.scope,
     settings: {
       foreground: colorValue
@@ -116,7 +147,11 @@ function updateTokenColorBlock(customizations, tokenRule, colorValue, themeVaria
   return nextCustomizations;
 }
 
-function resetTokenColorBlock(customizations, tokenRule, themeVariant) {
+export function resetTokenColorBlock(
+  customizations: unknown,
+  tokenRule: TokenRule,
+  themeVariant: ThemeVariant
+): PlainRecord {
   const nextCustomizations = ensurePlainObject(customizations);
   const themeCustomizations = ensurePlainObject(nextCustomizations[getThemeCustomizationKey(themeVariant)]);
   const textMateRules = getTextMateRules(themeCustomizations);
@@ -137,7 +172,10 @@ function resetTokenColorBlock(customizations, tokenRule, themeVariant) {
   return nextCustomizations;
 }
 
-function removeThemeCustomizationBlockFromObject(customizations, themeVariant) {
+export function removeThemeCustomizationBlockFromObject(
+  customizations: unknown,
+  themeVariant: ThemeVariant
+): PlainRecord {
   const nextCustomizations = ensurePlainObject(customizations);
 
   delete nextCustomizations[getThemeCustomizationKey(themeVariant)];
@@ -145,30 +183,22 @@ function removeThemeCustomizationBlockFromObject(customizations, themeVariant) {
   return nextCustomizations;
 }
 
-function getThemeCustomizationBlocksExportFromObject(customizations, themeVariants) {
+export function getThemeCustomizationBlocksExportFromObject(
+  customizations: unknown,
+  themeVariants: readonly ThemeVariant[]
+): Record<string, PlainRecord> {
   const safeCustomizations = ensurePlainObject(customizations);
 
-  return themeVariants.reduce(function reduceThemeBlocks(blocks, themeVariant) {
+  return themeVariants.reduce<Record<string, PlainRecord>>((blocks, themeVariant) => {
+    if (!themeVariant.id) {
+      return blocks;
+    }
+
     blocks[themeVariant.id] = ensurePlainObject(safeCustomizations[getThemeCustomizationKey(themeVariant)]);
     return blocks;
   }, {});
 }
 
-module.exports = {
-  areScopesEqual,
-  clonePlainObject,
-  ensurePlainObject,
-  findMatchingTokenRuleIndex,
-  getTextMateRules,
-  getThemeCustomizationBlocksExportFromObject,
-  getThemeCustomizationKey,
-  normalizeHexColor,
-  removeThemeCustomizationBlockFromObject,
-  resetTokenColorBlock,
-  resetWorkbenchColorBlock,
-  stringifyScope,
-  updateTokenColorBlock,
-  updateWorkbenchColorBlock,
-  writeThemeCustomizationBlock
-};
-
+function isTextMateRule(rule: unknown): rule is TextMateRule {
+  return Boolean(rule && typeof rule === "object" && !Array.isArray(rule));
+}

@@ -1,0 +1,58 @@
+**********************
+PowerShell transcript start
+Start time: 20260619154948
+Username: PC_PT_3891C\CodexSandboxOnline
+RunAs User: PC_PT_3891C\CodexSandboxOnline
+Configuration Name:
+Machine: PC_PT_3891C (Microsoft Windows NT 10.0.26100.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -NoProfile -Command try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+$modules = @(
+  @{ Name = 'module-01-settings-persistence'; Test = 'test/unit/settings-persistence.test.js' },
+  @{ Name = 'module-02-settings-effects-persistence'; Test = 'test/unit/settings-effects-persistence.test.js' },
+  @{ Name = 'module-03-settings-bundle'; Test = 'test/unit/settings-bundle.test.js' },
+  @{ Name = 'module-04-settings-store'; Test = 'test/unit/settings-store.test.js' },
+  @{ Name = 'module-05-settings-color-service'; Test = 'test/unit/settings-color-service.test.js' },
+  @{ Name = 'module-06-random-neko-image'; Test = 'test/unit/random-neko-image.test.js' },
+  @{ Name = 'module-07-empty-editor-logo-styles'; Test = 'test/unit/empty-editor-logo-styles.test.js' },
+  @{ Name = 'module-08-workbench-patch'; Test = 'test/unit/workbench-patch.test.js' },
+  @{ Name = 'module-09-compiled-runtime-entry'; Test = 'test/unit/compiled-runtime-entry.test.js' },
+  @{ Name = 'module-10-settings-message-persistence'; Test = 'test/unit/settings-message-persistence.test.js' },
+  @{ Name = 'module-11-extension-editor-background-fit'; Test = 'test/unit/extension-editor-background-fit.test.js' }
+)
+$exitCodes = @()
+foreach ($module in $modules) {
+  $log = "docs\migration\typescript\step03\step03-$($module.Name)-after.log"
+  Start-Transcript -Path $log -Force | Out-Null
+  Write-Host "## npm run compile"
+  npm run compile
+  $compileExit = $LASTEXITCODE
+  Write-Host "## node --test $($module.Test)"
+  node --test $module.Test
+  $testExit = $LASTEXITCODE
+  Write-Host "## exit codes: compile=$compileExit test=$testExit"
+  Stop-Transcript | Out-Null
+  $exitCodes += $compileExit
+  $exitCodes += $testExit
+}
+if (($exitCodes | Where-Object { $_ -ne 0 }).Count -gt 0) { exit 1 }
+exit 0
+Process ID: 138380
+PSVersion: 7.5.2
+PSEdition: Core
+GitCommitId: 7.5.2
+OS: Microsoft Windows 10.0.26100
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+## npm run compile
+
+## node --test test/unit/extension-editor-background-fit.test.js
+
+## exit codes: compile=0 test=0
+**********************
+PowerShell transcript end
+End time: 20260619154951
+**********************

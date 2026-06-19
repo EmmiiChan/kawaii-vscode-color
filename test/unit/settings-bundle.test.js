@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 
-const { createSettingsStore } = require("../../src/settingsStore");
+const { createSettingsStore } = require("../../out/src/settingsStore");
 const {
   applyColorCustomizationsExportToStore,
   applyExtensionConfigurationExportToStore,
@@ -14,7 +14,7 @@ const {
   getExtensionConfigurationExportFromStore,
   normalizeBrightnessSetting,
   normalizeSettingsBundle
-} = require("../../src/settingsBundle");
+} = require("../../out/src/settingsBundle");
 
 const BRIGHTNESS_SETTING = "kawaii_synthwave.brightness";
 const DISABLE_GLOW_SETTING = "kawaii_synthwave.disableGlow";

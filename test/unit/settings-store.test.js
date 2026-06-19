@@ -1,7 +1,7 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 
-const { createSettingsStore } = require("../../src/settingsStore");
+const { createSettingsStore } = require("../../out/src/settingsStore");
 
 function createWorkspaceMock(options = {}) {
   const updates = [];

@@ -1,13 +1,38 @@
-const {
+import {
   normalizeHexColor,
   removeThemeCustomizationBlockFromObject,
   resetTokenColorBlock,
   resetWorkbenchColorBlock,
+  type PlainRecord,
+  type ThemeVariant,
+  type TokenRule,
   updateTokenColorBlock,
   updateWorkbenchColorBlock
-} = require("./settingsPersistence");
+} from "./settingsPersistence";
+import type { SettingsStore } from "./settingsStore";
 
-function createSettingsColorService(dependencies) {
+interface GeneratedTheme {
+  readonly colors?: PlainRecord;
+}
+
+interface SettingsColorServiceDependencies {
+  readonly colorThemeSetting: string;
+  readonly getGeneratedTokenRule: (tokenIndex: number, themeVariant: ThemeVariant) => TokenRule | undefined;
+  readonly getThemeVariantById: (themeVariantId: unknown) => ThemeVariant;
+  readonly readGeneratedTheme: (themeVariant: ThemeVariant) => GeneratedTheme;
+  readonly settingsStore: SettingsStore;
+  readonly tokenCustomizationsSetting: string;
+  readonly workbenchCustomizationsSetting: string;
+}
+
+export interface SettingsColorService {
+  changeThemeVariant(themeVariantId: unknown): PromiseLike<void> | void;
+  resetAllColorCustomizations(themeVariantId: unknown): Promise<void>;
+  resetColorCustomization(section: string, id: unknown, themeVariantId: unknown): Promise<void>;
+  updateColorCustomization(section: string, id: unknown, value: unknown, themeVariantId: unknown): Promise<void>;
+}
+
+export function createSettingsColorService(dependencies: SettingsColorServiceDependencies): SettingsColorService {
   const {
     colorThemeSetting,
     getGeneratedTokenRule,
@@ -18,7 +43,7 @@ function createSettingsColorService(dependencies) {
     workbenchCustomizationsSetting
   } = dependencies;
 
-  async function updateColorCustomization(section, id, value, themeVariantId) {
+  async function updateColorCustomization(section: string, id: unknown, value: unknown, themeVariantId: unknown): Promise<void> {
     const themeVariant = getThemeVariantById(themeVariantId);
     const colorValue = normalizeHexColor(value);
 
@@ -35,7 +60,7 @@ function createSettingsColorService(dependencies) {
     throw new Error(`Unsupported color settings section: ${String(section)}`);
   }
 
-  async function resetColorCustomization(section, id, themeVariantId) {
+  async function resetColorCustomization(section: string, id: unknown, themeVariantId: unknown): Promise<void> {
     const themeVariant = getThemeVariantById(themeVariantId);
 
     if (section === "workbench") {
@@ -51,12 +76,12 @@ function createSettingsColorService(dependencies) {
     throw new Error(`Unsupported color settings section: ${String(section)}`);
   }
 
-  function changeThemeVariant(themeVariantId) {
+  function changeThemeVariant(themeVariantId: unknown): PromiseLike<void> | void {
     const themeVariant = getThemeVariantById(themeVariantId);
     return settingsStore.updateGlobalSetting(colorThemeSetting, themeVariant.label);
   }
 
-  async function updateWorkbenchColor(colorId, colorValue, themeVariant) {
+  async function updateWorkbenchColor(colorId: string, colorValue: string, themeVariant: ThemeVariant): Promise<void> {
     const theme = readGeneratedTheme(themeVariant);
 
     if (!theme.colors || !Object.prototype.hasOwnProperty.call(theme.colors, colorId)) {
@@ -74,7 +99,7 @@ function createSettingsColorService(dependencies) {
     );
   }
 
-  async function resetWorkbenchColor(colorId, themeVariant) {
+  async function resetWorkbenchColor(colorId: string, themeVariant: ThemeVariant): Promise<void> {
     await settingsStore.updateSetting(
       workbenchCustomizationsSetting,
       resetWorkbenchColorBlock(
@@ -98,7 +123,7 @@ function createSettingsColorService(dependencies) {
     }
   }
 
-  async function updateTokenColor(tokenIndex, colorValue, themeVariant) {
+  async function updateTokenColor(tokenIndex: number, colorValue: string, themeVariant: ThemeVariant): Promise<void> {
     const tokenRule = getGeneratedTokenRule(tokenIndex, themeVariant);
 
     if (!tokenRule || !tokenRule.scope) {
@@ -116,7 +141,7 @@ function createSettingsColorService(dependencies) {
     );
   }
 
-  async function resetTokenColor(tokenIndex, themeVariant) {
+  async function resetTokenColor(tokenIndex: number, themeVariant: ThemeVariant): Promise<void> {
     const tokenRule = getGeneratedTokenRule(tokenIndex, themeVariant);
 
     if (!tokenRule || !tokenRule.scope) {
@@ -146,7 +171,7 @@ function createSettingsColorService(dependencies) {
     }
   }
 
-  async function resetAllColorCustomizations(themeVariantId) {
+  async function resetAllColorCustomizations(themeVariantId: unknown): Promise<void> {
     const themeVariant = getThemeVariantById(themeVariantId);
 
     await removeThemeCustomizationBlock(workbenchCustomizationsSetting, true, themeVariant);
@@ -158,7 +183,7 @@ function createSettingsColorService(dependencies) {
     }
   }
 
-  function removeThemeCustomizationBlock(settingName, isGlobalTarget, themeVariant) {
+  function removeThemeCustomizationBlock(settingName: string, isGlobalTarget: boolean, themeVariant: ThemeVariant): PromiseLike<void> | void {
     return settingsStore.updateSetting(
       settingName,
       removeThemeCustomizationBlockFromObject(
@@ -176,8 +201,3 @@ function createSettingsColorService(dependencies) {
     updateColorCustomization
   };
 }
-
-module.exports = {
-  createSettingsColorService
-};
-

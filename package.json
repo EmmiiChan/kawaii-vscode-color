@@ -29,22 +29,22 @@
     "scripts": {
         "build": "npm run build:local",
         "build:theme": "node ./scripts/build-color-theme.js",
-        "build:local": "node ./scripts/increment-package-version.js && npm run build:theme && node ./scripts/package-local-vsix.js",
+        "build:local": "node ./scripts/increment-package-version.js && npm run compile && npm run build:theme && node ./scripts/package-local-vsix.js",
         "compile": "tsc -p tsconfig.extension.json && tsc -p tsconfig.scripts.json",
         "test": "npm run test:unit && npm run test:dom && npm run test:integration",
         "type-check": "tsc -p tsconfig.extension.json --noEmit --pretty false && tsc -p tsconfig.scripts.json --noEmit --pretty false && tsc -p tsconfig.tests.json --noEmit --pretty false",
         "test:docs": "node scripts/check-codex-docs.js",
-        "test:check": "npm run test:docs && node --check scripts/build-color-theme.js && node --check scripts/check-codex-docs.js && node --check scripts/check-codex-docs.test.js && node --check scripts/e2e-last-run.js && node --check scripts/e2e-last-run.test.js && node --check scripts/increment-package-version.js && node --check scripts/require-e2e-neon-flag.js && node --check scripts/run-e2e.js && node --check scripts/run-test-all.js && node --check src/emptyEditorLogoStyles.js && node --check src/extension.js && node --check src/randomNekoImage.js && node --check src/settings.js && node --check src/settingsWebview.js && node --check src/workbenchPatch.js && node --check src/js/theme_template.js && node --check test/unit/extension-editor-background-fit.test.js && node --check test/unit/random-neko-image.test.js && node --check test/e2e/.mocharc.js && node --check test/e2e/.mocharc.neon.js && node --check test/e2e/.mocharc.neon-apply.js && node --check test/e2e/.mocharc.neon-applied.js && node --check test/e2e/.mocharc.neon-alternate.js && node --check test/e2e/.mocharc.neon-reverted.js && node --check test/e2e/.mocharc.neon-restored.js && node --check test/e2e/helpers/extester-app.js && node --check test/e2e/helpers/png-analysis.js && node --check test/e2e/vscode-launcher.spec.js && node --check test/e2e/settings-webview.spec.js && node --check test/e2e/settings-safe-flows.spec.js && node --check test/e2e/settings-visual-states.spec.js && node --check test/e2e/neon-real.spec.js",
+        "test:check": "npm run test:docs && npm run compile && node --check scripts/build-color-theme.js && node --check scripts/check-codex-docs.js && node --check scripts/check-codex-docs.test.js && node --check scripts/e2e-last-run.js && node --check scripts/e2e-last-run.test.js && node --check scripts/increment-package-version.js && node --check scripts/require-e2e-neon-flag.js && node --check scripts/run-e2e.js && node --check scripts/run-test-all.js && node --check out/src/emptyEditorLogoStyles.js && node --check out/src/extension.js && node --check out/src/extensionRoot.js && node --check out/src/randomNekoImage.js && node --check out/src/settings.js && node --check out/src/settingsBundle.js && node --check out/src/settingsColorService.js && node --check out/src/settingsEffectsPersistence.js && node --check out/src/settingsPersistence.js && node --check out/src/settingsStore.js && node --check out/src/settingsWebview.js && node --check out/src/workbenchPatch.js && node --check src/js/theme_template.js && node --check test/unit/compiled-runtime-entry.test.js && node --check test/unit/extension-editor-background-fit.test.js && node --check test/unit/random-neko-image.test.js && node --check test/e2e/.mocharc.js && node --check test/e2e/.mocharc.neon.js && node --check test/e2e/.mocharc.neon-apply.js && node --check test/e2e/.mocharc.neon-applied.js && node --check test/e2e/.mocharc.neon-alternate.js && node --check test/e2e/.mocharc.neon-reverted.js && node --check test/e2e/.mocharc.neon-restored.js && node --check test/e2e/helpers/extester-app.js && node --check test/e2e/helpers/png-analysis.js && node --check test/e2e/vscode-launcher.spec.js && node --check test/e2e/settings-webview.spec.js && node --check test/e2e/settings-safe-flows.spec.js && node --check test/e2e/settings-visual-states.spec.js && node --check test/e2e/neon-real.spec.js",
         "test:unit": "npm run compile && node --test \"scripts/**/*.test.js\" \"test/unit/**/*.test.js\"",
         "test:dom": "node --test \"test/dom/**/*.test.js\"",
-        "test:integration": "vscode-test",
-        "test:e2e": "node scripts/run-e2e.js",
-        "test:e2e:current": "node scripts/run-e2e.js current",
-        "test:e2e:neon": "node scripts/require-e2e-neon-flag.js && node scripts/run-e2e.js neon",
+        "test:integration": "npm run compile && vscode-test",
+        "test:e2e": "npm run compile && node scripts/run-e2e.js",
+        "test:e2e:current": "npm run compile && node scripts/run-e2e.js current",
+        "test:e2e:neon": "node scripts/require-e2e-neon-flag.js && npm run compile && node scripts/run-e2e.js neon",
         "test:all": "node scripts/run-test-all.js",
-        "vscode:prepublish": "npm run build:theme",
+        "vscode:prepublish": "npm run compile && npm run build:theme",
         "package:vsix": "npm run build:local",
-        "publish:vsce": "npm run build:theme && npx --yes @vscode/vsce publish"
+        "publish:vsce": "npm run compile && npm run build:theme && npx --yes @vscode/vsce publish"
     },
     "keywords": [
         "kawaii",
@@ -69,7 +69,7 @@
         "onStartupFinished",
         "onCommand:kawaii_synthwave.openSettings"
     ],
-    "main": "./src/extension.js",
+    "main": "./out/src/extension.js",
     "contributes": {
         "themes": [
             {

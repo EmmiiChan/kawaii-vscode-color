@@ -10,7 +10,7 @@ This file is the migration-oriented contract map for the extension. Keep it fact
 | --- | --- |
 | Package | `kawaii-vscode-color`; patch version is managed automatically in `package.json` and `package-lock.json` |
 | Publisher | `ITEM-PIXEL` |
-| Runtime entry | `./src/extension.js` |
+| Runtime entry | `./out/src/extension.js` |
 | VS Code engine | `^1.33.0` |
 | Extension kind | `ui` |
 | Activation events | `onStartupFinished`, `onCommand:kawaii_synthwave.openSettings` |
@@ -46,19 +46,20 @@ Dev dependency contract:
 - `scripts/run-e2e.js`
 - `scripts/run-test-all.js`
 - `src/css/editor_chrome.css`
-- `src/emptyEditorLogoStyles.js`
+- `src/emptyEditorLogoStyles.ts`
 - `src/extension.js`
+- `src/extensionRoot.ts`
 - `src/js/theme_template.js`
-- `src/randomNekoImage.js`
+- `src/randomNekoImage.ts`
 - `src/settings.js`
-- `src/settingsBundle.js`
-- `src/settingsColorService.js`
-- `src/settingsEffectsPersistence.js`
-- `src/settingsPersistence.js`
-- `src/settingsStore.js`
+- `src/settingsBundle.ts`
+- `src/settingsColorService.ts`
+- `src/settingsEffectsPersistence.ts`
+- `src/settingsPersistence.ts`
+- `src/settingsStore.ts`
 - `src/settingsWebview.js`
 - `src/shared`
-- `src/workbenchPatch.js`
+- `src/workbenchPatch.ts`
 - `test/dom`
 - `test/e2e`
 - `test/integration`
@@ -88,17 +89,18 @@ Build behavior:
 
 | Module | Responsibility |
 | --- | --- |
-| `src/extension.js` | Extension activation, command registration, `workbench.colorTheme` change listener, Neon patch apply/remove, renderer template assembly, reload prompts. |
-| `src/workbenchPatch.js` | Pure workbench path detection and marked HTML patch helpers for `neondreams.js`. |
+| `src/extension.js` -> `out/src/extension.js` | Extension activation, command registration, `workbench.colorTheme` change listener, Neon patch apply/remove, renderer template assembly, reload prompts. |
+| `src/extensionRoot.ts` -> `out/src/extensionRoot.js` | Resolves package-root asset paths from both source and compiled `out/src` runtime directories. |
+| `src/workbenchPatch.ts` -> `out/src/workbenchPatch.js` | Pure workbench path detection and marked HTML patch helpers for `neondreams.js`. |
 | `src/settings.js` | Settings webview lifecycle, message routing, Settings Sync/JSON orchestration, image workflows, color state composition, runtime read of `.codex/color_scheme_reference.md`. |
 | `src/settingsWebview.js` | Complete settings webview HTML/CSS/JS, DOM state, UI event emission, and VS Code webview token styling. |
-| `src/settingsPersistence.js` | Pure mutation helpers for theme-scoped workbench and TextMate customization blocks. |
-| `src/settingsStore.js` | VS Code configuration get/inspect/update adapter. |
-| `src/settingsColorService.js` | Generated-theme-aware color update/reset and theme switching. |
-| `src/settingsBundle.js` | Settings bundle schema, Settings Sync state, JSON export/import, and configuration/color/effects apply order. |
-| `src/settingsEffectsPersistence.js` | Image metadata normalization, safe filenames, stored image export/restore, opacity and fit normalization. |
-| `src/emptyEditorLogoStyles.js` | CSS selector list and generated CSS for no-tab logo replacement. |
-| `src/randomNekoImage.js` | Testable Random Neko API payload parsing, URL resolution, guarded HTTPS fetch, and image response normalization. |
+| `src/settingsPersistence.ts` -> `out/src/settingsPersistence.js` | Pure mutation helpers for theme-scoped workbench and TextMate customization blocks. |
+| `src/settingsStore.ts` -> `out/src/settingsStore.js` | VS Code configuration get/inspect/update adapter. |
+| `src/settingsColorService.ts` -> `out/src/settingsColorService.js` | Generated-theme-aware color update/reset and theme switching. |
+| `src/settingsBundle.ts` -> `out/src/settingsBundle.js` | Settings bundle schema, Settings Sync state, JSON export/import, and configuration/color/effects apply order. |
+| `src/settingsEffectsPersistence.ts` -> `out/src/settingsEffectsPersistence.js` | Image metadata normalization, safe filenames, stored image export/restore, opacity and fit normalization. |
+| `src/emptyEditorLogoStyles.ts` -> `out/src/emptyEditorLogoStyles.js` | CSS selector list and generated CSS for no-tab logo replacement. |
+| `src/randomNekoImage.ts` -> `out/src/randomNekoImage.js` | Testable Random Neko API payload parsing, URL resolution, guarded HTTPS fetch, and image response normalization. |
 | `src/js/theme_template.js` | Renderer-side token CSS detection, theme matching, glow transformation, style-tag management. |
 | `src/css/editor_chrome.css` | CSS injected into the VS Code workbench renderer after placeholder replacement. |
 | `src/shared` | TypeScript migration contracts, models, branded primitives, and runtime guards for external inputs. |
@@ -225,11 +227,11 @@ The renderer code must keep using VS Code workbench/theme tokens and must not de
 | Layer | Command | Contract |
 | --- | --- | --- |
 | Codex docs guard | `npm run test:docs` | Verifies this map and `.codex` guides still match critical repo facts. |
-| TypeScript compatibility check | `npm run type-check` | Runs TypeScript no-emit checks for current JavaScript-compatible migration configs. |
-| Syntax check | `npm run test:check` | Runs `test:docs`, then Node syntax checks for selected scripts/runtime/E2E files. |
+| TypeScript compatibility check | `npm run type-check` | Runs TypeScript no-emit checks for current mixed JS/TS migration configs. |
+| Syntax check | `npm run test:check` | Runs `test:docs`, compiles, then Node syntax checks for selected scripts, compiled runtime output, and E2E files. |
 | Unit | `npm run test:unit` | Compiles TypeScript-compatible migration output, then runs the Node test runner for scripts, shared contracts, and dependency-light runtime helpers. |
 | DOM | `npm run test:dom` | jsdom settings webview behavior and visual-state DOM contracts. |
-| Integration | `npm run test:integration` | VS Code Extension Development Host activation and command smoke tests. |
-| Safe E2E | `npm run test:e2e` | Disposable VS Code UI automation without applying the real Neon patch. |
-| Current VS Code E2E | `npm run test:e2e:current` | Experimental safe E2E against the latest ExTester-supported VS Code version, isolated from the stable `1.111.0` safe gate. |
-| Gated Neon E2E | `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` | Real disposable workbench patch lifecycle, screenshots, restore checks, and fit matrix. |
+| Integration | `npm run test:integration` | Compiles, then runs VS Code Extension Development Host activation and command smoke tests. |
+| Safe E2E | `npm run test:e2e` | Compiles, then runs disposable VS Code UI automation without applying the real Neon patch. |
+| Current VS Code E2E | `npm run test:e2e:current` | Compiles, then runs experimental safe E2E against the latest ExTester-supported VS Code version, isolated from the stable `1.111.0` safe gate. |
+| Gated Neon E2E | `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` | Requires the flag, compiles, then runs real disposable workbench patch lifecycle, screenshots, restore checks, and fit matrix. |

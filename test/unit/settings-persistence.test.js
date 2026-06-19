@@ -17,7 +17,7 @@ const {
   updateTokenColorBlock,
   updateWorkbenchColorBlock,
   writeThemeCustomizationBlock
-} = require("../../src/settingsPersistence");
+} = require("../../out/src/settingsPersistence");
 
 const darkVariant = { id: "dark", label: "Kawaii VS Code Color" };
 const lightVariant = { id: "light", label: "Kawaii VS Code Color Light" };

@@ -6,7 +6,7 @@ const {
   EMPTY_EDITOR_LOGO_FALLBACK_VERSION_CASES,
   EMPTY_EDITOR_LOGO_LETTERPRESS_SELECTORS,
   createEmptyEditorLogoStyles
-} = require("../../src/emptyEditorLogoStyles");
+} = require("../../out/src/emptyEditorLogoStyles");
 
 test("createEmptyEditorLogoStyles includes old and wrapper watermark selectors", () => {
   const css = createEmptyEditorLogoStyles("data:image/png;base64,abc123", 0.42);

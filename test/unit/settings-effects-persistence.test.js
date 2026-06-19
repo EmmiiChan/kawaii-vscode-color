@@ -23,7 +23,7 @@ const {
   resolveStoredEmptyEditorLogoImagePath,
   restoreStoredImageExport,
   storeImageState
-} = require("../../src/settingsEffectsPersistence");
+} = require("../../out/src/settingsEffectsPersistence");
 
 const FIXTURES_DIR = path.resolve(__dirname, "..", "fixtures", "settings");
 

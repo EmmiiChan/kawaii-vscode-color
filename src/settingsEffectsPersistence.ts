@@ -1,10 +1,10 @@
-const path = require("path");
-const { ensurePlainObject } = require("./settingsPersistence");
+import path = require("path");
+import { ensurePlainObject, type PlainRecord } from "./settingsPersistence";
 
 const EDITOR_BACKGROUND_IMAGE_FILE_PREFIX = "editor-background-image";
 const EMPTY_EDITOR_LOGO_IMAGE_FILE_PREFIX = "empty-editor-logo-image";
-const EDITOR_BACKGROUND_ALLOWED_EXTENSIONS = ["png", "jpg", "jpeg", "webp", "svg"];
-const EDITOR_BACKGROUND_MIME_TYPES = {
+const EDITOR_BACKGROUND_ALLOWED_EXTENSIONS = ["png", "jpg", "jpeg", "webp", "svg"] as const;
+const EDITOR_BACKGROUND_MIME_TYPES: Record<string, string> = {
   png: "image/png",
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
@@ -27,12 +27,126 @@ const EDITOR_BACKGROUND_FIT_IDS = [
   "top-right",
   "bottom-left",
   "bottom-right"
-];
+] as const;
 const EMPTY_EDITOR_LOGO_DEFAULT_OPACITY = 0.75;
 const EMPTY_EDITOR_LOGO_MIN_OPACITY = 0;
 const EMPTY_EDITOR_LOGO_MAX_OPACITY = 1;
 
-function normalizeEditorBackgroundOpacity(opacity) {
+type EditorBackgroundFit = typeof EDITOR_BACKGROUND_FIT_IDS[number];
+
+export interface StoredImageMetadata {
+  readonly fileName: string;
+  readonly originalName: string;
+  readonly mimeType: string;
+  readonly size: number;
+}
+
+export interface NormalizedImageData {
+  readonly imageBuffer: Buffer;
+  readonly extension: string;
+  readonly originalName: string;
+  readonly mimeType: string;
+}
+
+export interface StoredImageExport {
+  readonly fileName: string;
+  readonly originalName: string;
+  readonly mimeType: string;
+  readonly extension: string;
+  readonly size: number;
+  readonly dataBase64: string;
+}
+
+interface StoredImageStateOptions {
+  readonly metadata?: StoredImageMetadata;
+  readonly fileExists: boolean;
+  readonly previewUri: string;
+  readonly opacity: number;
+  readonly minOpacity: number;
+  readonly maxOpacity: number;
+  readonly opacityStep: number;
+  readonly fit?: string;
+  readonly fitOptions?: readonly unknown[];
+  readonly supportedFormats: string;
+  readonly dataUrlWarning: string;
+  readonly maxImageSizeBytes: number;
+}
+
+interface StoredImageState {
+  hasImage: boolean;
+  missingImage: boolean;
+  fileName: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  sizeLabel: string;
+  previewUri: string;
+  opacity: number;
+  minOpacity: number;
+  maxOpacity: number;
+  opacityStep: number;
+  fit?: string;
+  fitOptions?: readonly unknown[];
+  supportedFormats?: string;
+  dataUrlWarning?: string;
+  maxImageSizeLabel?: string;
+}
+
+interface StoredImageExportDependencies {
+  exists(filePath: string): boolean;
+  readFile(filePath: string): Promise<Buffer> | Buffer;
+  resolvePath(fileName: string): string;
+}
+
+interface RestoreStoredImageDependencies {
+  removeImage(): Promise<void> | void;
+  storeImage(imageData: NormalizedImageData): Promise<void> | void;
+}
+
+interface GlobalStateLike {
+  update(key: string, value: unknown): Promise<void> | void;
+}
+
+interface ExtensionContextLike {
+  readonly globalState: GlobalStateLike;
+}
+
+interface StoreImageStateOptions extends TimestampProvider {
+  readonly context: ExtensionContextLike;
+  readonly stateKey: string;
+  readonly imageData: NormalizedImageData;
+  readonly fileName: string;
+  readonly previousMetadata?: StoredImageMetadata;
+  readonly targetPath: string;
+  readonly ensureStorageDirectory: () => Promise<void> | void;
+  readonly deletePreviousFile: (metadata: StoredImageMetadata | undefined, preservedFileName: string) => Promise<void> | void;
+  readonly fileSystem: {
+    writeFile(filePath: string, imageBuffer: Buffer): Promise<void> | void;
+  };
+  readonly maxSizeBytes?: number;
+  readonly maxSizeErrorMessage: string;
+}
+
+interface RemoveStoredImageStateOptions {
+  readonly context: ExtensionContextLike;
+  readonly stateKey: string;
+  readonly metadata?: StoredImageMetadata;
+  readonly deleteFile: (metadata: StoredImageMetadata) => Promise<void> | void;
+}
+
+interface EffectsDependencies {
+  updateEditorBackgroundOpacity(value: unknown): Promise<void> | void;
+  updateEditorBackgroundFit(value: unknown): Promise<void> | void;
+  restoreEditorBackgroundImage(value: unknown): Promise<void> | void;
+  updateEmptyEditorLogoOpacity(value: unknown): Promise<void> | void;
+  restoreEmptyEditorLogoImage(value: unknown): Promise<void> | void;
+}
+
+interface TimestampProvider {
+  readonly now?: () => Date | string | number;
+}
+
+export function normalizeEditorBackgroundOpacity(opacity: unknown): number {
   return normalizeOpacity(
     opacity,
     EDITOR_BACKGROUND_DEFAULT_OPACITY,
@@ -41,7 +155,7 @@ function normalizeEditorBackgroundOpacity(opacity) {
   );
 }
 
-function normalizeEmptyEditorLogoOpacity(opacity) {
+export function normalizeEmptyEditorLogoOpacity(opacity: unknown): number {
   return normalizeOpacity(
     opacity,
     EMPTY_EDITOR_LOGO_DEFAULT_OPACITY,
@@ -50,7 +164,7 @@ function normalizeEmptyEditorLogoOpacity(opacity) {
   );
 }
 
-function normalizeOpacity(opacity, defaultValue, minValue, maxValue) {
+function normalizeOpacity(opacity: unknown, defaultValue: number, minValue: number, maxValue: number): number {
   const numericOpacity = Number.parseFloat(String(opacity));
 
   if (!Number.isFinite(numericOpacity)) {
@@ -62,26 +176,26 @@ function normalizeOpacity(opacity, defaultValue, minValue, maxValue) {
   return Number(clampedOpacity.toFixed(2));
 }
 
-function normalizeEditorBackgroundFit(fit) {
+export function normalizeEditorBackgroundFit(fit: unknown): EditorBackgroundFit {
   const normalizedFit = String(fit || "")
     .trim()
     .toLowerCase()
     .replace(/^botton/, "bottom");
 
-  return EDITOR_BACKGROUND_FIT_IDS.includes(normalizedFit)
+  return isEditorBackgroundFit(normalizedFit)
     ? normalizedFit
     : EDITOR_BACKGROUND_DEFAULT_FIT;
 }
 
-function getSafeEditorBackgroundImageFileName(fileName) {
+export function getSafeEditorBackgroundImageFileName(fileName: unknown): string | undefined {
   return getSafeStoredImageFileName(fileName, EDITOR_BACKGROUND_IMAGE_FILE_PREFIX);
 }
 
-function getSafeEmptyEditorLogoImageFileName(fileName) {
+export function getSafeEmptyEditorLogoImageFileName(fileName: unknown): string | undefined {
   return getSafeStoredImageFileName(fileName, EMPTY_EDITOR_LOGO_IMAGE_FILE_PREFIX);
 }
 
-function getSafeStoredImageFileName(fileName, prefix) {
+function getSafeStoredImageFileName(fileName: unknown, prefix: string): string | undefined {
   const normalizedFileName = String(fileName || "");
 
   if (
@@ -95,7 +209,7 @@ function getSafeStoredImageFileName(fileName, prefix) {
   return normalizedFileName;
 }
 
-function resolveStoredEditorBackgroundImagePath(storagePath, fileName) {
+export function resolveStoredEditorBackgroundImagePath(storagePath: string, fileName: unknown): string {
   const safeFileName = getSafeEditorBackgroundImageFileName(fileName);
 
   if (!safeFileName) {
@@ -105,7 +219,7 @@ function resolveStoredEditorBackgroundImagePath(storagePath, fileName) {
   return resolveStoredImagePath(storagePath, safeFileName, "editor background image");
 }
 
-function resolveStoredEmptyEditorLogoImagePath(storagePath, fileName) {
+export function resolveStoredEmptyEditorLogoImagePath(storagePath: string, fileName: unknown): string {
   const safeFileName = getSafeEmptyEditorLogoImageFileName(fileName);
 
   if (!safeFileName) {
@@ -115,7 +229,7 @@ function resolveStoredEmptyEditorLogoImagePath(storagePath, fileName) {
   return resolveStoredImagePath(storagePath, safeFileName, "empty editor logo");
 }
 
-function resolveStoredImagePath(storagePath, safeFileName, label) {
+function resolveStoredImagePath(storagePath: string, safeFileName: string, label: string): string {
   const storageDirectory = path.resolve(storagePath);
   const imagePath = path.resolve(storageDirectory, safeFileName);
 
@@ -126,17 +240,19 @@ function resolveStoredImagePath(storagePath, safeFileName, label) {
   return imagePath;
 }
 
-function getSupportedEditorBackgroundImageExtension(filePath) {
+export function getSupportedEditorBackgroundImageExtension(filePath: string): string | undefined {
   const extension = path.extname(filePath).slice(1).toLowerCase();
 
-  return EDITOR_BACKGROUND_ALLOWED_EXTENSIONS.includes(extension) ? extension : undefined;
+  return EDITOR_BACKGROUND_ALLOWED_EXTENSIONS.includes(extension as typeof EDITOR_BACKGROUND_ALLOWED_EXTENSIONS[number])
+    ? extension
+    : undefined;
 }
 
-function getEditorBackgroundImageMimeType(extension) {
+export function getEditorBackgroundImageMimeType(extension: string): string {
   return EDITOR_BACKGROUND_MIME_TYPES[String(extension || "").toLowerCase()] || "application/octet-stream";
 }
 
-function normalizeExportedImage(image) {
+export function normalizeExportedImage(image: unknown): NormalizedImageData | undefined {
   const exportedImage = ensurePlainObject(image);
   const dataBase64 = typeof exportedImage.dataBase64 === "string" ? exportedImage.dataBase64 : "";
 
@@ -159,7 +275,7 @@ function normalizeExportedImage(image) {
   };
 }
 
-function normalizeExportedImageExtension(extensionSource) {
+export function normalizeExportedImageExtension(extensionSource: unknown): string {
   const rawSource = String(extensionSource || "");
   const source = rawSource.includes(".")
     ? rawSource
@@ -173,7 +289,7 @@ function normalizeExportedImageExtension(extensionSource) {
   return extension;
 }
 
-function getExportedImageOriginalName(exportedImage, extension) {
+export function getExportedImageOriginalName(exportedImage: PlainRecord, extension: string): string {
   const originalName = path.basename(String(exportedImage.originalName || ""));
 
   if (originalName && getSupportedEditorBackgroundImageExtension(originalName)) {
@@ -183,20 +299,24 @@ function getExportedImageOriginalName(exportedImage, extension) {
   return `imported-kawaii-vscode-color-image.${extension}`;
 }
 
-function normalizeStoredEditorBackgroundMetadata(metadata) {
+export function normalizeStoredEditorBackgroundMetadata(metadata: unknown): StoredImageMetadata | undefined {
   return normalizeStoredImageMetadata(metadata, getSafeEditorBackgroundImageFileName);
 }
 
-function normalizeStoredEmptyEditorLogoMetadata(metadata) {
+export function normalizeStoredEmptyEditorLogoMetadata(metadata: unknown): StoredImageMetadata | undefined {
   return normalizeStoredImageMetadata(metadata, getSafeEmptyEditorLogoImageFileName);
 }
 
-function normalizeStoredImageMetadata(metadata, getSafeFileName) {
+function normalizeStoredImageMetadata(
+  metadata: unknown,
+  getSafeFileName: (fileName: unknown) => string | undefined
+): StoredImageMetadata | undefined {
   if (!metadata || typeof metadata !== "object") {
     return undefined;
   }
 
-  const fileName = getSafeFileName(metadata.fileName);
+  const metadataRecord = metadata as PlainRecord;
+  const fileName = getSafeFileName(metadataRecord.fileName);
 
   if (!fileName) {
     return undefined;
@@ -204,17 +324,17 @@ function normalizeStoredImageMetadata(metadata, getSafeFileName) {
 
   return {
     fileName,
-    originalName: typeof metadata.originalName === "string" ? metadata.originalName : fileName,
-    mimeType: typeof metadata.mimeType === "string" ? metadata.mimeType : getEditorBackgroundImageMimeType(path.extname(fileName).slice(1)),
-    size: typeof metadata.size === "number" ? metadata.size : 0
+    originalName: typeof metadataRecord.originalName === "string" ? metadataRecord.originalName : fileName,
+    mimeType: typeof metadataRecord.mimeType === "string" ? metadataRecord.mimeType : getEditorBackgroundImageMimeType(path.extname(fileName).slice(1)),
+    size: typeof metadataRecord.size === "number" ? metadataRecord.size : 0
   };
 }
 
-function createStoredImageState(options) {
+export function createStoredImageState(options: StoredImageStateOptions): StoredImageState {
   const metadata = options.metadata;
   const fileExists = Boolean(metadata && options.fileExists);
   const size = metadata && typeof metadata.size === "number" ? metadata.size : 0;
-  const state = {
+  const state: StoredImageState = {
     hasImage: fileExists,
     missingImage: Boolean(metadata && !fileExists),
     fileName: metadata ? metadata.fileName : "",
@@ -230,8 +350,13 @@ function createStoredImageState(options) {
   };
 
   if (Object.prototype.hasOwnProperty.call(options, "fit")) {
-    state.fit = options.fit;
-    state.fitOptions = options.fitOptions;
+    if (options.fit !== undefined) {
+      state.fit = options.fit;
+    }
+
+    if (options.fitOptions !== undefined) {
+      state.fitOptions = options.fitOptions;
+    }
   }
 
   state.supportedFormats = options.supportedFormats;
@@ -241,7 +366,10 @@ function createStoredImageState(options) {
   return state;
 }
 
-async function createStoredImageExport(metadata, dependencies) {
+export async function createStoredImageExport(
+  metadata: StoredImageMetadata | undefined,
+  dependencies: StoredImageExportDependencies
+): Promise<StoredImageExport | undefined> {
   if (!metadata) {
     return undefined;
   }
@@ -269,7 +397,10 @@ async function createStoredImageExport(metadata, dependencies) {
   };
 }
 
-async function restoreStoredImageExport(image, dependencies) {
+export async function restoreStoredImageExport(
+  image: unknown,
+  dependencies: RestoreStoredImageDependencies
+): Promise<void> {
   const imageData = normalizeExportedImage(image);
 
   if (!imageData) {
@@ -280,7 +411,7 @@ async function restoreStoredImageExport(image, dependencies) {
   await dependencies.storeImage(imageData);
 }
 
-async function storeImageState(options) {
+export async function storeImageState(options: StoreImageStateOptions): Promise<void> {
   const maxSizeBytes = options.maxSizeBytes || EDITOR_BACKGROUND_MAX_IMAGE_SIZE_BYTES;
 
   if (options.imageData.imageBuffer.length > maxSizeBytes) {
@@ -299,7 +430,7 @@ async function storeImageState(options) {
   });
 }
 
-async function removeStoredImageState(options) {
+export async function removeStoredImageState(options: RemoveStoredImageStateOptions): Promise<void> {
   if (options.metadata) {
     await options.deleteFile(options.metadata);
   }
@@ -307,7 +438,7 @@ async function removeStoredImageState(options) {
   await options.context.globalState.update(options.stateKey, undefined);
 }
 
-async function applyEffectsExport(effects, dependencies) {
+export async function applyEffectsExport(effects: unknown, dependencies: EffectsDependencies): Promise<void> {
   const exportedEffects = ensurePlainObject(effects);
   const editorBackground = ensurePlainObject(exportedEffects.editorBackground);
   const emptyEditorLogo = ensurePlainObject(exportedEffects.emptyEditorLogo);
@@ -319,7 +450,7 @@ async function applyEffectsExport(effects, dependencies) {
   await dependencies.restoreEmptyEditorLogoImage(emptyEditorLogo.image);
 }
 
-function formatFileSize(bytes) {
+export function formatFileSize(bytes: number): string {
   if (bytes < 1024) {
     return `${bytes} B`;
   }
@@ -333,33 +464,12 @@ function formatFileSize(bytes) {
   return `${(kibibytes / 1024).toFixed(1)} MB`;
 }
 
-function getIsoTimestamp(options) {
+function getIsoTimestamp(options: TimestampProvider): string {
   const value = typeof options.now === "function" ? options.now() : new Date();
 
   return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
 }
 
-module.exports = {
-  applyEffectsExport,
-  createStoredImageExport,
-  createStoredImageState,
-  formatFileSize,
-  getEditorBackgroundImageMimeType,
-  getExportedImageOriginalName,
-  getSafeEditorBackgroundImageFileName,
-  getSafeEmptyEditorLogoImageFileName,
-  getSupportedEditorBackgroundImageExtension,
-  normalizeEditorBackgroundFit,
-  normalizeEditorBackgroundOpacity,
-  normalizeEmptyEditorLogoOpacity,
-  normalizeExportedImage,
-  normalizeExportedImageExtension,
-  normalizeStoredEditorBackgroundMetadata,
-  normalizeStoredEmptyEditorLogoMetadata,
-  removeStoredImageState,
-  resolveStoredEditorBackgroundImagePath,
-  resolveStoredEmptyEditorLogoImagePath,
-  restoreStoredImageExport,
-  storeImageState
-};
-
+function isEditorBackgroundFit(value: string): value is EditorBackgroundFit {
+  return EDITOR_BACKGROUND_FIT_IDS.includes(value as EditorBackgroundFit);
+}

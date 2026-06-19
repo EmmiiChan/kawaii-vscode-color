@@ -3,6 +3,7 @@ const fs = require('fs');
 const vscode = require('vscode');
 const settings = require('./settings');
 const { createEmptyEditorLogoStyles } = require('./emptyEditorLogoStyles');
+const { resolveExtensionAssetPath } = require('./extensionRoot');
 const {
 	NEON_SCRIPT_FILE_NAME,
 	applyWorkbenchPatchScriptTag,
@@ -121,8 +122,8 @@ async function enableNeon() {
 
 	try {
 		// generate production theme JS
-		const chromeStyles = buildCustomChromeStyles(fs.readFileSync(__dirname + '/css/editor_chrome.css', 'utf-8'));
-		const jsTemplate = fs.readFileSync(__dirname + '/js/theme_template.js', 'utf-8');
+		const chromeStyles = buildCustomChromeStyles(fs.readFileSync(resolveExtensionAssetPath(__dirname, 'src', 'css', 'editor_chrome.css'), 'utf-8'));
+		const jsTemplate = fs.readFileSync(resolveExtensionAssetPath(__dirname, 'src', 'js', 'theme_template.js'), 'utf-8');
 		const themeWithGlow = jsTemplate.replace(/\[DISABLE_GLOW\]/g, disableGlow);
 		const themeWithChrome = themeWithGlow.replace(/\[CHROME_STYLES\]/g, chromeStyles);
 		const finalTheme = themeWithChrome.replace(/\[NEON_BRIGHTNESS\]/g, neonBrightness);

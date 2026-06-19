@@ -45,7 +45,7 @@ function createFacts() {
     package: {
       name: "kawaii-vscode-color",
       publisher: "ITEM-PIXEL",
-      main: "./src/extension.js",
+      main: "./out/src/extension.js",
       vscodeEngine: "^1.33.0",
       activationEvents: [
         "onStartupFinished",
@@ -142,7 +142,7 @@ function createBaseDocs() {
     docs: [
       "kawaii-vscode-color",
       "ITEM-PIXEL",
-      "./src/extension.js",
+      "./out/src/extension.js",
       "^1.33.0",
       "onStartupFinished",
       "onCommand:kawaii_synthwave.openSettings",
