@@ -43,7 +43,7 @@ Expected result:
 - `npm run test:unit` should pass build, version, and workbench patch unit tests.
 - `npm run test:dom` should pass settings webview DOM tests covering all safe webview events, app navigation, Help metadata, Color Settings inputs/debounce, image/logo state, incoming webview messages, warnings/errors, and editor-provided `--vscode-*` tokens instead of a standalone UI palette.
 - `npm run test:integration` should activate the extension in the Extension Development Host and execute `kawaii_synthwave.openSettings` without running the real Neon Effect patch.
-- `npm run test:e2e` should package the extension, open disposable VS Code `1.111.0` through ExTester/WebDriver, navigate the real settings webview, and avoid all real Neon patch actions.
+- `npm run test:e2e` should package the extension, open disposable VS Code `1.111.0` through ExTester/WebDriver, navigate the real settings webview, avoid all real Neon patch actions, and write safe Settings visual screenshots plus PNG analysis under `test-results/e2e`.
 - `npm run build:theme` should regenerate the generated theme files from protected bases and overrides without unexpected diffs.
 
 `npm test` runs the unit, DOM, and VS Code integration layers in sequence. `npm run test:all` runs the unit, DOM, VS Code integration, and safe real VS Code E2E layers in sequence, then prints a final pass/fail/skipped summary for launch-terminal readability. There is no `tsc --noEmit` or lint command in the current project.
@@ -53,6 +53,7 @@ Visual validation rule:
 - Require screenshot artifacts for behavior that changes visible UI, theme appearance, logos, image previews, editor backgrounds, layout, or visual state.
 - Do not add screenshots for behavior that is purely data, filesystem, manifest, persistence, command routing, or non-visual validation.
 - When a test changes a visual state, keep before/after screenshots or an equivalent baseline/after pair and inspect the images, not only DOM or CSS state.
+- The safe Settings E2E must keep `settings-visual-*.png` screenshots and `settings-visual-state-analysis.json` for webview image previews, missing/loading states, warning/status/error states, invalid/empty color states, opacity values, and fit selector state.
 - The gated Neon E2E must keep visual evidence for no-tab logo replacement, editor-page background replacement, and every supported editor background fit area.
 
 ## Manual Theme Test
@@ -142,7 +143,7 @@ The package ships runtime source files directly:
 | Unit without UI | `npm run test:unit` | Theme build merge behavior, version bump behavior, workbench patch helpers, settings persistence helpers, settings store adapter, color customization service, bundle/sync/file actions, effect/image persistence, and mocked settings message chains. |
 | DOM UI | `npm run test:dom` | Settings webview readiness, all safe webview events, app navigation, Help metadata, Color Settings inputs/debounce, image/logo state, incoming webview messages, warnings/errors, and `--vscode-*` color-token contract. |
 | VS Code integration | `npm run test:integration` | Extension manifest registration, activation, command registration, and opening settings in the Extension Development Host. |
-| Real VS Code UI E2E | `npm run test:e2e` | ExTester/WebDriver opens disposable VS Code, runs the Command Palette, switches into the real settings webview iframe, validates navigation, layout, safe UI flows, and screenshot artifacts for visible settings pages and dynamic visual UI states. |
+| Real VS Code UI E2E | `npm run test:e2e` | ExTester/WebDriver opens disposable VS Code, runs the Command Palette, switches into the real settings webview iframe, validates navigation, layout, safe UI flows, screenshot artifacts for visible settings pages and dynamic visual UI states, and programmatic PNG analysis for Settings visual before/after states. |
 | Gated Neon E2E | `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` | Applies the real workbench patch only inside `.vscode-test`, validates dstgroup runtime state after full restart, captures no-tab logo and editor-page background screenshots, checks editor background fit area CSS variables, switches to an alternate image and validates it after restart, captures a baseline plus screenshots for the complete editor background fit matrix, reverts to dstgroup after restart, disables the patch, and validates restored state after another full restart. |
 
 Do not fold the gated Neon E2E into the safe suite. It must stay behind `KAWAII_E2E_ALLOW_NEON_PATCH=1`.

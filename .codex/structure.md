@@ -178,6 +178,8 @@ Current source of truth:
 - Setup webview HTML generation lives in `src/settingsWebview.js`.
 - Workbench path detection and marked HTML patch helpers live in `src/workbenchPatch.js`.
 - Real VS Code E2E helpers live in `test/e2e/helpers/extester-app.js`.
+- Safe E2E PNG parsing and visual-difference assertions live in `test/e2e/helpers/png-analysis.js`.
+- Safe Settings visual before/after coverage lives in `test/e2e/settings-visual-states.spec.js`.
 - Reusable settings webview DOM test setup lives in `test/dom/settings-webview-helper.js`.
 - Protected upstream/base palette and token rules live in `themes/kawaii_synthwave-color-theme.json`.
 - Kawaii palette and token changes must be placed in `themes/kawaii_synthwave-color-theme-overrides.json`.
@@ -188,6 +190,7 @@ Settings webview visual rule:
 
 - The webview must consume editor-provided VS Code webview tokens such as `--vscode-editor-background`, `--vscode-foreground`, `--vscode-button-background`, and `--vscode-panel-border`.
 - Do not add a separate hardcoded product palette for page surfaces, text, controls, panels, or states.
+- Safe Settings visual E2E coverage must keep before/after `settings-visual-*.png` artifacts and `settings-visual-state-analysis.json` PNG metrics for webview preview, loading, warning, status, error, invalid, empty, opacity, and fit selector states.
 - Help content should continue to centralize repository, issue tracker, README/homepage, and publisher/contact metadata derived from project data.
 
 ## Where New Code Should Go

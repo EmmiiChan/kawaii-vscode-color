@@ -254,6 +254,23 @@ async function takeE2EScreenshot(name) {
     return outputPath;
 }
 
+async function takeWebviewElementScreenshot(css, name) {
+    fs.mkdirSync(E2E_RESULTS_DIR, { recursive: true });
+
+    const element = await waitForWebviewCss(css);
+    await VSBrowser.instance.driver.executeScript(
+        "arguments[0].scrollIntoView({ block: 'center', inline: 'nearest' });",
+        element
+    );
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const screenshot = await element.takeScreenshot();
+    const outputPath = path.join(E2E_RESULTS_DIR, `${name}.png`);
+    fs.writeFileSync(outputPath, screenshot, "base64");
+
+    return outputPath;
+}
+
 async function clearTransientWorkbenchNotifications() {
     await VSBrowser.instance.driver.switchTo().defaultContent();
 
@@ -301,6 +318,7 @@ function escapeRegExp(value) {
 }
 
 module.exports = {
+    E2E_RESULTS_DIR,
     SETTINGS_COMMAND_LABEL,
     SETTINGS_EDITOR_TITLE,
     assertCommandAvailable,
@@ -319,6 +337,7 @@ module.exports = {
     selectWebviewOptionByText,
     setWebviewInputValue,
     takeE2EScreenshot,
+    takeWebviewElementScreenshot,
     waitForWebviewCss,
     waitForWebviewElement,
     waitForWebviewTextIncludes,

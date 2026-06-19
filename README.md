@@ -228,6 +228,8 @@ Safety matrix:
 
 The integration suite opens `Kawaii VS Code Color: Settings`, but it does not control the rendered VS Code window. The safe E2E suite does control the real window and webview, but it is still safe by default: it does not click `Enable Neon Effect`, `Disable Neon Effect`, `Apply Effects`, upload/import/export/download controls, or network-backed random image controls. E2E screenshots and state notes are written under `test-results/e2e`.
 
+The safe E2E suite also writes `settings-visual-*.png` screenshots plus `settings-visual-state-analysis.json`. Those artifacts cover the Settings webview image previews, selected-image warnings, missing-image states, Random Neko loading presentation, effects warning, Neon status, error status, invalid color input, empty color filter, opacity value changes, and editor background fit selector state. The JSON file records programmatic PNG difference, color-ratio, or contrast metrics for each before/after visual assertion.
+
 Visual test rule: tests should create screenshots only for behavior that changes a visible UI or theme state. When a visual state changes, keep before/after evidence, or a baseline/after pair, so the rendered result can be inspected alongside DOM/CSS assertions.
 
 The real Neon Effect patch has its own gated command:
