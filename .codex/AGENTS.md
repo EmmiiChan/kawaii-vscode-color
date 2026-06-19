@@ -77,7 +77,7 @@ $env:KAWAII_E2E_ALLOW_NEON_PATCH = "1"
 npm run test:e2e:neon
 ```
 
-This command is intentionally separate from `npm test`, `npm run test:all`, and `npm run test:e2e`. It uses `.vscode-test/extest-111-neon`, validates before/apply/remove states, and opens VS Code three times so applied and restored checks happen after full process restarts. It also verifies that runtime CSS keeps using editor-provided `--vscode-*` tokens instead of a separate hardcoded palette.
+This command is intentionally separate from `npm test`, `npm run test:all`, and `npm run test:e2e`. It uses `.vscode-test/extest-111-neon`, validates before/apply/remove states, and opens VS Code three times so applied and restored checks happen after full process restarts. It also verifies no-tab logos, real editor-page background screenshots, `.monaco-editor::before` background application, and runtime CSS that keeps using editor-provided `--vscode-*` tokens instead of a separate hardcoded palette.
 
 Recommended safe approach:
 
@@ -136,7 +136,7 @@ The package ships runtime source files directly:
 | DOM UI | `npm run test:dom` | Settings webview readiness, all safe webview events, app navigation, Help metadata, Color Settings inputs/debounce, image/logo state, incoming webview messages, warnings/errors, and `--vscode-*` color-token contract. |
 | VS Code integration | `npm run test:integration` | Extension manifest registration, activation, command registration, and opening settings in the Extension Development Host. |
 | Real VS Code UI E2E | `npm run test:e2e` | ExTester/WebDriver opens disposable VS Code, runs the Command Palette, switches into the real settings webview iframe, validates navigation, layout, and safe UI flows. |
-| Gated Neon E2E | `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` | Applies the real workbench patch only inside `.vscode-test`, validates dstgroup runtime state after full restart, switches to an alternate image and validates it after restart, reverts to dstgroup after restart, disables the patch, and validates restored state after another full restart. |
+| Gated Neon E2E | `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` | Applies the real workbench patch only inside `.vscode-test`, validates dstgroup runtime state after full restart, captures no-tab logo and editor-page background screenshots, switches to an alternate image and validates it after restart, reverts to dstgroup after restart, disables the patch, and validates restored state after another full restart. |
 
 Do not fold the gated Neon E2E into the safe suite. It must stay behind `KAWAII_E2E_ALLOW_NEON_PATCH=1`.
 

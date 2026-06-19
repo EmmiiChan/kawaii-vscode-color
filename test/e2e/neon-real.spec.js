@@ -3,7 +3,7 @@ const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const zlib = require("node:zlib");
-const { VSBrowser } = require("vscode-extension-tester");
+const { VSBrowser, Workbench } = require("vscode-extension-tester");
 
 const {
     assertWebviewPageVisible,
@@ -141,6 +141,11 @@ describe("Neon real gated E2E @neon-real", function () {
             `Expected screenshot crop to change from the default VS Code watermark to the custom no-tab logo. Analysis: ${JSON.stringify(logoScreenshotAnalysis)}`
         );
 
+        const dstgroupEditorBackgroundState = await captureAppliedEditorBackgroundVisualState(
+            DSTGROUP_VISUAL_CASE,
+            "neon-real-dstgroup-page-background-after-full-restart"
+        );
+
         await applyVisualSettingsBundleAndEffects(ALTERNATE_VISUAL_CASE, "neon-real-before-apply-alternate");
 
         const alternateSnapshot = await waitForPatchSnapshot(
@@ -158,6 +163,7 @@ describe("Neon real gated E2E @neon-real", function () {
 
         updateState({
             dstgroupLogoState,
+            dstgroupEditorBackgroundState,
             alternateHtmlHash: alternateSnapshot.htmlHash,
             alternateTemplateHash: alternateSnapshot.templateHash
         });
@@ -189,6 +195,19 @@ describe("Neon real gated E2E @neon-real", function () {
             `Expected screenshot crop to change from dstgroup no-tab logo to alternate image. Analysis: ${JSON.stringify(alternateScreenshotAnalysis)}`
         );
 
+        const alternateEditorBackgroundState = await captureAppliedEditorBackgroundVisualState(
+            ALTERNATE_VISUAL_CASE,
+            "neon-real-alternate-page-background-after-full-restart"
+        );
+        const editorBackgroundScreenshotAnalysis = compareEditorBackgroundScreenshots(
+            state.dstgroupEditorBackgroundState,
+            alternateEditorBackgroundState
+        );
+        assert.ok(
+            editorBackgroundScreenshotAnalysis.hasVisualChange,
+            `Expected editor page background screenshot crop to change from dstgroup to alternate image. Analysis: ${JSON.stringify(editorBackgroundScreenshotAnalysis)}`
+        );
+
         await applyVisualSettingsBundleAndEffects(DSTGROUP_VISUAL_CASE, "neon-real-before-revert-dstgroup");
 
         const revertedDstgroupSnapshot = await waitForPatchSnapshot(
@@ -206,6 +225,7 @@ describe("Neon real gated E2E @neon-real", function () {
 
         updateState({
             alternateLogoState,
+            alternateEditorBackgroundState,
             revertedDstgroupHtmlHash: revertedDstgroupSnapshot.htmlHash,
             revertedDstgroupTemplateHash: revertedDstgroupSnapshot.templateHash
         });
@@ -236,6 +256,19 @@ describe("Neon real gated E2E @neon-real", function () {
         assert.ok(
             revertedScreenshotAnalysis.hasVisualChangeFromDefault,
             `Expected screenshot crop to change from alternate image back to dstgroup no-tab logo. Analysis: ${JSON.stringify(revertedScreenshotAnalysis)}`
+        );
+
+        const revertedDstgroupEditorBackgroundState = await captureAppliedEditorBackgroundVisualState(
+            DSTGROUP_VISUAL_CASE,
+            "neon-real-dstgroup-page-background-reverted-after-full-restart"
+        );
+        const revertedEditorBackgroundScreenshotAnalysis = compareEditorBackgroundScreenshots(
+            state.alternateEditorBackgroundState,
+            revertedDstgroupEditorBackgroundState
+        );
+        assert.ok(
+            revertedEditorBackgroundScreenshotAnalysis.hasVisualChange,
+            `Expected editor page background screenshot crop to change from alternate image back to dstgroup. Analysis: ${JSON.stringify(revertedEditorBackgroundScreenshotAnalysis)}`
         );
 
         await clickNeonAction("#disable-neon", "neon-real-before-disable");
@@ -396,6 +429,53 @@ async function captureAppliedEmptyEditorLogoVisualState(visualCase, screenshotNa
     assert.equal(runtimeState.hasExpectedEmptyEditorLogoOpacity, true, `Expected runtime CSS to include ${visualCase.id} no-tab logo opacity`);
 
     return { screenshotPath, runtimeState };
+}
+
+async function captureAppliedEditorBackgroundVisualState(visualCase, screenshotName) {
+    await openUntitledTextEditorPage();
+    await sleep(1000);
+
+    try {
+        const runtimeState = await waitForRuntimeNeonState(
+            (state) =>
+                state.hasChromeStyles
+                && state.hasThemeStyles
+                && state.hasKawaiiThemeWrapper
+                && state.hasThemeWrapperClass
+                && state.usesEditorTokens
+                && !state.hasOwnPaletteOnly
+                && state.hasExpectedEditorBackgroundImage
+                && state.hasExpectedEditorBackgroundImageOnEditor
+                && state.hasExpectedEditorBackgroundOpacity
+                && state.hasExpectedEditorBackgroundPseudoOpacity
+                && state.hasExpectedEditorBackgroundFit
+                && state.editorBackgroundRect
+                && state.editorBackgroundRect.width > 100
+                && state.editorBackgroundRect.height > 100,
+            `Expected ${visualCase.id} editor page background to be active on a real editor after full VS Code restart`,
+            visualCase
+        );
+        const screenshotPath = await takeE2EScreenshot(screenshotName);
+
+        assert.equal(runtimeState.hasThemeWrapperClass, true, `Expected ${visualCase.id} Kawaii theme wrapper class with an editor page open`);
+        assert.equal(runtimeState.hasOwnPaletteOnly, false, `Expected ${visualCase.id} editor page runtime CSS to keep VS Code editor tokens`);
+        assert.equal(runtimeState.hasExpectedEditorBackgroundImageOnEditor, true, `Expected ${visualCase.id} editor background image data URL on the real Monaco editor pseudo-element`);
+        assert.equal(runtimeState.hasExpectedEditorBackgroundPseudoOpacity, true, `Expected ${visualCase.id} editor background pseudo-element opacity`);
+
+        return { screenshotPath, runtimeState };
+    } finally {
+        await runCommand("View: Close All Editors").catch(() => undefined);
+        await sleep(500);
+    }
+}
+
+async function openUntitledTextEditorPage() {
+    await VSBrowser.instance.driver.switchTo().defaultContent();
+    await VSBrowser.instance.driver.actions()
+        .keyDown(Workbench.ctlKey)
+        .sendKeys("n")
+        .keyUp(Workbench.ctlKey)
+        .perform();
 }
 
 async function applyVisualSettingsBundleAndEffects(visualCase, screenshotName) {
@@ -598,6 +678,17 @@ async function getRuntimeNeonState(visualCase) {
         const chromeText = chromeStyles ? chromeStyles.textContent || '' : '';
         const themeText = themeStyles ? themeStyles.textContent || '' : '';
         const injectedText = chromeText + themeText;
+        const editorTargets = Array.from(document.querySelectorAll('.monaco-editor')).filter((element) => {
+            const rect = element.getBoundingClientRect();
+            const styles = window.getComputedStyle(element);
+            return rect.width > 100 && rect.height > 100 && styles.display !== 'none' && styles.visibility !== 'hidden';
+        });
+        const editorTarget = editorTargets.find((element) => {
+            const styles = window.getComputedStyle(element, '::before');
+            return styles.backgroundImage.includes(expectedEditorBackgroundDataUrl);
+        }) || editorTargets[0];
+        const editorTargetStyles = editorTarget ? window.getComputedStyle(editorTarget, '::before') : null;
+        const editorTargetRect = editorTarget ? editorTarget.getBoundingClientRect() : null;
         const logoTargets = Array.from(document.querySelectorAll(emptyEditorLogoSelectors.join(', ')));
         const logoTarget = logoTargets.find((element) => {
             const styles = window.getComputedStyle(element);
@@ -616,7 +707,18 @@ async function getRuntimeNeonState(visualCase) {
             usesEditorTokens: /var\\(--vscode-/.test(injectedText),
             hasOwnPaletteOnly: Boolean(injectedText) && !/var\\(--vscode-/.test(injectedText),
             hasExpectedEditorBackgroundImage: injectedText.includes(expectedEditorBackgroundDataUrl),
+            hasExpectedEditorBackgroundImageOnEditor: Boolean(editorTargetStyles && editorTargetStyles.backgroundImage.includes(expectedEditorBackgroundDataUrl)),
             hasExpectedEmptyEditorLogoImage: Boolean(logoTargetStyles && logoTargetStyles.backgroundImage.includes(expectedEmptyEditorLogoDataUrl)),
+            editorBackgroundTargetCount: editorTargets.length,
+            editorBackgroundTargetClassName: editorTarget ? editorTarget.className : '',
+            editorBackgroundPseudoBackgroundImageLength: editorTargetStyles ? editorTargetStyles.backgroundImage.length : 0,
+            editorBackgroundPseudoOpacity: editorTargetStyles ? editorTargetStyles.opacity : '',
+            editorBackgroundRect: editorTargetRect ? {
+                left: editorTargetRect.left,
+                top: editorTargetRect.top,
+                width: editorTargetRect.width,
+                height: editorTargetRect.height
+            } : null,
             emptyEditorLogoTargetCount: logoTargets.length,
             emptyEditorLogoTargetClassName: logoTarget ? logoTarget.className : '',
             emptyEditorLogoTargetBackgroundImageLength: logoTargetStyles ? logoTargetStyles.backgroundImage.length : 0,
@@ -629,6 +731,7 @@ async function getRuntimeNeonState(visualCase) {
             hasExpectedEditorBackgroundOpacity: new RegExp('--kawaii-editor-background-image-opacity:\\\\s*' + expectedEditorBackgroundOpacity.replace('.', '\\\\.')).test(chromeText),
             hasExpectedEditorBackgroundFit: /--kawaii-editor-background-area-width:\\s*100%/.test(chromeText)
                 && /--kawaii-editor-background-area-height:\\s*100%/.test(chromeText),
+            hasExpectedEditorBackgroundPseudoOpacity: Boolean(editorTargetStyles && editorTargetStyles.opacity === expectedEditorBackgroundOpacity),
             hasExpectedEmptyEditorLogoOpacity: Boolean(logoTargetStyles && logoTargetStyles.opacity === expectedEmptyEditorLogoOpacity)
         };
     `,
@@ -638,6 +741,47 @@ async function getRuntimeNeonState(visualCase) {
         visualCase.expected.emptyEditorLogoOpacity,
         EMPTY_EDITOR_LOGO_LETTERPRESS_SELECTORS
     );
+}
+
+function compareEditorBackgroundScreenshots(beforeState, afterState) {
+    assert.ok(beforeState && beforeState.screenshotPath, "Expected before editor background screenshot state.");
+    assert.ok(afterState && afterState.screenshotPath, "Expected after editor background screenshot state.");
+
+    const beforeSamples = getEditorBackgroundCropLuminanceSamples(beforeState.screenshotPath, beforeState.runtimeState);
+    const afterSamples = getEditorBackgroundCropLuminanceSamples(afterState.screenshotPath, afterState.runtimeState);
+    const sampleCount = Math.min(beforeSamples.samples.length, afterSamples.samples.length);
+    let changedPixels = 0;
+    let totalDifference = 0;
+    let maxDifference = 0;
+
+    for (let index = 0; index < sampleCount; index++) {
+        const difference = Math.abs(beforeSamples.samples[index] - afterSamples.samples[index]);
+
+        totalDifference += difference;
+        maxDifference = Math.max(maxDifference, difference);
+
+        if (difference > 6) {
+            changedPixels += 1;
+        }
+    }
+
+    const meanDifference = sampleCount > 0 ? totalDifference / sampleCount : 0;
+    const changedRatio = sampleCount > 0 ? changedPixels / sampleCount : 0;
+
+    return {
+        beforeScreenshotPath: beforeState.screenshotPath,
+        afterScreenshotPath: afterState.screenshotPath,
+        beforeCrop: beforeSamples.crop,
+        afterCrop: afterSamples.crop,
+        sampleCount,
+        meanDifference,
+        maxDifference,
+        changedRatio,
+        hasVisualChange: sampleCount > 1000
+            && meanDifference > 1
+            && maxDifference > 10
+            && changedRatio > 0.01
+    };
 }
 
 function compareEmptyEditorLogoScreenshots(beforeState, afterState) {
@@ -679,6 +823,48 @@ function compareEmptyEditorLogoScreenshots(beforeState, afterState) {
             && maxDifference > 20
             && changedRatio > 0.03
     };
+}
+
+function getEditorBackgroundCropLuminanceSamples(screenshotPath, runtimeState) {
+    const rect = runtimeState && runtimeState.editorBackgroundRect;
+
+    assert.ok(rect && rect.width > 100 && rect.height > 100, `Expected a measurable editor background rect. Runtime state: ${JSON.stringify(runtimeState)}`);
+
+    const png = decodePng(screenshotPath);
+    const scaleX = png.width / runtimeState.viewportWidth;
+    const scaleY = png.height / runtimeState.viewportHeight;
+    const crop = {
+        left: clamp(Math.floor(rect.left * scaleX), 0, png.width - 1),
+        top: clamp(Math.floor(rect.top * scaleY), 0, png.height - 1),
+        right: clamp(Math.ceil((rect.left + rect.width) * scaleX), 1, png.width),
+        bottom: clamp(Math.ceil((rect.top + rect.height) * scaleY), 1, png.height)
+    };
+    const gridWidth = 96;
+    const gridHeight = 96;
+    const samples = [];
+
+    for (let row = 0; row < gridHeight; row++) {
+        for (let column = 0; column < gridWidth; column++) {
+            const x = clamp(
+                Math.floor(crop.left + ((column + 0.5) / gridWidth) * (crop.right - crop.left)),
+                0,
+                png.width - 1
+            );
+            const y = clamp(
+                Math.floor(crop.top + ((row + 0.5) / gridHeight) * (crop.bottom - crop.top)),
+                0,
+                png.height - 1
+            );
+            const offset = (y * png.width + x) * png.channels;
+            const red = png.data[offset];
+            const green = png.data[offset + 1];
+            const blue = png.data[offset + 2];
+
+            samples.push((0.2126 * red) + (0.7152 * green) + (0.0722 * blue));
+        }
+    }
+
+    return { crop, samples };
 }
 
 function getLogoCropLuminanceSamples(screenshotPath, runtimeState) {
