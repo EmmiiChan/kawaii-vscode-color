@@ -13,12 +13,13 @@ Current tooling state:
 | Area | Current state |
 | --- | --- |
 | Build step | `npm run build:theme` merges protected base themes and editable overrides into the generated themes loaded by VS Code. `npm run build:local` bumps the patch version, then builds the themes and local VSIX. |
-| Automated tests | Four regular layers are configured: Node unit tests, `jsdom` DOM UI tests, VS Code Extension Development Host integration tests, and ExTester/WebDriver real VS Code UI E2E tests. A separate gated Neon E2E patches only a disposable `.vscode-test` install. |
+| Automated tests | The lightweight gate starts with the Codex docs drift guard and Node syntax check, then the regular layers cover Node unit tests, `jsdom` DOM UI tests, VS Code Extension Development Host integration tests, and ExTester/WebDriver real VS Code UI E2E tests. A separate gated Neon E2E patches only a disposable `.vscode-test` install. |
 | TypeScript | Not used. Runtime source is CommonJS JavaScript. |
 | npm dependencies | No runtime dependencies. Dev-only test dependencies are `jsdom@29.1.1`, `@vscode/test-cli@0.0.12`, `@vscode/test-electron@3.0.0`, `vscode-extension-tester@8.23.0`, and `mocha@11.7.6`. |
 | Packaging tool | Not installed permanently in this repo. Use `@vscode/vsce` through the existing npm scripts when packaging. |
 | Runtime entry | `package.json.main` points to `./src/extension.js`. |
 | Extension id | `ITEM-PIXEL.kawaii-vscode-color` from `publisher + name`. |
+| Codex documentation | `.codex/system-map.md` is the migration-oriented contract map, `.codex/change-impact.md` defines when docs must change, and `npm run test:docs` verifies critical facts against the repo. |
 
 Do not add another build system, test framework, or dependency unless the task explicitly requires it.
 
@@ -28,6 +29,7 @@ Run these checks before and after code changes:
 
 ```powershell
 npm pkg get name version publisher dependencies devDependencies engines
+npm run test:docs
 npm run test:check
 npm run test:unit
 npm run test:dom
@@ -39,7 +41,8 @@ npm run build:theme
 Expected result:
 
 - `npm pkg get` should show `kawaii-vscode-color`, publisher `ITEM-PIXEL`, no runtime dependency object, and the pinned test devDependencies.
-- `npm run test:check` should exit without syntax errors.
+- `npm run test:docs` should confirm `.codex` docs match package metadata, themes, message contracts, state keys, schemas, renderer placeholders, and `semanticTokenColors`.
+- `npm run test:check` should run `test:docs` first, then exit without syntax errors.
 - `npm run test:unit` should pass build, version, workbench patch, settings persistence, Settings Sync / JSON import-export chain, and mocked settings message-chain unit tests.
 - `npm run test:dom` should pass settings webview DOM tests covering all safe webview events, app navigation, Help metadata, Color Settings inputs/debounce, image/logo state, incoming webview messages, warnings/errors, and editor-provided `--vscode-*` tokens instead of a standalone UI palette.
 - `npm run test:integration` should activate the extension in the Extension Development Host and execute `kawaii_synthwave.openSettings` without running the real Neon Effect patch.
@@ -49,6 +52,12 @@ Expected result:
 `npm test` runs the unit, DOM, and VS Code integration layers in sequence. `npm run test:all` runs the unit, DOM, VS Code integration, and safe real VS Code E2E layers in sequence, then prints a final pass/fail/skipped summary for launch-terminal readability. It is the safe local gate and must not include `npm run test:e2e:neon`. There is no `tsc --noEmit` or lint command in the current project.
 
 `test-results/e2e/kawaii-last-run.json` is the project-owned last-run marker for safe and gated E2E runs. Treat `test-results/e2e/.last-run.json` as optional ExTester diagnostics only, because it can remain stale after a later successful run.
+
+Codex documentation rule:
+
+- Any addition, removal, or update to package metadata, source modules, webview messages, theme files, settings/state keys, persistence schemas, test workflows, E2E artifacts, or renderer placeholders must update `.codex/system-map.md` and any relevant `.codex` guide in the same change.
+- Use `.codex/change-impact.md` to decide which docs must change.
+- Do not treat `.codex/color_scheme_reference.md` as only agent-facing prose; `src/settings.js` reads it at runtime for Settings color descriptions.
 
 Visual validation rule:
 
