@@ -173,6 +173,8 @@ Current source of truth:
 - No-tab logo selector/style generation lives in `src/emptyEditorLogoStyles.ts`.
 - Renderer behavior lives in the JS template under `src/js`.
 - Settings webview orchestration, message routing, VS Code notifications/dialogs, native picker/download workflows, color-reference parsing, and state composition live in `src/settings.js`.
+- Runtime activation and command registration live in `src/extension.ts`.
+- Extension-host Neon controller, service, filesystem, storage, and notification boundaries live under `src/extensionHost`.
 - Runtime asset resolution from source or `out/src` lives in `src/extensionRoot.ts`.
 - Random Neko payload parsing, URL resolution, guarded HTTPS fetch, and image response normalization live in `src/randomNekoImage.ts`.
 - Pure color customization block mutation, scope comparison, and hex validation live in `src/settingsPersistence.ts`.
@@ -194,7 +196,7 @@ Current source of truth:
 - Light Kawaii palette and token changes must be placed in `themes/kawaii_synthwave-color-theme-light-overrides.json`.
 - The public dark theme loaded by VS Code is generated at `themes/kawaii_synthwave-generated-color-theme.json`.
 - The public light theme loaded by VS Code is generated at `themes/kawaii_synthwave-generated-color-theme-light.json`.
-- Command registration, setting normalization, filesystem writes, and workbench patching live in the extension host entry point or extracted host modules.
+- Command registration lives in `src/extension.ts`; setting normalization, filesystem boundaries, generated script assembly, notifications, and workbench patching live in extracted host modules under `src/extensionHost`.
 - Codex documentation drift checks live in `scripts/check-codex-docs.js` and are run by `npm run test:docs`.
 
 Settings webview visual rule:
@@ -298,7 +300,7 @@ Treat these as negation prompts. Do not cross these boundaries unless the user e
 - Do not re-add direct commands or menu contributions for `Color Settings`, `Enable Neon Effect`, or `Disable Neon Effect`. The public command opens `Kawaii VS Code Color: Settings`; Color Settings and Neon Effect are internal pages selected from that webview's side menu.
 - Do not use any theme JSON file to register commands, settings, activation events, views, keybindings, menus, or extension behavior. Those belong in `package.json` contribution points and extension host code.
 - Do not use a color theme file to change file icons, product icons, activity bar icons, codicons, or custom UI surfaces. Color themes are not icon themes or webviews.
-- Do not use theme JSON to add runtime logic, filesystem access, reload behavior, notifications, or command handling. Runtime behavior belongs in `src/extension.js`, its compiled `out/src/extension.js`, or extracted extension host modules.
+- Do not use theme JSON to add runtime logic, filesystem access, reload behavior, notifications, or command handling. Runtime behavior belongs in `src/extension.ts`, its compiled `out/src/extension.js`, or extracted extension host modules.
 - Do not expect normal theme changes to update Neon Dreams behavior automatically. The glow map in `src/js/theme_template.js` is coupled to specific foreground colors and must be updated when glow-driving token colors change.
 - Do not use workbench HTML patching as a normal theming mechanism. It is an unsupported workaround used only for Neon Dreams effects that the official theme API cannot express.
 - Do not hide or remove user-facing warnings around Neon Dreams patching. Users must know that enabling glow modifies installed VS Code workbench files.
@@ -431,7 +433,8 @@ Before packaging or publishing:
 Local source anchors:
 
 - `package.json`: manifest, contributions, activation, settings, extension entry.
-- `src/extension.js`: extension host command flow, setting normalization, patch/unpatch mechanics, compiled to `out/src/extension.js`.
+- `src/extension.ts`: extension host activation, command registration, and service composition, compiled to `out/src/extension.js`.
+- `src/extensionHost`: typed adapters, Neon Effect controller, script assembly service, and workbench patch service.
 - `src/extensionRoot.ts`: package-root and asset path resolution for source and compiled runtime directories.
 - `src/emptyEditorLogoStyles.ts`: no-tab logo selector contract and generated logo replacement CSS.
 - `src/randomNekoImage.ts`: Random Neko payload parsing, URL resolution, guarded HTTPS fetching, and image normalization.

@@ -2,7 +2,7 @@
 
 Last reviewed: 2026-06-17
 
-Purpose: give Codex a stable, source-backed link index for the Kawaii VS Code Color VS Code theme extension. Use this file before changing `package.json`, `scripts/build-color-theme.js`, `scripts/check-codex-docs.js`, `scripts/e2e-last-run.js`, `scripts/run-e2e.js`, `scripts/run-test-all.js`, `src/extension.js`, `src/extensionRoot.ts`, `src/randomNekoImage.ts`, `src/settings.js`, `src/settingsPersistence.ts`, `src/settingsStore.ts`, `src/settingsColorService.ts`, `src/settingsBundle.ts`, `src/settingsEffectsPersistence.ts`, `src/settingsWebview.js`, `src/workbenchPatch.ts`, `src/js/theme_template.js`, `src/css/editor_chrome.css`, `themes/kawaii_synthwave-color-theme-overrides.json`, `themes/kawaii_synthwave-color-theme-light-overrides.json`, packaging metadata, test tooling, or marketplace docs.
+Purpose: give Codex a stable, source-backed link index for the Kawaii VS Code Color VS Code theme extension. Use this file before changing `package.json`, `scripts/build-color-theme.js`, `scripts/check-codex-docs.js`, `scripts/e2e-last-run.js`, `scripts/run-e2e.js`, `scripts/run-test-all.js`, `src/extension.ts`, `src/extensionHost`, `src/extensionRoot.ts`, `src/randomNekoImage.ts`, `src/settings.js`, `src/settingsPersistence.ts`, `src/settingsStore.ts`, `src/settingsColorService.ts`, `src/settingsBundle.ts`, `src/settingsEffectsPersistence.ts`, `src/settingsWebview.js`, `src/workbenchPatch.ts`, `src/js/theme_template.js`, `src/css/editor_chrome.css`, `themes/kawaii_synthwave-color-theme-overrides.json`, `themes/kawaii_synthwave-color-theme-light-overrides.json`, packaging metadata, test tooling, or marketplace docs.
 
 ## Project Snapshot
 
@@ -89,16 +89,13 @@ Compatibility rule:
 
 ## Runtime API References
 
-### `src/extension.js`
+### `src/extension.ts` and `src/extensionHost`
 
 | API/surface | Current usage | Official docs |
 | --- | --- | --- |
-| CommonJS modules | `require('path')`, `require('fs')`, `require('vscode')`, `module.exports` | [Node CommonJS modules](https://nodejs.org/api/modules.html) |
-| `path.dirname` | Derives VS Code app directory from `vscode.env.appRoot` | [Node `path.dirname`](https://nodejs.org/api/path.html#pathdirnamepath) |
-| `path.join` | Builds workbench and generated script paths | [Node `path.join`](https://nodejs.org/api/path.html#pathjoinpaths) |
-| `fs.readFileSync` | Reads CSS, JS template, and VS Code workbench HTML | [Node `fs.readFileSync`](https://nodejs.org/api/fs.html#fsreadfilesyncpath-options) |
-| `fs.writeFileSync` | Writes `neondreams.js` and patched workbench HTML | [Node `fs.writeFileSync`](https://nodejs.org/api/fs.html#fswritefilesyncfile-data-options) |
-| `fs.existsSync` | Detects possible VS Code workbench HTML paths | [Node `fs.existsSync`](https://nodejs.org/api/fs.html#fsexistssyncpath) |
+| TypeScript CommonJS output | `src/extension.ts` compiles to `out/src/extension.js`; `src/extensionHost` compiles to `out/src/extensionHost` | [Node CommonJS modules](https://nodejs.org/api/modules.html), [TypeScript Modules](https://www.typescriptlang.org/docs/handbook/modules.html) |
+| `path.dirname` / `path.join` | Derives VS Code app directory from `vscode.env.appRoot` and builds workbench/generated script paths in services | [Node `path.dirname`](https://nodejs.org/api/path.html#pathdirnamepath), [Node `path.join`](https://nodejs.org/api/path.html#pathjoinpaths) |
+| `fs.readFileSync` / `fs.writeFileSync` / `fs.existsSync` | Adapter-backed filesystem reads/writes for CSS, JS template, workbench HTML, `neondreams.js`, and stored images | [Node `fs.readFileSync`](https://nodejs.org/api/fs.html#fsreadfilesyncpath-options), [Node `fs.writeFileSync`](https://nodejs.org/api/fs.html#fswritefilesyncfile-data-options), [Node `fs.existsSync`](https://nodejs.org/api/fs.html#fsexistssyncpath) |
 | `vscode.workspace.getConfiguration` | Reads `kawaii_synthwave` settings | [VS Code API reference](https://code.visualstudio.com/api/references/vscode-api) |
 | `vscode.env.appRoot` | Locates VS Code installation root | [VS Code API reference - env](https://code.visualstudio.com/api/references/vscode-api#env) |
 | `vscode.commands.registerCommand` | Registers enable/disable commands | [VS Code Commands guide](https://code.visualstudio.com/api/extension-guides/command) |

@@ -47,7 +47,8 @@ Dev dependency contract:
 - `scripts/run-test-all.js`
 - `src/css/editor_chrome.css`
 - `src/emptyEditorLogoStyles.ts`
-- `src/extension.js`
+- `src/extension.ts`
+- `src/extensionHost`
 - `src/extensionRoot.ts`
 - `src/js/theme_template.js`
 - `src/randomNekoImage.ts`
@@ -89,7 +90,8 @@ Build behavior:
 
 | Module | Responsibility |
 | --- | --- |
-| `src/extension.js` -> `out/src/extension.js` | Extension activation, command registration, `workbench.colorTheme` change listener, Neon patch apply/remove, renderer template assembly, reload prompts. |
+| `src/extension.ts` -> `out/src/extension.js` | Extension activation, command registration, Settings Sync setup, and composition of typed extension-host services. |
+| `src/extensionHost` -> `out/src/extensionHost` | VS Code adapters, Neon Effect controller, renderer template assembly, stored image CSS values, workbench patch apply/remove orchestration, reload prompts. |
 | `src/extensionRoot.ts` -> `out/src/extensionRoot.js` | Resolves package-root asset paths from both source and compiled `out/src` runtime directories. |
 | `src/workbenchPatch.ts` -> `out/src/workbenchPatch.js` | Pure workbench path detection and marked HTML patch helpers for `neondreams.js`. |
 | `src/settings.js` | Settings webview lifecycle, message routing, Settings Sync/JSON orchestration, image workflows, color state composition, runtime read of `.codex/color_scheme_reference.md`. |
@@ -197,7 +199,7 @@ Workbench patch marker:
 <!-- KAWAII SYNTHWAVE --><script src="neondreams.js?v=<timestamp>"></script><!-- NEON DREAMS -->
 ```
 
-Renderer placeholders replaced by `src/extension.js`:
+Renderer placeholders replaced by `src/extensionHost/services/NeonEffectService.ts`:
 
 - `CHROME_STYLES`
 - `DISABLE_GLOW`

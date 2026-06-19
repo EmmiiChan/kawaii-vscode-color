@@ -41,7 +41,8 @@ const CRITICAL_FILES = [
   "scripts/run-test-all.js",
   "src/css/editor_chrome.css",
   "src/emptyEditorLogoStyles.ts",
-  "src/extension.js",
+  "src/extension.ts",
+  "src/extensionHost",
   "src/extensionRoot.ts",
   "src/js/theme_template.js",
   "src/randomNekoImage.ts",
@@ -70,7 +71,7 @@ function collectProjectFacts(workspaceRoot = process.cwd()) {
   const packageManifest = readJsonFile(path.join(workspaceRoot, "package.json"));
   const packageLock = readJsonFile(path.join(workspaceRoot, "package-lock.json"));
   const settingsSource = readTextFile(path.join(workspaceRoot, "src", "settings.js"));
-  const extensionSource = readTextFile(path.join(workspaceRoot, "src", "extension.js"));
+  const extensionSource = readTextFile(path.join(workspaceRoot, "src", "extension.ts"));
   const settingsBundleSource = readTextFile(path.join(workspaceRoot, "src", "settingsBundle.ts"));
   const themeTemplateSource = readTextFile(path.join(workspaceRoot, "src", "js", "theme_template.js"));
   const editorChromeSource = readTextFile(path.join(workspaceRoot, "src", "css", "editor_chrome.css"));

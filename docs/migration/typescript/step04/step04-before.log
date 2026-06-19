@@ -1,0 +1,61 @@
+**********************
+PowerShell transcript start
+Start time: 20260619155951
+Username: PC_PT_3891C\CodexSandboxOnline
+RunAs User: PC_PT_3891C\CodexSandboxOnline
+Configuration Name:
+Machine: PC_PT_3891C (Microsoft Windows NT 10.0.26100.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -NoProfile -Command try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+$log = 'docs\migration\typescript\step04\step04-before.log'
+$exitCodes = @()
+Start-Transcript -Path $log -Force | Out-Null
+Write-Host '## git status --short --branch'
+git status --short --branch
+$exitCodes += $LASTEXITCODE
+Write-Host '## npm pkg get name version publisher engines main scripts.compile scripts.type-check scripts.test:unit scripts.test:integration'
+npm pkg get name version publisher engines main scripts.compile scripts.type-check scripts.test:unit scripts.test:integration
+$exitCodes += $LASTEXITCODE
+Write-Host '## npm run type-check'
+npm run type-check
+$exitCodes += $LASTEXITCODE
+Write-Host '## npm run test:docs'
+npm run test:docs
+$exitCodes += $LASTEXITCODE
+Write-Host '## npm run test:unit'
+npm run test:unit
+$exitCodes += $LASTEXITCODE
+Write-Host '## npm run test:integration'
+npm run test:integration
+$exitCodes += $LASTEXITCODE
+Write-Host "## exit codes: $($exitCodes -join ', ')"
+Stop-Transcript | Out-Null
+if (($exitCodes | Where-Object { $_ -ne 0 }).Count -gt 0) { exit 1 }
+exit 0
+Process ID: 168716
+PSVersion: 7.5.2
+PSEdition: Core
+GitCommitId: 7.5.2
+OS: Microsoft Windows 10.0.26100
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+## git status --short --branch
+
+## npm pkg get name version publisher engines main scripts.compile scripts.type-check scripts.test:unit scripts.test:integration
+
+## npm run type-check
+
+## npm run test:docs
+
+## npm run test:unit
+
+## npm run test:integration
+
+## exit codes: 0, 0, 0, 0, 0, 0
+**********************
+PowerShell transcript end
+End time: 20260619160008
+**********************

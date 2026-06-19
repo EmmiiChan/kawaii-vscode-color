@@ -14,7 +14,7 @@ Current tooling state:
 | --- | --- |
 | Build step | `npm run build:theme` merges protected base themes and editable overrides into the generated themes loaded by VS Code. `npm run build:local` bumps the patch version, then builds the themes and local VSIX. |
 | Automated tests | The lightweight gate starts with the Codex docs drift guard and Node syntax check, then the regular layers cover Node unit tests, `jsdom` DOM UI tests, VS Code Extension Development Host integration tests, and ExTester/WebDriver real VS Code UI E2E tests. A separate gated Neon E2E patches only a disposable `.vscode-test` install. |
-| TypeScript | Tooling is active for migration. `package.json.main` points to compiled `./out/src/extension.js`, while controller source remains JavaScript and the pure settings/workbench helpers listed below are TypeScript. |
+| TypeScript | Tooling is active for migration. `package.json.main` points to compiled `./out/src/extension.js`; the runtime entry, extracted Neon host controller/services/adapters, shared contracts, and pure settings/workbench helpers listed below are TypeScript. |
 | npm dependencies | No runtime dependencies. Dev-only tooling/test dependencies are `typescript@^6.0.3`, `@types/node@^26.0.0`, `@types/vscode@^1.33.0`, `jsdom@29.1.1`, `@vscode/test-cli@0.0.12`, `@vscode/test-electron@3.0.0`, `vscode-extension-tester@8.23.0`, and `mocha@11.7.6`. |
 | Packaging tool | Not installed permanently in this repo. Use `@vscode/vsce` through the existing npm scripts when packaging. |
 | Runtime entry | `package.json.main` points to `./out/src/extension.js`; run `npm run compile` before extension-host, E2E, or package validation. |
@@ -96,7 +96,7 @@ This validates the public VS Code theme contribution without installing the exte
 
 Live testing is possible, but it is risky because the Neon Effect setup action modifies the VS Code installation used by the Extension Development Host. The automated integration tests intentionally do not execute `Enable Neon Effect`.
 
-Use live Neon testing only when testing `src/extension.js`, `src/workbenchPatch.ts`, `src/js/theme_template.js`, or `src/css/editor_chrome.css`.
+Use live Neon testing only when testing `src/extension.ts`, `src/extensionHost`, `src/workbenchPatch.ts`, `src/js/theme_template.js`, or `src/css/editor_chrome.css`.
 
 Preferred automated path:
 
@@ -144,7 +144,8 @@ Theme file ownership:
 
 The package loads compiled runtime JavaScript from `out/` and still ships source assets used by that runtime:
 
-- `out/src/extension.js` runs in the extension host and is compiled from `src/extension.js`.
+- `out/src/extension.js` runs in the extension host and is compiled from `src/extension.ts`.
+- `src/extensionHost` contains typed extension-host adapters, the Neon Effect controller, and services for script assembly and workbench patch application/removal.
 - `src/extensionRoot.ts` owns source/compiled package-root asset resolution for runtime reads.
 - `src/settings.js` owns the settings webview orchestration, message routing, VS Code notifications/dialogs, and remaining UI-facing workflows.
 - `src/settingsPersistence.ts` owns pure color customization block mutation and hex/scope helpers.

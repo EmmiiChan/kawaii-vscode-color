@@ -1,11 +1,10 @@
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const path = require("node:path");
 const test = require("node:test");
-const vm = require("node:vm");
 
-const WORKSPACE_ROOT = path.resolve(__dirname, "..", "..");
-const EXTENSION_PATH = path.join(WORKSPACE_ROOT, "out", "src", "extension.js");
+const {
+  getEditorBackgroundFitArea,
+  normalizeEditorBackgroundFit
+} = require("../../out/src/extensionHost/services/NeonEffectService");
 const EXPECTED_EDITOR_BACKGROUND_FIT_AREAS = {
   full: { top: "0", right: "auto", bottom: "auto", left: "0", width: "100%", height: "100%" },
   top: { top: "0", right: "auto", bottom: "auto", left: "0", width: "100%", height: "50%" },
@@ -19,8 +18,6 @@ const EXPECTED_EDITOR_BACKGROUND_FIT_AREAS = {
 };
 
 test("extension maps every editor background fit option to its CSS area", () => {
-  const { getEditorBackgroundFitArea, normalizeEditorBackgroundFit } = loadExtensionInternals();
-
   for (const [fit, expectedArea] of Object.entries(EXPECTED_EDITOR_BACKGROUND_FIT_AREAS)) {
     assert.equal(normalizeEditorBackgroundFit(fit), fit);
     assert.deepEqual(toPlainObject(getEditorBackgroundFitArea(fit)), expectedArea);
@@ -33,116 +30,4 @@ test("extension maps every editor background fit option to its CSS area", () => 
 
 function toPlainObject(value) {
   return JSON.parse(JSON.stringify(value));
-}
-
-function loadExtensionInternals() {
-  const source = fs.readFileSync(EXTENSION_PATH, "utf8");
-  const module = { exports: {} };
-  const wrappedSource = `
-    (function(exports, require, module, __filename, __dirname) {
-      ${source}
-      module.exports.__test = {
-        getEditorBackgroundFitArea,
-        normalizeEditorBackgroundFit
-      };
-    })
-  `;
-  const compiled = vm.runInNewContext(wrappedSource, {
-    Buffer,
-    console,
-    process
-  }, { filename: EXTENSION_PATH });
-
-  compiled(module.exports, createSandboxRequire(), module, EXTENSION_PATH, path.dirname(EXTENSION_PATH));
-
-  return module.exports.__test;
-}
-
-function createSandboxRequire() {
-  return function sandboxRequire(request) {
-    if (request === "vscode") {
-      return createVscodeStub();
-    }
-
-    if (request === "./settings") {
-      return {
-        configureSettingsSync() {},
-        openSettings() {}
-      };
-    }
-
-    if (request === "./emptyEditorLogoStyles") {
-      return {
-        createEmptyEditorLogoStyles() {
-          return "";
-        }
-      };
-    }
-
-    if (request === "./workbenchPatch") {
-      return {
-        applyWorkbenchPatchScriptTag(html) {
-          return html;
-        },
-        isWorkbenchPatchEnabled() {
-          return false;
-        },
-        removeWorkbenchPatchScriptTag(html) {
-          return html;
-        },
-        resolveWorkbenchPatchPaths() {
-          return null;
-        }
-      };
-    }
-
-    if (request === "./extensionRoot") {
-      return {
-        resolveExtensionAssetPath(_currentDirName, ...segments) {
-          return path.join(WORKSPACE_ROOT, ...segments);
-        },
-        resolveExtensionRoot() {
-          return WORKSPACE_ROOT;
-        }
-      };
-    }
-
-    return require(request);
-  };
-}
-
-function createVscodeStub() {
-  return {
-    commands: {
-      executeCommand() {
-        return Promise.resolve();
-      },
-      registerCommand() {
-        return { dispose() {} };
-      }
-    },
-    env: {
-      appRoot: path.resolve("C:/fake/resources/app")
-    },
-    window: {
-      showErrorMessage() {
-        return Promise.resolve();
-      },
-      showInformationMessage() {
-        return Promise.resolve();
-      }
-    },
-    workspace: {
-      getConfiguration() {
-        return {
-          get() {
-            return undefined;
-          }
-        };
-      },
-      onDidChangeConfiguration() {
-        return { dispose() {} };
-      }
-    }
-  };
 }
