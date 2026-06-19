@@ -97,12 +97,10 @@ function validateCodexDocFacts(facts, documents) {
   requireText(documents.readme, ".codex/change-impact.md", ".codex/README.md", "change-impact entry", errors);
 
   requireText(docsAndAgents, facts.package.name, ".codex docs", "package name", errors);
-  requireText(docsAndAgents, facts.package.version, ".codex docs", "package version", errors);
   requireText(docsAndAgents, facts.package.publisher, ".codex docs", "package publisher", errors);
   requireText(documents.docs, facts.package.main, ".codex/docs.md", "package main", errors);
   requireText(docsAndAgents, facts.package.vscodeEngine, ".codex docs", "VS Code engine", errors);
   requireText(docsAndAgents, `lockfileVersion: ${facts.package.lockfileVersion}`, ".codex docs", "lockfile version", errors);
-  requireText(docsAndAgents, facts.package.lockRootVersion, ".codex docs", "lock root version", errors);
 
   facts.package.activationEvents.forEach((activationEvent) => {
     requireText(allDocs, activationEvent, ".codex docs", "activation event", errors);
@@ -181,14 +179,12 @@ function validateCodexDocFacts(facts, documents) {
 function collectPackageFacts(packageManifest, packageLock) {
   return {
     name: packageManifest.name,
-    version: packageManifest.version,
     publisher: packageManifest.publisher,
     main: packageManifest.main,
     vscodeEngine: packageManifest.engines && packageManifest.engines.vscode,
     activationEvents: packageManifest.activationEvents || [],
     devDependencies: packageManifest.devDependencies || {},
-    lockfileVersion: packageLock.lockfileVersion,
-    lockRootVersion: packageLock.packages && packageLock.packages[""] && packageLock.packages[""].version
+    lockfileVersion: packageLock.lockfileVersion
   };
 }
 

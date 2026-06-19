@@ -8,7 +8,7 @@ This file is the migration-oriented contract map for the extension. Keep it fact
 
 | Surface | Contract |
 | --- | --- |
-| Package | `kawaii-vscode-color@0.1.30` |
+| Package | `kawaii-vscode-color`; patch version is managed automatically in `package.json` and `package-lock.json` |
 | Publisher | `ITEM-PIXEL` |
 | Runtime entry | `./src/extension.js` |
 | VS Code engine | `^1.33.0` |
@@ -16,7 +16,7 @@ This file is the migration-oriented contract map for the extension. Keep it fact
 | Activation events | `onStartupFinished`, `onCommand:kawaii_synthwave.openSettings` |
 | Public command | `kawaii_synthwave.openSettings` -> `Kawaii VS Code Color: Settings` |
 | Documentation guard | `npm run test:docs` -> `node scripts/check-codex-docs.js` |
-| Lockfile | `lockfileVersion: 3`, root version `0.1.30` |
+| Lockfile | `lockfileVersion: 3`; root package patch version is automatic and not duplicated in `.codex` docs |
 
 Dev dependency contract:
 

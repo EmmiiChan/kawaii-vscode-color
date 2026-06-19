@@ -9,14 +9,15 @@ test("validateCodexDocFacts accepts documentation that contains all critical fac
   assert.deepEqual(result.errors, []);
 });
 
-test("validateCodexDocFacts reports package version drift", () => {
-  const documents = createDocuments({
-    docs: createBaseDocs().docs.replace("0.1.30", "0.1.31")
-  });
+test("validateCodexDocFacts ignores automatic patch version drift", () => {
+  const facts = createFacts();
+  facts.package.version = "0.1.99";
+  facts.package.lockRootVersion = "0.1.99";
+  const documents = createDocuments();
 
-  const result = validateCodexDocFacts(createFacts(), documents);
+  const result = validateCodexDocFacts(facts, documents);
 
-  assert.match(result.errors.join("\n"), /package version.*0\.1\.30/);
+  assert.deepEqual(result.errors, []);
 });
 
 test("validateCodexDocFacts reports missing webview message contracts", () => {
@@ -43,7 +44,6 @@ function createFacts() {
   return {
     package: {
       name: "kawaii-vscode-color",
-      version: "0.1.30",
       publisher: "ITEM-PIXEL",
       main: "./src/extension.js",
       vscodeEngine: "^1.33.0",
@@ -55,8 +55,7 @@ function createFacts() {
         jsdom: "29.1.1",
         mocha: "11.7.6"
       },
-      lockfileVersion: 3,
-      lockRootVersion: "0.1.30"
+      lockfileVersion: 3
     },
     themes: [
       {
@@ -142,7 +141,6 @@ function createBaseDocs() {
     ].join("\n"),
     docs: [
       "kawaii-vscode-color",
-      "0.1.30",
       "ITEM-PIXEL",
       "./src/extension.js",
       "^1.33.0",
