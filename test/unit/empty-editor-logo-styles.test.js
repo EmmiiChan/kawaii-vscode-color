@@ -3,6 +3,7 @@ const test = require("node:test");
 const { JSDOM } = require("jsdom");
 
 const {
+  EMPTY_EDITOR_LOGO_FALLBACK_VERSION_CASES,
   EMPTY_EDITOR_LOGO_LETTERPRESS_SELECTORS,
   createEmptyEditorLogoStyles
 } = require("../../src/emptyEditorLogoStyles");
@@ -40,6 +41,36 @@ test("empty editor logo selectors match old and wrapper VS Code watermark markup
   const matches = Array.from(dom.window.document.querySelectorAll(selector)).map((node) => node.id);
 
   assert.deepEqual(matches, ["old-watermark", "wrapped-watermark"]);
+});
+
+test("empty editor logo version fallbacks remain individually active", () => {
+  const dom = new JSDOM(`
+    <div class="monaco-workbench">
+      <div class="part editor">
+        <div class="content">
+          <div class="editor-group-container">
+            <div class="editor-group-watermark">
+              <div class="letterpress" data-fallback-id="legacy-editor-group-watermark"></div>
+            </div>
+          </div>
+          <div class="editor-group-container">
+            <div class="editor-group-watermark-wrapper">
+              <div class="editor-group-watermark">
+                <div class="letterpress" data-fallback-id="wrapped-editor-group-watermark"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `);
+
+  for (const fallbackCase of EMPTY_EDITOR_LOGO_FALLBACK_VERSION_CASES) {
+    const match = dom.window.document.querySelector(fallbackCase.selector);
+
+    assert.ok(match, `Expected fallback selector to match: ${fallbackCase.id}`);
+    assert.equal(match.getAttribute("data-fallback-id"), fallbackCase.id);
+  }
 });
 
 test("createEmptyEditorLogoStyles applies data URI and opacity", () => {

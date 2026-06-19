@@ -9,7 +9,8 @@ const {
     writeE2ELastRunRecord
 } = require("./e2e-last-run");
 
-const mode = process.argv[2] === "neon" ? "neon" : "safe";
+const requestedMode = process.argv[2];
+const mode = requestedMode === "neon" || requestedMode === "current" ? requestedMode : "safe";
 const isWindows = process.platform === "win32";
 const workspaceRoot = process.cwd();
 const extestBinary = path.join(
@@ -18,7 +19,9 @@ const extestBinary = path.join(
     ".bin",
     isWindows ? "extest.cmd" : "extest"
 );
-const codeVersion = "1.111.0";
+const codeVersion = mode === "current"
+    ? process.env.KAWAII_E2E_CURRENT_CODE_VERSION || "max"
+    : "1.111.0";
 const codeSettings = "test/e2e/settings.json";
 const openResource = "test/fixtures/workspace";
 const mochaConfig = mode === "neon"
@@ -26,12 +29,17 @@ const mochaConfig = mode === "neon"
     : "test/e2e/.mocharc.js";
 const storage = mode === "neon"
     ? ".vscode-test/extest-111-neon"
-    : ".vscode-test/extest-111";
+    : mode === "current"
+        ? ".vscode-test/extest-current"
+        : ".vscode-test/extest-111";
 const extensionsDir = mode === "neon"
     ? ".vscode-test/extest-111-neon-extensions"
-    : ".vscode-test/extest-111-extensions";
+    : mode === "current"
+        ? ".vscode-test/extest-current-extensions"
+        : ".vscode-test/extest-111-extensions";
 const env = { ...process.env };
 env.KAWAII_E2E_STORAGE = path.resolve(storage);
+env.KAWAII_E2E_TEST_HOOKS = "1";
 
 delete env.ELECTRON_RUN_AS_NODE;
 
@@ -51,7 +59,7 @@ const phases = mode === "neon"
         { name: "neon restored after full restart", mochaConfig: "test/e2e/.mocharc.neon-restored.js" }
     ]
     : [
-        { name: "safe", mochaConfig }
+        { name: mode === "current" ? "current" : "safe", mochaConfig }
     ];
 const runRecord = createE2ELastRunRecord({
     mode,

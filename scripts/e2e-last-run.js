@@ -14,7 +14,7 @@ function getE2EResultsDir(options = {}) {
 
 function createE2ELastRunRecord(options) {
     const workspaceRoot = path.resolve(options.workspaceRoot || process.cwd());
-    const mode = options.mode === "neon" ? "neon" : "safe";
+    const mode = normalizeE2EMode(options.mode);
     const startedAt = normalizeTimestamp(options.startedAt);
 
     return {
@@ -133,7 +133,7 @@ function readExTesterLastRun(options = {}) {
 }
 
 function validateE2ERunOptions(options = {}) {
-    if (options.mode !== "neon") {
+    if (normalizeE2EMode(options.mode) !== "neon") {
         return;
     }
 
@@ -177,15 +177,47 @@ function findOrCreatePhase(record, phaseName, mochaConfig) {
 }
 
 function getDefaultCommand(mode) {
-    return mode === "neon" ? "node scripts/run-e2e.js neon" : "node scripts/run-e2e.js";
+    if (mode === "neon") {
+        return "node scripts/run-e2e.js neon";
+    }
+
+    if (mode === "current") {
+        return "node scripts/run-e2e.js current";
+    }
+
+    return "node scripts/run-e2e.js";
 }
 
 function getDefaultStorage(mode) {
-    return mode === "neon" ? ".vscode-test/extest-111-neon" : ".vscode-test/extest-111";
+    if (mode === "neon") {
+        return ".vscode-test/extest-111-neon";
+    }
+
+    if (mode === "current") {
+        return ".vscode-test/extest-current";
+    }
+
+    return ".vscode-test/extest-111";
 }
 
 function getDefaultExtensionsDir(mode) {
-    return mode === "neon" ? ".vscode-test/extest-111-neon-extensions" : ".vscode-test/extest-111-extensions";
+    if (mode === "neon") {
+        return ".vscode-test/extest-111-neon-extensions";
+    }
+
+    if (mode === "current") {
+        return ".vscode-test/extest-current-extensions";
+    }
+
+    return ".vscode-test/extest-111-extensions";
+}
+
+function normalizeE2EMode(mode) {
+    if (mode === "neon" || mode === "current") {
+        return mode;
+    }
+
+    return "safe";
 }
 
 function resolveFromWorkspace(workspaceRoot, value) {

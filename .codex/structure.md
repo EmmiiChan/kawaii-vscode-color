@@ -172,6 +172,7 @@ Current source of truth:
 - No-tab logo selector/style generation lives in `src/emptyEditorLogoStyles.js`.
 - Renderer behavior lives in the JS template under `src/js`.
 - Settings webview orchestration, message routing, VS Code notifications/dialogs, native picker/download workflows, color-reference parsing, and state composition live in `src/settings.js`.
+- Random Neko payload parsing, URL resolution, guarded HTTPS fetch, and image response normalization live in `src/randomNekoImage.js`.
 - Pure color customization block mutation, scope comparison, and hex validation live in `src/settingsPersistence.js`.
 - VS Code configuration get/inspect/update target handling lives in `src/settingsStore.js`.
 - Generated-theme-aware color customization updates/resets live in `src/settingsColorService.js`.
@@ -321,7 +322,7 @@ Current mechanics:
 - The inserted script is wrapped with marker comments so it can be removed later.
 - The gated E2E command `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` validates this only inside `.vscode-test/extest-111-neon`.
 - The gated E2E uses five separate VS Code launches: capture baseline/apply dstgroup patch, validate dstgroup runtime after full restart and apply an alternate image, validate the alternate image after full restart and reapply dstgroup, validate dstgroup after full restart and disable, then validate restored runtime after another full restart.
-- The gated E2E captures screenshots of the default watermark, dstgroup no-tab logo, alternate no-tab image, reverted dstgroup logo, real editor-page backgrounds for dstgroup, alternate, and reverted dstgroup states, and a no-overlay baseline plus one real-editor screenshot for every `full`, `top`, `bottom`, `left`, `right`, `top-left`, `top-right`, `bottom-left`, and `bottom-right` editor background fit area. It also checks runtime CSS data URLs, real `.monaco-editor::before` background application, editor background fit area CSS variables, image-difference positioning metrics, and `--vscode-*` token usage. Unit tests cover the complete fit area mapping without opening VS Code.
+- The gated E2E captures screenshots of the default watermark, UI-backed dstgroup no-tab logo replacement, alternate no-tab image, reverted dstgroup logo, real editor-page backgrounds for dstgroup, alternate, and reverted dstgroup states, and a no-overlay baseline plus one real-editor screenshot for every `full`, `top`, `bottom`, `left`, `right`, `top-left`, `top-right`, `bottom-left`, and `bottom-right` editor background fit area. It also checks runtime CSS data URLs, real `.monaco-editor::before` background application, active no-page logo fallback selector matching, editor background fit area CSS variables, image-difference positioning metrics, and `--vscode-*` token usage. Unit tests cover the complete fit area mapping and both no-page logo fallback selector versions without opening VS Code.
 
 Patch marker contract:
 
@@ -399,9 +400,11 @@ Useful checks for this repository:
 - `npm run test:dom`
 - `npm run test:integration`
 - `npm run test:e2e`
+- `npm run test:e2e:current`
 - `npm test`
 - `npm run test:all`
 - `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` only when validating disposable Neon patch behavior.
+- `KAWAII_E2E_CURRENT_CODE_VERSION=<version> npm run test:e2e:current` only when probing a specific VS Code build with the safe E2E suite.
 - `npm run build:theme`
 - Manual inspection of `package.json` contribution points.
 - Manual theme validation in VS Code with `Developer: Inspect Editor Tokens and Scopes`.
@@ -426,6 +429,7 @@ Local source anchors:
 - `package.json`: manifest, contributions, activation, settings, extension entry.
 - `src/extension.js`: extension host command flow, setting normalization, patch/unpatch mechanics.
 - `src/emptyEditorLogoStyles.js`: no-tab logo selector contract and generated logo replacement CSS.
+- `src/randomNekoImage.js`: Random Neko payload parsing, URL resolution, guarded HTTPS fetching, and image normalization.
 - `src/settings.js`: settings webview orchestration, message handling, VS Code notifications/dialogs, native picker/download workflows, and state composition.
 - `src/settingsPersistence.js`: pure color customization block mutation, scope comparison, and hex validation.
 - `src/settingsStore.js`: VS Code configuration adapter for global/workspace settings reads and writes.

@@ -7,6 +7,8 @@ const test = require("node:test");
 
 const workspaceRoot = path.resolve(__dirname, "..", "..");
 const settingsFixturePath = path.join(workspaceRoot, "test", "fixtures", "settings", "settings-dark-light-customized.json");
+const editorBackgroundFixturePath = path.join(workspaceRoot, "test", "fixtures", "settings", "editor-background.png");
+const emptyEditorLogoFixturePath = path.join(workspaceRoot, "test", "fixtures", "settings", "empty-editor-logo.png");
 
 function createUri(filePath) {
   return {
@@ -352,6 +354,91 @@ test("settings E2E bundle hook is rejected by default and applies fixture only w
       delete process.env.KAWAII_E2E_ALLOW_NEON_PATCH;
     } else {
       process.env.KAWAII_E2E_ALLOW_NEON_PATCH = originalFlag;
+    }
+    harness.cleanup();
+  }
+});
+
+test("settings E2E fixtures drive dialogs and random image flows without native UI or network", async () => {
+  const originalSafeHooksFlag = process.env.KAWAII_E2E_TEST_HOOKS;
+  const harness = createSettingsHarness();
+
+  try {
+    process.env.KAWAII_E2E_TEST_HOOKS = "1";
+
+    await harness.settings.openSettings(harness.context, {
+      enableNeon: async () => {
+        harness.actions.enable += 1;
+      },
+      disableNeon: async () => {
+        harness.actions.disable += 1;
+      }
+    });
+
+    const messageHandler = harness.getMessageHandler();
+    const exportPath = path.join(harness.tempRoot, "controlled-settings-export.json");
+    const editorBackgroundDownloadPath = path.join(harness.tempRoot, "downloaded-editor-background.png");
+    const emptyEditorLogoDownloadPath = path.join(harness.tempRoot, "downloaded-empty-editor-logo.png");
+
+    await messageHandler({
+      type: "e2e-set-test-fixtures",
+      fixtures: {
+        settingsExportPath: exportPath,
+        settingsImportPath: exportPath,
+        editorBackgroundImagePath: editorBackgroundFixturePath,
+        emptyEditorLogoImagePath: emptyEditorLogoFixturePath,
+        editorBackgroundDownloadPath,
+        emptyEditorLogoDownloadPath,
+        randomNekoImagePath: editorBackgroundFixturePath
+      }
+    });
+
+    await messageHandler({ type: "select-editor-background-image" });
+    assert.equal(harness.globalStateValues.get("kawaii_synthwave.editorBackgroundImage").originalName, "editor-background.png");
+    assert.ok(fs.existsSync(path.join(harness.context.globalStorageUri.fsPath, "editor-background-image.png")));
+
+    await messageHandler({ type: "select-empty-editor-logo-image" });
+    assert.equal(harness.globalStateValues.get("kawaii_synthwave.emptyEditorLogoImage").originalName, "empty-editor-logo.png");
+    assert.ok(fs.existsSync(path.join(harness.context.globalStorageUri.fsPath, "empty-editor-logo-image.png")));
+
+    await messageHandler({ type: "download-editor-background-image" });
+    await messageHandler({ type: "download-empty-editor-logo-image" });
+    assert.deepEqual(fs.readFileSync(editorBackgroundDownloadPath), fs.readFileSync(editorBackgroundFixturePath));
+    assert.deepEqual(fs.readFileSync(emptyEditorLogoDownloadPath), fs.readFileSync(emptyEditorLogoFixturePath));
+
+    await messageHandler({
+      type: "update-color",
+      section: "workbench",
+      id: "editor.background",
+      value: "#121212",
+      themeVariantId: "dark"
+    });
+    await messageHandler({ type: "export-settings" });
+    assert.ok(fs.existsSync(exportPath));
+
+    await messageHandler({
+      type: "update-color",
+      section: "workbench",
+      id: "editor.background",
+      value: "#343434",
+      themeVariantId: "dark"
+    });
+    await messageHandler({ type: "import-settings" });
+    assert.equal(
+      harness.configurationValues.get("workbench.colorCustomizations")["[Kawaii VS Code Color]"]["editor.background"],
+      "#121212"
+    );
+
+    await messageHandler({ type: "select-random-neko-editor-background-image" });
+    assert.equal(
+      harness.globalStateValues.get("kawaii_synthwave.editorBackgroundImage").originalName,
+      "e2e-random-neko-editor-background.png"
+    );
+  } finally {
+    if (originalSafeHooksFlag === undefined) {
+      delete process.env.KAWAII_E2E_TEST_HOOKS;
+    } else {
+      process.env.KAWAII_E2E_TEST_HOOKS = originalSafeHooksFlag;
     }
     harness.cleanup();
   }

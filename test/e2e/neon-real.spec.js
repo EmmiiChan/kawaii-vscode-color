@@ -10,8 +10,11 @@ const {
     clearTransientWorkbenchNotifications,
     clickWebviewCss,
     getWebviewInputValue,
+    postWebviewE2EMessage,
     runCommand,
+    setWebviewInputValue,
     takeE2EScreenshot,
+    waitForWebviewInputValue,
     waitForWebviewTextIncludes,
     withSettingsWebview
 } = require("./helpers/extester-app");
@@ -21,6 +24,7 @@ const {
     resolveWorkbenchPatchPaths
 } = require("../../src/workbenchPatch");
 const {
+    EMPTY_EDITOR_LOGO_FALLBACK_VERSION_CASES,
     EMPTY_EDITOR_LOGO_LETTERPRESS_SELECTORS
 } = require("../../src/emptyEditorLogoStyles");
 
@@ -109,7 +113,7 @@ describe("Neon real gated E2E @neon-real", function () {
             baselineLogoState
         });
 
-        await applyVisualSettingsBundleAndEffects(DSTGROUP_VISUAL_CASE, "neon-real-before-apply-dstgroup");
+        await applyVisualSettingsThroughUiAndEffects(DSTGROUP_VISUAL_CASE, "neon-real-before-apply-dstgroup");
 
         const appliedSnapshot = await waitForPatchSnapshot(
             patchPaths,
@@ -333,6 +337,10 @@ function createVisualSettingsCase(id, options) {
     return {
         id,
         bundle,
+        source: {
+            editorBackgroundImagePath: options.editorBackgroundImagePath,
+            emptyEditorLogoImagePath: options.emptyEditorLogoImagePath
+        },
         expected: createExpectedVisualEffects(bundle)
     };
 }
@@ -466,6 +474,7 @@ async function captureAppliedEmptyEditorLogoVisualState(visualCase, screenshotNa
     assert.equal(runtimeState.hasOwnPaletteOnly, false, `Expected ${visualCase.id} runtime CSS to keep VS Code editor tokens`);
     assert.equal(runtimeState.hasExpectedEditorBackgroundImage, true, `Expected runtime CSS to include ${visualCase.id} editor background image data URL`);
     assert.equal(runtimeState.hasExpectedEmptyEditorLogoImage, true, `Expected runtime CSS to apply ${visualCase.id} no-tab logo image data URL to the real watermark target`);
+    assert.ok(runtimeState.emptyEditorLogoActiveFallbackId, `Expected a known no-page logo fallback selector to be active. Runtime state: ${JSON.stringify(runtimeState.emptyEditorLogoFallbackMatches)}`);
     assert.equal(runtimeState.hasExpectedEditorBackgroundOpacity, true, `Expected runtime CSS to include ${visualCase.id} background opacity`);
     assert.equal(runtimeState.hasExpectedEditorBackgroundFit, true, `Expected runtime CSS to include ${visualCase.id} background fit area`);
     assert.equal(runtimeState.hasExpectedEmptyEditorLogoOpacity, true, `Expected runtime CSS to include ${visualCase.id} no-tab logo opacity`);
@@ -688,16 +697,7 @@ async function applyVisualSettingsBundleAndEffects(visualCase, screenshotName) {
         await assertWebviewPageVisible("color-settings-page");
         await waitForWebviewTextIncludes("#color-settings-page", "THEME MODE");
 
-        const posted = await VSBrowser.instance.driver.executeScript(`
-            const postMessage = window.kawaiiVsCodeColorE2EPostMessage;
-            if (typeof postMessage !== 'function') {
-                return false;
-            }
-            postMessage({ type: 'e2e-apply-settings-bundle', bundle: arguments[0] });
-            return true;
-        `, visualCase.bundle);
-
-        assert.equal(posted, true, "Expected gated E2E postMessage hook to be available");
+        await postWebviewE2EMessage({ type: "e2e-apply-settings-bundle", bundle: visualCase.bundle });
         await waitForWebviewTextIncludes("#effects-warning", "Settings restored from E2E bundle", 30000);
         await waitForWebviewTextIncludes("#editor-background-file", visualCase.expected.editorBackgroundOriginalName, 30000);
         await waitForWebviewTextIncludes("#empty-editor-logo-file", visualCase.expected.emptyEditorLogoOriginalName, 30000);
@@ -713,6 +713,77 @@ async function applyVisualSettingsBundleAndEffects(visualCase, screenshotName) {
 
         await clickWebviewCss("#apply-effects");
     });
+}
+
+async function applyVisualSettingsThroughUiAndEffects(visualCase, screenshotName) {
+    await withSettingsWebview(async () => {
+        await clickWebviewCss('.nav-button[data-page="color-settings"]');
+        await assertWebviewPageVisible("color-settings-page");
+        await waitForWebviewTextIncludes("#color-settings-page", "THEME MODE");
+
+        const preseedVisualCase = visualCase.id === ALTERNATE_VISUAL_CASE.id
+            ? DSTGROUP_VISUAL_CASE
+            : ALTERNATE_VISUAL_CASE;
+        await postWebviewE2EMessage({ type: "e2e-apply-settings-bundle", bundle: preseedVisualCase.bundle });
+        await waitForWebviewTextIncludes("#editor-background-file", preseedVisualCase.expected.editorBackgroundOriginalName, 30000);
+        await waitForWebviewTextIncludes("#empty-editor-logo-file", preseedVisualCase.expected.emptyEditorLogoOriginalName, 30000);
+
+        await postWebviewE2EMessage({
+            type: "e2e-set-test-fixtures",
+            fixtures: {
+                editorBackgroundImagePath: visualCase.source.editorBackgroundImagePath,
+                emptyEditorLogoImagePath: visualCase.source.emptyEditorLogoImagePath
+            }
+        });
+
+        await clickWebviewCss("#editor-background-upload");
+        await waitForWebviewTextIncludes("#editor-background-file", visualCase.expected.editorBackgroundOriginalName, 30000);
+        await clickWebviewCss("#empty-editor-logo-upload");
+        await waitForWebviewTextIncludes("#empty-editor-logo-file", visualCase.expected.emptyEditorLogoOriginalName, 30000);
+
+        await setWebviewInputValue("#editor-background-opacity", visualCase.expected.editorBackgroundOpacity);
+        await waitForWebviewInputValue("#editor-background-opacity", visualCase.expected.editorBackgroundOpacity, 20000);
+        await setWebviewInputValue("#editor-background-fit", visualCase.expected.editorBackgroundFit);
+        await waitForWebviewInputValue("#editor-background-fit", visualCase.expected.editorBackgroundFit, 20000);
+        await setWebviewInputValue("#empty-editor-logo-opacity", visualCase.expected.emptyEditorLogoOpacity);
+        await waitForWebviewInputValue("#empty-editor-logo-opacity", visualCase.expected.emptyEditorLogoOpacity, 20000);
+
+        assert.equal(await getWebviewInputValue("#theme-variant"), "dark");
+
+        if (screenshotName) {
+            await takeE2EScreenshot(screenshotName);
+        }
+
+        await setVisualControlsAndApply(visualCase);
+    });
+}
+
+async function setVisualControlsAndApply(visualCase) {
+    const applied = await VSBrowser.instance.driver.executeScript(`
+        const editorBackgroundOpacity = document.querySelector('#editor-background-opacity');
+        const editorBackgroundFit = document.querySelector('#editor-background-fit');
+        const emptyEditorLogoOpacity = document.querySelector('#empty-editor-logo-opacity');
+        const applyEffects = document.querySelector('#apply-effects');
+
+        if (!editorBackgroundOpacity || !editorBackgroundFit || !emptyEditorLogoOpacity || !applyEffects) {
+            return false;
+        }
+
+        editorBackgroundOpacity.value = arguments[0];
+        editorBackgroundFit.value = arguments[1];
+        emptyEditorLogoOpacity.value = arguments[2];
+        editorBackgroundOpacity.dispatchEvent(new Event('input', { bubbles: true }));
+        editorBackgroundFit.dispatchEvent(new Event('change', { bubbles: true }));
+        emptyEditorLogoOpacity.dispatchEvent(new Event('input', { bubbles: true }));
+        applyEffects.click();
+        return true;
+    `,
+        visualCase.expected.editorBackgroundOpacity,
+        visualCase.expected.editorBackgroundFit,
+        visualCase.expected.emptyEditorLogoOpacity
+    );
+
+    assert.equal(applied, true, "Expected visual controls to be set before Apply Effects");
 }
 
 async function clickNeonAction(buttonCss, screenshotName) {
@@ -878,8 +949,9 @@ async function getRuntimeNeonState(visualCase, options = {}) {
         const expectedEmptyEditorLogoOpacity = arguments[3];
         const expectedEditorBackgroundFitArea = arguments[4];
         const emptyEditorLogoSelectors = arguments[5];
-        const allowRuntimeEditorBackgroundFitOverride = arguments[6];
-        const allowRuntimeEditorBackgroundOpacityOverride = arguments[7];
+        const emptyEditorLogoFallbackCases = arguments[6];
+        const allowRuntimeEditorBackgroundFitOverride = arguments[7];
+        const allowRuntimeEditorBackgroundOpacityOverride = arguments[8];
         const editorBackgroundFitProperties = ['top', 'right', 'bottom', 'left', 'width', 'height'];
         const themeSelectors = [
             '[class~="vs-dark"][class*="kawaii_synthwave-generated-color-theme-json"]',
@@ -937,6 +1009,22 @@ async function getRuntimeNeonState(visualCase, options = {}) {
         }) || logoTargets[0];
         const logoTargetStyles = logoTarget ? window.getComputedStyle(logoTarget) : null;
         const logoTargetRect = logoTarget ? logoTarget.getBoundingClientRect() : null;
+        const emptyEditorLogoFallbackMatches = emptyEditorLogoFallbackCases.map((fallbackCase) => {
+            const matches = Array.from(document.querySelectorAll(fallbackCase.selector));
+            const expectedImageMatches = matches.filter((element) => {
+                const styles = window.getComputedStyle(element);
+                return styles.backgroundImage.includes(expectedEmptyEditorLogoDataUrl);
+            });
+
+            return {
+                id: fallbackCase.id,
+                selector: fallbackCase.selector,
+                count: matches.length,
+                expectedImageCount: expectedImageMatches.length
+            };
+        });
+        const activeFallback = emptyEditorLogoFallbackMatches.find((fallbackCase) => fallbackCase.expectedImageCount > 0)
+            || emptyEditorLogoFallbackMatches.find((fallbackCase) => fallbackCase.count > 0);
         return {
             viewportWidth: window.innerWidth,
             viewportHeight: window.innerHeight,
@@ -964,6 +1052,8 @@ async function getRuntimeNeonState(visualCase, options = {}) {
             } : null,
             emptyEditorLogoTargetCount: logoTargets.length,
             emptyEditorLogoTargetClassName: logoTarget ? logoTarget.className : '',
+            emptyEditorLogoFallbackMatches,
+            emptyEditorLogoActiveFallbackId: activeFallback ? activeFallback.id : '',
             emptyEditorLogoTargetBackgroundImageLength: logoTargetStyles ? logoTargetStyles.backgroundImage.length : 0,
             emptyEditorLogoRect: logoTargetRect ? {
                 left: logoTargetRect.left,
@@ -983,6 +1073,7 @@ async function getRuntimeNeonState(visualCase, options = {}) {
         visualCase.expected.emptyEditorLogoOpacity,
         visualCase.expected.editorBackgroundFitArea,
         EMPTY_EDITOR_LOGO_LETTERPRESS_SELECTORS,
+        EMPTY_EDITOR_LOGO_FALLBACK_VERSION_CASES,
         Boolean(options.allowRuntimeEditorBackgroundFitOverride),
         Boolean(options.allowRuntimeEditorBackgroundOpacityOverride)
     );

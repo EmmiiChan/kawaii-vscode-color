@@ -1,8 +1,8 @@
 const fs = require("fs");
-const https = require("https");
 const os = require("os");
 const path = require("path");
 const vscode = require("vscode");
+const { createRandomNekoImageFetcher } = require("./randomNekoImage");
 const { createSettingsBundleActions } = require("./settingsBundle");
 const { createSettingsColorService } = require("./settingsColorService");
 const effectsPersistence = require("./settingsEffectsPersistence");
@@ -40,7 +40,9 @@ const BRIGHTNESS_SETTING = "kawaii_synthwave.brightness";
 const DISABLE_GLOW_SETTING = "kawaii_synthwave.disableGlow";
 const SETTINGS_EXPORT_FILE_NAME = "kawaii-vscode-color-settings.json";
 const NEON_E2E_ALLOW_PATCH_ENV = "KAWAII_E2E_ALLOW_NEON_PATCH";
+const SETTINGS_E2E_TEST_HOOKS_ENV = "KAWAII_E2E_TEST_HOOKS";
 const COLOR_SCHEME_REFERENCE_PATH = path.join(__dirname, "..", ".codex", "color_scheme_reference.md");
+const e2eTestFixtures = {};
 const settingsStore = createSettingsStore(vscode.workspace);
 const settingsColorService = createSettingsColorService({
   colorThemeSetting: COLOR_THEME_SETTING,
@@ -69,7 +71,7 @@ const settingsBundleActions = createSettingsBundleActions({
   themeVariants: THEME_VARIANTS,
   tokenCustomizationsSetting: TOKEN_CUSTOMIZATIONS_SETTING,
   uri: vscode.Uri,
-  window: vscode.window,
+  window: createWindowAdapter(),
   workbenchCustomizationsSetting: WORKBENCH_CUSTOMIZATIONS_SETTING
 });
 const EDITOR_BACKGROUND_IMAGE_STATE_KEY = "kawaii_synthwave.editorBackgroundImage";
@@ -313,6 +315,19 @@ const CHECKSUM_FIX_LINK = {
   url: "https://marketplace.visualstudio.com/items?itemName=iewnfod.vscode-fix-checksums-next-next"
 };
 const PROJECT_LINKS = getProjectLinksFromManifest(packageManifest);
+const fetchRandomNekoImageFromNetwork = createRandomNekoImageFetcher({
+  endpoint: NEKOS_MOE_RANDOM_IMAGE_ENDPOINT,
+  imageBaseUrl: NEKOS_MOE_IMAGE_BASE_URL,
+  userAgent: NEKOS_MOE_USER_AGENT,
+  timeoutMs: NETWORK_REQUEST_TIMEOUT_MS,
+  redirectLimit: NETWORK_REDIRECT_LIMIT,
+  jsonMaxBytes: NETWORK_JSON_MAX_BYTES,
+  imageMaxBytes: EDITOR_BACKGROUND_MAX_IMAGE_SIZE_BYTES,
+  mimeTypes: EDITOR_BACKGROUND_MIME_TYPES,
+  getSupportedImageExtension: getSupportedEditorBackgroundImageExtension,
+  getMimeType: getEditorBackgroundImageMimeType,
+  formatFileSize
+});
 
 let activePanel;
 let neonEffectActions = {};
@@ -437,6 +452,13 @@ async function handleSettingsMessage(panel, message, context) {
         await settingsBundleActions.applySettingsBundle(context, message.bundle);
         await postSettingsState(panel, context);
         postEffectsPendingWarning(panel, "Settings restored from E2E bundle. Click Apply Effects, then reload VS Code to refresh image-backed effects.");
+        return;
+      case "e2e-set-test-fixtures":
+        if (!isSettingsE2ETestHookEnabled()) {
+          throw new Error("E2E test fixtures are only available while KAWAII_E2E_TEST_HOOKS=1 or KAWAII_E2E_ALLOW_NEON_PATCH=1.");
+        }
+        setE2ETestFixtures(message.fixtures);
+        await postSettingsState(panel, context);
         return;
       case "select-editor-background-image":
         if (await selectEditorBackgroundImage(context)) {
@@ -650,6 +672,155 @@ function postEffectsPendingWarning(panel, message) {
  */
 function isNeonE2ETestHookEnabled() {
   return process.env[NEON_E2E_ALLOW_PATCH_ENV] === "1";
+}
+
+/**
+ * Checks whether safe settings E2E test hooks may be exposed.
+ *
+ * @returns {boolean} True only for explicit E2E runs.
+ */
+function isSettingsE2ETestHookEnabled() {
+  return process.env[SETTINGS_E2E_TEST_HOOKS_ENV] === "1" || isNeonE2ETestHookEnabled();
+}
+
+/**
+ * Stores deterministic fixture paths for E2E-only dialog and network replacements.
+ *
+ * @param {unknown} fixtures - Fixture path map received from the webview.
+ * @returns {void}
+ */
+function setE2ETestFixtures(fixtures) {
+  const allowedKeys = [
+    "settingsExportPath",
+    "settingsImportPath",
+    "editorBackgroundImagePath",
+    "emptyEditorLogoImagePath",
+    "editorBackgroundDownloadPath",
+    "emptyEditorLogoDownloadPath",
+    "randomNekoImagePath"
+  ];
+  const normalizedFixtures = ensurePlainObject(fixtures);
+
+  allowedKeys.forEach(function assignFixturePath(key) {
+    if (typeof normalizedFixtures[key] === "string" && normalizedFixtures[key]) {
+      e2eTestFixtures[key] = path.resolve(normalizedFixtures[key]);
+    } else {
+      delete e2eTestFixtures[key];
+    }
+  });
+}
+
+/**
+ * Builds the VS Code window facade used by settings actions.
+ *
+ * @returns {Record<string, Function>} Window facade.
+ */
+function createWindowAdapter() {
+  return {
+    showErrorMessage(...args) {
+      return vscode.window.showErrorMessage(...args);
+    },
+    showInformationMessage(...args) {
+      return vscode.window.showInformationMessage(...args);
+    },
+    showOpenDialog(options) {
+      return showOpenDialog(options);
+    },
+    showSaveDialog(options) {
+      return showSaveDialog(options);
+    },
+    showWarningMessage(...args) {
+      return vscode.window.showWarningMessage(...args);
+    }
+  };
+}
+
+/**
+ * Opens a native file dialog or returns an E2E fixture path when hooks are enabled.
+ *
+ * @param {Record<string, unknown>} options - VS Code open dialog options.
+ * @returns {Thenable<vscode.Uri[] | undefined>} Selected URIs.
+ */
+function showOpenDialog(options) {
+  const fixtureKey = getE2EOpenDialogFixtureKey(options);
+
+  if (fixtureKey) {
+    return Promise.resolve([vscode.Uri.file(e2eTestFixtures[fixtureKey])]);
+  }
+
+  return vscode.window.showOpenDialog(options);
+}
+
+/**
+ * Opens a native save dialog or returns an E2E fixture path when hooks are enabled.
+ *
+ * @param {Record<string, unknown>} options - VS Code save dialog options.
+ * @returns {Thenable<vscode.Uri | undefined>} Selected URI.
+ */
+function showSaveDialog(options) {
+  const fixtureKey = getE2ESaveDialogFixtureKey(options);
+
+  if (fixtureKey) {
+    return Promise.resolve(vscode.Uri.file(e2eTestFixtures[fixtureKey]));
+  }
+
+  return vscode.window.showSaveDialog(options);
+}
+
+/**
+ * Resolves an E2E open-dialog fixture key by dialog title.
+ *
+ * @param {Record<string, unknown>} options - VS Code dialog options.
+ * @returns {string | undefined} Fixture key.
+ */
+function getE2EOpenDialogFixtureKey(options) {
+  if (!isSettingsE2ETestHookEnabled()) {
+    return undefined;
+  }
+
+  const title = String(options && options.title || "");
+
+  if (title.includes("Import Kawaii VS Code Color settings") && e2eTestFixtures.settingsImportPath) {
+    return "settingsImportPath";
+  }
+
+  if (title.includes("editor background image") && e2eTestFixtures.editorBackgroundImagePath) {
+    return "editorBackgroundImagePath";
+  }
+
+  if (title.includes("no-tab logo") && e2eTestFixtures.emptyEditorLogoImagePath) {
+    return "emptyEditorLogoImagePath";
+  }
+
+  return undefined;
+}
+
+/**
+ * Resolves an E2E save-dialog fixture key by dialog title.
+ *
+ * @param {Record<string, unknown>} options - VS Code dialog options.
+ * @returns {string | undefined} Fixture key.
+ */
+function getE2ESaveDialogFixtureKey(options) {
+  if (!isSettingsE2ETestHookEnabled()) {
+    return undefined;
+  }
+
+  const title = String(options && options.title || "");
+
+  if (title.includes("Export Kawaii VS Code Color settings") && e2eTestFixtures.settingsExportPath) {
+    return "settingsExportPath";
+  }
+
+  if (title.includes("editor background image") && e2eTestFixtures.editorBackgroundDownloadPath) {
+    return "editorBackgroundDownloadPath";
+  }
+
+  if (title.includes("no-tab logo") && e2eTestFixtures.emptyEditorLogoDownloadPath) {
+    return "emptyEditorLogoDownloadPath";
+  }
+
+  return undefined;
 }
 
 /**
@@ -915,7 +1086,7 @@ async function removeStoredEmptyEditorLogoImage(context) {
  * @returns {Promise<boolean>} True when the image metadata and file are stored.
  */
 async function selectEditorBackgroundImage(context) {
-  const selectedUris = await vscode.window.showOpenDialog({
+  const selectedUris = await showOpenDialog({
     canSelectFiles: true,
     canSelectFolders: false,
     canSelectMany: false,
@@ -1012,191 +1183,36 @@ async function storeEditorBackgroundImage(context, imageData) {
  * @returns {Promise<{imageBuffer: Buffer, extension: string, originalName: string, mimeType: string}>} Downloaded image data.
  */
 async function fetchRandomNekoImage() {
-  const payload = await requestJson(NEKOS_MOE_RANDOM_IMAGE_ENDPOINT, NETWORK_REDIRECT_LIMIT);
-  const image = getRandomNekoImageFromPayload(payload);
-  const imageUrl = getRandomNekoImageUrl(image);
-  const response = await requestBuffer(imageUrl, EDITOR_BACKGROUND_MAX_IMAGE_SIZE_BYTES, NETWORK_REDIRECT_LIMIT);
-  const extension = getImageExtensionFromResponse(response.contentType, imageUrl);
+  if (isSettingsE2ETestHookEnabled() && e2eTestFixtures.randomNekoImagePath) {
+    return readE2ERandomNekoImageFixture(e2eTestFixtures.randomNekoImagePath);
+  }
+
+  return fetchRandomNekoImageFromNetwork();
+}
+
+/**
+ * Reads a deterministic local image as the E2E replacement for Random Neko.
+ *
+ * @param {string} imagePath - Local fixture image path.
+ * @returns {Promise<{imageBuffer: Buffer, extension: string, originalName: string, mimeType: string}>} Image data.
+ */
+async function readE2ERandomNekoImageFixture(imagePath) {
+  const extension = getSupportedEditorBackgroundImageExtension(imagePath);
+
+  if (!extension) {
+    throw new Error(`Unsupported Random Neko E2E fixture format. Use ${EDITOR_BACKGROUND_SUPPORTED_FORMATS_LABEL}.`);
+  }
+
+  const imageBuffer = await fs.promises.readFile(imagePath);
   const mimeType = getEditorBackgroundImageMimeType(extension);
-  const originalName = `nekos.moe_${image.id}.${extension}`;
+  const originalName = `e2e-random-neko-${path.basename(imagePath)}`;
 
   return {
-    imageBuffer: response.body,
+    imageBuffer,
     extension,
     originalName,
     mimeType
   };
-}
-
-/**
- * Extracts one random neko image object from the API response.
- *
- * @param {unknown} payload - Parsed nekos.moe API response.
- * @returns {{id: string, image_url?: string}} Random image object.
- */
-function getRandomNekoImageFromPayload(payload) {
-  if (!payload || typeof payload !== "object" || !Array.isArray(payload.images) || payload.images.length === 0) {
-    throw new Error("Nekos.moe returned no images.");
-  }
-
-  const image = payload.images[0];
-
-  if (!image || typeof image !== "object" || typeof image.id !== "string" || !image.id) {
-    throw new Error("Nekos.moe returned an image without a valid id.");
-  }
-
-  return image;
-}
-
-/**
- * Builds the image download URL from a nekos.moe image object.
- *
- * @param {{id: string, image_url?: string}} image - Nekos.moe image object.
- * @returns {string} Image download URL.
- */
-function getRandomNekoImageUrl(image) {
-  if (typeof image.image_url === "string" && image.image_url.startsWith("https://nekos.moe/")) {
-    return image.image_url;
-  }
-
-  return `${NEKOS_MOE_IMAGE_BASE_URL}${encodeURIComponent(image.id)}`;
-}
-
-/**
- * Requests JSON from a URL.
- *
- * @param {string} url - Request URL.
- * @param {number} redirectsRemaining - Remaining redirect attempts.
- * @returns {Promise<unknown>} Parsed JSON response.
- */
-async function requestJson(url, redirectsRemaining) {
-  const response = await requestBuffer(url, NETWORK_JSON_MAX_BYTES, redirectsRemaining);
-
-  try {
-    return JSON.parse(response.body.toString("utf8"));
-  } catch (error) {
-    throw new Error(`Failed to parse JSON from ${url}: ${getErrorMessage(error)}`);
-  }
-}
-
-/**
- * Downloads a URL into a buffer with timeout, redirect, and size guards.
- *
- * @param {string} url - Request URL.
- * @param {number} maxBytes - Maximum accepted response size.
- * @param {number} redirectsRemaining - Remaining redirect attempts.
- * @returns {Promise<{body: Buffer, contentType: string}>} Response body and content type.
- */
-function requestBuffer(url, maxBytes, redirectsRemaining) {
-  const parsedUrl = new URL(url);
-
-  if (parsedUrl.protocol !== "https:") {
-    return Promise.reject(new Error(`Unsupported request protocol: ${parsedUrl.protocol}`));
-  }
-
-  return new Promise(function createRequest(resolve, reject) {
-    const request = https.get(
-      url,
-      {
-        headers: {
-          "User-Agent": NEKOS_MOE_USER_AGENT
-        },
-        timeout: NETWORK_REQUEST_TIMEOUT_MS
-      },
-      function handleResponse(response) {
-        const statusCode = response.statusCode || 0;
-        const location = response.headers.location;
-
-        if (statusCode >= 300 && statusCode < 400 && location) {
-          response.resume();
-
-          if (redirectsRemaining <= 0) {
-            reject(new Error(`Too many redirects while requesting ${url}.`));
-            return;
-          }
-
-          const nextUrl = new URL(location, url).toString();
-          requestBuffer(nextUrl, maxBytes, redirectsRemaining - 1).then(resolve, reject);
-          return;
-        }
-
-        if (statusCode !== 200) {
-          response.resume();
-          reject(new Error(`Request failed with HTTP ${statusCode} for ${url}.`));
-          return;
-        }
-
-        const contentLength = Number.parseInt(String(response.headers["content-length"] || "0"), 10);
-
-        if (Number.isFinite(contentLength) && contentLength > maxBytes) {
-          response.resume();
-          reject(new Error(`Downloaded image must be ${formatFileSize(maxBytes)} or smaller.`));
-          return;
-        }
-
-        const chunks = [];
-        let receivedBytes = 0;
-
-        response.on("data", function handleChunk(chunk) {
-          receivedBytes += chunk.length;
-
-          if (receivedBytes > maxBytes) {
-            request.destroy(new Error(`Downloaded image must be ${formatFileSize(maxBytes)} or smaller.`));
-            return;
-          }
-
-          chunks.push(chunk);
-        });
-
-        response.on("end", function handleEnd() {
-          resolve({
-            body: Buffer.concat(chunks),
-            contentType: String(response.headers["content-type"] || "")
-          });
-        });
-      }
-    );
-
-    request.on("timeout", function handleTimeout() {
-      request.destroy(new Error(`Request timed out after ${NETWORK_REQUEST_TIMEOUT_MS} ms: ${url}`));
-    });
-
-    request.on("error", reject);
-  });
-}
-
-/**
- * Resolves a supported image extension from HTTP content type or URL.
- *
- * @param {string} contentType - HTTP content type.
- * @param {string} imageUrl - Download URL.
- * @returns {string} Supported image extension.
- */
-function getImageExtensionFromResponse(contentType, imageUrl) {
-  const mimeExtension = getSupportedEditorBackgroundImageExtensionFromMimeType(contentType);
-
-  if (mimeExtension) {
-    return mimeExtension;
-  }
-
-  const urlExtension = getSupportedEditorBackgroundImageExtension(new URL(imageUrl).pathname);
-
-  return urlExtension || "jpg";
-}
-
-/**
- * Gets a supported image file extension from a MIME type.
- *
- * @param {string} mimeType - Candidate MIME type.
- * @returns {string | undefined} Supported extension.
- */
-function getSupportedEditorBackgroundImageExtensionFromMimeType(mimeType) {
-  const normalizedMimeType = String(mimeType || "").split(";")[0].trim().toLowerCase();
-  const extension = Object.keys(EDITOR_BACKGROUND_MIME_TYPES).find(function matchMimeType(candidateExtension) {
-    return EDITOR_BACKGROUND_MIME_TYPES[candidateExtension] === normalizedMimeType;
-  });
-
-  return extension === "jpeg" ? "jpg" : extension;
 }
 
 /**
@@ -1276,7 +1292,7 @@ async function updateEditorBackgroundFit(context, fit) {
  * @returns {Promise<boolean>} True when the logo metadata and file are stored.
  */
 async function selectEmptyEditorLogoImage(context) {
-  const selectedUris = await vscode.window.showOpenDialog({
+  const selectedUris = await showOpenDialog({
     canSelectFiles: true,
     canSelectFolders: false,
     canSelectMany: false,
@@ -1734,7 +1750,7 @@ async function downloadStoredImage(options) {
     return false;
   }
 
-  const targetUri = await vscode.window.showSaveDialog({
+  const targetUri = await showSaveDialog({
     title: options.title,
     defaultUri: getImageDownloadDefaultUri(options.metadata),
     filters: {
@@ -1935,7 +1951,7 @@ function createSettingsState(context, webview) {
     projectLinks: PROJECT_LINKS,
     corruptionWarningLinks: CORRUPTION_WARNING_LINKS,
     checksumFixLink: CHECKSUM_FIX_LINK,
-    e2eTestApiEnabled: isNeonE2ETestHookEnabled(),
+    e2eTestApiEnabled: isSettingsE2ETestHookEnabled(),
     editorBackground: getEditorBackgroundState(context, webview),
     emptyEditorLogo: getEmptyEditorLogoState(context, webview),
     workbenchColors,

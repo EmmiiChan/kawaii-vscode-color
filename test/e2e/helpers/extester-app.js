@@ -162,6 +162,15 @@ async function getWebviewInputValue(css) {
     );
 }
 
+async function waitForWebviewInputValue(css, expectedValue, timeout = 10000) {
+    const driver = VSBrowser.instance.driver;
+
+    return driver.wait(async () => {
+        const value = await getWebviewInputValue(css).catch(() => undefined);
+        return value === expectedValue;
+    }, timeout, `Expected ${css} value to be ${expectedValue}`);
+}
+
 async function setWebviewInputValue(css, value) {
     await waitForWebviewCss(css);
 
@@ -198,6 +207,19 @@ async function selectWebviewOptionByText(css, optionText) {
 
     assert.ok(selectedValue, `Expected ${css} to include an option containing ${optionText}`);
     return selectedValue;
+}
+
+async function postWebviewE2EMessage(message) {
+    const posted = await VSBrowser.instance.driver.executeScript(`
+        const postMessage = window.kawaiiVsCodeColorE2EPostMessage;
+        if (typeof postMessage !== 'function') {
+            return false;
+        }
+        postMessage(arguments[0]);
+        return true;
+    `, message);
+
+    assert.equal(posted, true, "Expected E2E postMessage hook to be available");
 }
 
 async function getWebviewText(css) {
@@ -333,6 +355,7 @@ module.exports = {
     getWebviewInputValue,
     getWebviewText,
     openSettingsWebview,
+    postWebviewE2EMessage,
     runCommand,
     selectWebviewOptionByText,
     setWebviewInputValue,
@@ -340,6 +363,7 @@ module.exports = {
     takeWebviewElementScreenshot,
     waitForWebviewCss,
     waitForWebviewElement,
+    waitForWebviewInputValue,
     waitForWebviewTextIncludes,
     waitForWorkbench,
     withSettingsWebview

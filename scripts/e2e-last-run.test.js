@@ -54,6 +54,26 @@ test("createE2ELastRunRecord normalizes safe run metadata and artifact paths", (
     );
 });
 
+test("createE2ELastRunRecord keeps current VS Code E2E metadata isolated", () => {
+    const workspaceRoot = path.join(os.tmpdir(), "kawaii-marker-current");
+    const record = createE2ELastRunRecord({
+        mode: "current",
+        workspaceRoot,
+        phases: [{ name: "current", mochaConfig: "test/e2e/.mocharc.js" }],
+        startedAt: "2026-06-19T10:00:00.000Z"
+    });
+
+    assert.equal(record.mode, "current");
+    assert.equal(record.command, "node scripts/run-e2e.js current");
+    assert.equal(record.storage, path.join(workspaceRoot, ".vscode-test", "extest-current"));
+    assert.equal(record.extensionsDir, path.join(workspaceRoot, ".vscode-test", "extest-current-extensions"));
+    assert.deepEqual(record.phases, [{
+        name: "current",
+        mochaConfig: "test/e2e/.mocharc.js",
+        status: "pending"
+    }]);
+});
+
 test("updateE2ELastRunPhase and finalizeE2ELastRunRecord preserve failure details", () => {
     const record = createE2ELastRunRecord({
         mode: "neon",

@@ -43,6 +43,7 @@ const CRITICAL_FILES = [
   "src/emptyEditorLogoStyles.js",
   "src/extension.js",
   "src/js/theme_template.js",
+  "src/randomNekoImage.js",
   "src/settings.js",
   "src/settingsBundle.js",
   "src/settingsColorService.js",

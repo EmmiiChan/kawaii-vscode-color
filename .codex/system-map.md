@@ -46,6 +46,7 @@ Dev dependency contract:
 - `src/emptyEditorLogoStyles.js`
 - `src/extension.js`
 - `src/js/theme_template.js`
+- `src/randomNekoImage.js`
 - `src/settings.js`
 - `src/settingsBundle.js`
 - `src/settingsColorService.js`
@@ -88,6 +89,7 @@ Build behavior:
 | `src/settingsBundle.js` | Settings bundle schema, Settings Sync state, JSON export/import, and configuration/color/effects apply order. |
 | `src/settingsEffectsPersistence.js` | Image metadata normalization, safe filenames, stored image export/restore, opacity and fit normalization. |
 | `src/emptyEditorLogoStyles.js` | CSS selector list and generated CSS for no-tab logo replacement. |
+| `src/randomNekoImage.js` | Testable Random Neko API payload parsing, URL resolution, guarded HTTPS fetch, and image response normalization. |
 | `src/js/theme_template.js` | Renderer-side token CSS detection, theme matching, glow transformation, style-tag management. |
 | `src/css/editor_chrome.css` | CSS injected into the VS Code workbench renderer after placeholder replacement. |
 
@@ -101,6 +103,7 @@ Webview -> extension host message types handled by `src/settings.js`:
 - `download-editor-background-image`
 - `download-empty-editor-logo-image`
 - `e2e-apply-settings-bundle`
+- `e2e-set-test-fixtures`
 - `enable-neon`
 - `export-settings`
 - `import-settings`
@@ -135,6 +138,7 @@ Rules:
 - Color messages write VS Code settings, never repository theme JSON.
 - Image and opacity messages update `globalState`/global storage and require `apply-neon-customizations` to refresh injected effects.
 - `e2e-apply-settings-bundle` is test-only and must remain gated by `KAWAII_E2E_ALLOW_NEON_PATCH=1`.
+- `e2e-set-test-fixtures` is test-only and must remain gated by `KAWAII_E2E_TEST_HOOKS=1` or `KAWAII_E2E_ALLOW_NEON_PATCH=1`; it replaces native dialogs and Random Neko network calls with deterministic local fixture paths during E2E.
 - Host errors are surfaced to both webview `error` messages and VS Code error notifications.
 
 ## Settings, State, and Schemas
@@ -216,5 +220,5 @@ The renderer code must keep using VS Code workbench/theme tokens and must not de
 | DOM | `npm run test:dom` | jsdom settings webview behavior and visual-state DOM contracts. |
 | Integration | `npm run test:integration` | VS Code Extension Development Host activation and command smoke tests. |
 | Safe E2E | `npm run test:e2e` | Disposable VS Code UI automation without applying the real Neon patch. |
+| Current VS Code E2E | `npm run test:e2e:current` | Experimental safe E2E against the latest ExTester-supported VS Code version, isolated from the stable `1.111.0` safe gate. |
 | Gated Neon E2E | `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` | Real disposable workbench patch lifecycle, screenshots, restore checks, and fit matrix. |
-
