@@ -43,10 +43,12 @@ Expected result:
 - `npm run test:unit` should pass build, version, workbench patch, settings persistence, Settings Sync / JSON import-export chain, and mocked settings message-chain unit tests.
 - `npm run test:dom` should pass settings webview DOM tests covering all safe webview events, app navigation, Help metadata, Color Settings inputs/debounce, image/logo state, incoming webview messages, warnings/errors, and editor-provided `--vscode-*` tokens instead of a standalone UI palette.
 - `npm run test:integration` should activate the extension in the Extension Development Host and execute `kawaii_synthwave.openSettings` without running the real Neon Effect patch.
-- `npm run test:e2e` should package the extension, open disposable VS Code `1.111.0` through ExTester/WebDriver, navigate the real settings webview, avoid all real Neon patch actions, and write safe Settings visual screenshots plus PNG analysis under `test-results/e2e`.
+- `npm run test:e2e` should package the extension, open disposable VS Code `1.111.0` through ExTester/WebDriver, navigate the real settings webview, avoid all real Neon patch actions, write safe Settings visual screenshots plus PNG analysis under `test-results/e2e`, and update `test-results/e2e/kawaii-last-run.json`.
 - `npm run build:theme` should regenerate the generated theme files from protected bases and overrides without unexpected diffs.
 
-`npm test` runs the unit, DOM, and VS Code integration layers in sequence. `npm run test:all` runs the unit, DOM, VS Code integration, and safe real VS Code E2E layers in sequence, then prints a final pass/fail/skipped summary for launch-terminal readability. There is no `tsc --noEmit` or lint command in the current project.
+`npm test` runs the unit, DOM, and VS Code integration layers in sequence. `npm run test:all` runs the unit, DOM, VS Code integration, and safe real VS Code E2E layers in sequence, then prints a final pass/fail/skipped summary for launch-terminal readability. It is the safe local gate and must not include `npm run test:e2e:neon`. There is no `tsc --noEmit` or lint command in the current project.
+
+`test-results/e2e/kawaii-last-run.json` is the project-owned last-run marker for safe and gated E2E runs. Treat `test-results/e2e/.last-run.json` as optional ExTester diagnostics only, because it can remain stale after a later successful run.
 
 Visual validation rule:
 
@@ -85,7 +87,7 @@ $env:KAWAII_E2E_ALLOW_NEON_PATCH = "1"
 npm run test:e2e:neon
 ```
 
-This command is intentionally separate from `npm test`, `npm run test:all`, and `npm run test:e2e`. It uses `.vscode-test/extest-111-neon`, validates before/apply/remove states, and opens VS Code three times so applied and restored checks happen after full process restarts. It also verifies no-tab logos, real editor-page background screenshots, `.monaco-editor::before` background application, editor background fit area CSS variables, and runtime CSS that keeps using editor-provided `--vscode-*` tokens instead of a separate hardcoded palette.
+This command is intentionally separate from `npm test`, `npm run test:all`, and `npm run test:e2e`. It uses `.vscode-test/extest-111-neon`, refuses to run without `KAWAII_E2E_ALLOW_NEON_PATCH=1`, validates before/apply/remove states, and opens VS Code five times so applied, alternate, reverted, and restored checks happen after full process restarts. It also verifies no-tab logos, real editor-page background screenshots, `.monaco-editor::before` background application, editor background fit area CSS variables, and runtime CSS that keeps using editor-provided `--vscode-*` tokens instead of a separate hardcoded palette.
 
 Recommended safe approach:
 
@@ -147,6 +149,7 @@ The package ships runtime source files directly:
 | Gated Neon E2E | `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` | Applies the real workbench patch only inside `.vscode-test`, validates dstgroup runtime state after full restart, captures no-tab logo and editor-page background screenshots, checks editor background fit area CSS variables, switches to an alternate image and validates it after restart, captures a baseline plus screenshots for the complete editor background fit matrix, reverts to dstgroup after restart, disables the patch, and validates restored state after another full restart. |
 
 Do not fold the gated Neon E2E into the safe suite. It must stay behind `KAWAII_E2E_ALLOW_NEON_PATCH=1`.
+Both E2E commands update `test-results/e2e/kawaii-last-run.json`; use that file instead of ExTester's `.last-run.json` when deciding the last project run status.
 
 ## Package a Local VSIX
 

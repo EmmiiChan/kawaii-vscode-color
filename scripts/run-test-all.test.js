@@ -92,3 +92,50 @@ test("safe phase list captures integration output before continuing", () => {
 
     assert.equal(integrationPhase.captureOutput, true);
 });
+
+test("safe phase list excludes gated Neon E2E", () => {
+    assert.equal(testAllRunner.SAFE_TEST_PHASES.some((phase) => phase.script === "test:e2e:neon"), false);
+});
+
+test("runAllSafeTestPlan fails fast and keeps summary when Safe E2E exits non-zero", async () => {
+    assert.equal(typeof testAllRunner.runAllSafeTestPlan, "function");
+
+    const result = await testAllRunner.runAllSafeTestPlan({
+        phases: [
+            { name: "Unit", script: "test:unit" },
+            { name: "Safe E2E", script: "test:e2e" },
+            { name: "After", script: "test:after" }
+        ],
+        spawn: createCloseOnlySpawn([0, 1]),
+        summaryDelayMs: 0,
+        stdout: { write() {} },
+        stderr: { write() {} }
+    });
+
+    assert.equal(result.exitCode, 1);
+    assert.deepEqual(result.results.map((phase) => phase.status), ["passed", "failed", "skipped"]);
+    assert.match(result.summary, /FAIL\s+Safe E2E\s+npm run test:e2e/);
+    assert.match(result.summary, /SKIP\s+After\s+npm run test:after/);
+    assert.match(result.summary, /Result:\s+FAIL/);
+});
+
+function createCloseOnlySpawn(exitCodes) {
+    return function spawnMock() {
+        const handlers = {};
+        const child = {
+            stdout: { on() {} },
+            stderr: { on() {} },
+            on(eventName, handler) {
+                handlers[eventName] = handler;
+                return child;
+            }
+        };
+        const exitCode = exitCodes.shift();
+
+        process.nextTick(() => {
+            handlers.close(exitCode);
+        });
+
+        return child;
+    };
+}

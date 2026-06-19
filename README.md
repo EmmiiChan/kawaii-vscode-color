@@ -210,9 +210,9 @@ The project has four regular automated test layers, plus one gated Neon Effect E
 | `npm run test:unit` | Unit tests without UI | Uses Node's built-in test runner for build logic, workbench patch helpers, settings persistence modules, chained Settings Sync / JSON import-export state matrices, and mocked settings message chains. |
 | `npm run test:dom` | DOM UI tests | Uses `jsdom` to load the settings webview HTML and verify safe `postMessage` events, app navigation, Help metadata, Color Settings inputs/debounce, image/logo state, incoming webview messages, warnings/errors, and `--vscode-*` token usage. |
 | `npm run test:integration` | VS Code integration | Uses `@vscode/test-cli` and `@vscode/test-electron` to activate the extension in an Extension Development Host and execute the settings command. |
-| `npm run test:e2e` | Real VS Code UI E2E | Uses ExTester/WebDriver to package the extension, open a disposable VS Code, run `Kawaii VS Code Color: Settings`, navigate the real webview, and validate safe UI flows. |
+| `npm run test:e2e` | Real VS Code UI E2E | Uses ExTester/WebDriver to package the extension, open a disposable VS Code, run `Kawaii VS Code Color: Settings`, navigate the real webview, validate safe UI flows, and write the project-owned last-run marker. |
 | `npm test` | Full suite | Runs unit, DOM, and VS Code integration tests in sequence. |
-| `npm run test:all` | Full suite plus safe E2E | Runs unit, DOM, integration, and safe E2E layers in order, then prints a final pass/fail/skipped summary. |
+| `npm run test:all` | Full suite plus safe E2E | Runs unit, DOM, integration, and safe E2E layers in order, then prints a final pass/fail/skipped summary. It is the safe local gate and intentionally excludes the gated Neon patch flow. |
 
 Safety matrix:
 
@@ -228,6 +228,8 @@ Safety matrix:
 
 The integration suite opens `Kawaii VS Code Color: Settings`, but it does not control the rendered VS Code window. The safe E2E suite does control the real window and webview, but it is still safe by default: it does not click `Enable Neon Effect`, `Disable Neon Effect`, `Apply Effects`, upload/import/export/download controls, or network-backed random image controls. E2E screenshots and state notes are written under `test-results/e2e`.
 
+`test-results/e2e/kawaii-last-run.json` is the project-owned source of truth for the last `npm run test:e2e` or gated `npm run test:e2e:neon` execution. It records the mode, status, timings, exit code, disposable storage paths, Mocha phase configs, failed test ids when the current run fails, and key artifact paths. `test-results/e2e/.last-run.json` is an ExTester diagnostic file only and can be stale after later successful runs.
+
 The safe E2E suite also writes `settings-visual-*.png` screenshots plus `settings-visual-state-analysis.json`. Those artifacts cover the Settings webview image previews, selected-image warnings, missing-image states, Random Neko loading presentation, effects warning, Neon status, error status, invalid color input, empty color filter, opacity value changes, and editor background fit selector state. The JSON file records programmatic PNG difference, color-ratio, or contrast metrics for each before/after visual assertion.
 
 Visual test rule: tests should create screenshots only for behavior that changes a visible UI or theme state. When a visual state changes, keep before/after evidence, or a baseline/after pair, so the rendered result can be inspected alongside DOM/CSS assertions.
@@ -239,7 +241,7 @@ $env:KAWAII_E2E_ALLOW_NEON_PATCH = "1"
 npm run test:e2e:neon
 ```
 
-`npm run test:e2e:neon` patches only the disposable VS Code installation under `.vscode-test/extest-111-neon`. It runs five separate VS Code launches to validate the same lifecycle users may need manually: before applying, after applying dstgroup images and reopening VS Code, after switching to an alternate image and reopening VS Code, after reverting to dstgroup and reopening VS Code, and after removing the patch and reopening VS Code. It verifies the workbench HTML hash returns to the original baseline and that injected runtime CSS uses editor-provided `--vscode-*` tokens rather than a standalone UI palette.
+`npm run test:e2e:neon` patches only the disposable VS Code installation under `.vscode-test/extest-111-neon`. The runner refuses Neon mode unless `KAWAII_E2E_ALLOW_NEON_PATCH=1` is present and the storage path resolves inside that disposable Neon directory. It runs five separate VS Code launches to validate the same lifecycle users may need manually: before applying, after applying dstgroup images and reopening VS Code, after switching to an alternate image and reopening VS Code, after reverting to dstgroup and reopening VS Code, and after removing the patch and reopening VS Code. It verifies the workbench HTML hash returns to the original baseline and that injected runtime CSS uses editor-provided `--vscode-*` tokens rather than a standalone UI palette.
 
 The gated Neon suite imports controlled settings fixtures through an internal test hook that is exposed only when `KAWAII_E2E_ALLOW_NEON_PATCH=1`. It validates `Apply Effects` against real workbench files, generated `neondreams.js`, image data URLs, editor background opacity/fit, no-tab logo opacity, runtime style tags, screenshots, image replacement, dstgroup logo restoration, and final HTML restoration. It also writes a visual editor-background fit matrix under `test-results/e2e` with a no-overlay baseline plus one screenshot for each supported fit area: `full`, `top`, `bottom`, `left`, `right`, `top-left`, `top-right`, `bottom-left`, and `bottom-right`.
 

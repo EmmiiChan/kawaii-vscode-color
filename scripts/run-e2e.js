@@ -1,14 +1,26 @@
 const path = require("path");
 const { spawnSync } = require("child_process");
+const {
+    createE2ELastRunRecord,
+    finalizeE2ELastRunRecord,
+    readExTesterLastRun,
+    updateE2ELastRunPhase,
+    validateE2ERunOptions,
+    writeE2ELastRunRecord
+} = require("./e2e-last-run");
 
 const mode = process.argv[2] === "neon" ? "neon" : "safe";
 const isWindows = process.platform === "win32";
+const workspaceRoot = process.cwd();
 const extestBinary = path.join(
-    process.cwd(),
+    workspaceRoot,
     "node_modules",
     ".bin",
     isWindows ? "extest.cmd" : "extest"
 );
+const codeVersion = "1.111.0";
+const codeSettings = "test/e2e/settings.json";
+const openResource = "test/fixtures/workspace";
 const mochaConfig = mode === "neon"
     ? "test/e2e/.mocharc.neon.js"
     : "test/e2e/.mocharc.js";
@@ -23,6 +35,13 @@ env.KAWAII_E2E_STORAGE = path.resolve(storage);
 
 delete env.ELECTRON_RUN_AS_NODE;
 
+try {
+    validateE2ERunOptions({ mode, workspaceRoot, storage, env });
+} catch (error) {
+    console.error(error.message);
+    process.exit(1);
+}
+
 const phases = mode === "neon"
     ? [
         { name: "neon apply", mochaConfig: "test/e2e/.mocharc.neon-apply.js" },
@@ -34,23 +53,40 @@ const phases = mode === "neon"
     : [
         { name: "safe", mochaConfig }
     ];
+const runRecord = createE2ELastRunRecord({
+    mode,
+    workspaceRoot,
+    storage,
+    extensionsDir,
+    codeVersion,
+    codeSettings,
+    openResource,
+    phases
+});
+
+writeE2ELastRunRecord(runRecord, { workspaceRoot });
 
 for (const phase of phases) {
     console.log(`Running E2E phase: ${phase.name}`);
+    updateE2ELastRunPhase(runRecord, phase.name, {
+        status: "running",
+        startedAt: new Date().toISOString()
+    });
+    writeE2ELastRunRecord(runRecord, { workspaceRoot });
 
     const result = spawnSync(extestBinary, [
         "setup-and-run",
         "test/e2e/**/*.spec.js",
         "--code_version",
-        "1.111.0",
+        codeVersion,
         "--storage",
         storage,
         "--extensions_dir",
         extensionsDir,
         "--code_settings",
-        "test/e2e/settings.json",
+        codeSettings,
         "--open_resource",
-        "test/fixtures/workspace",
+        openResource,
         "--mocha_config",
         phase.mochaConfig
     ], {
@@ -60,13 +96,48 @@ for (const phase of phases) {
     });
 
     if (result.error) {
+        updateE2ELastRunPhase(runRecord, phase.name, {
+            status: "failed",
+            finishedAt: new Date().toISOString(),
+            exitCode: 1,
+            error: result.error
+        });
+        finalizeAndWriteRunRecord(runRecord, 1, result.error);
         console.error(result.error);
         process.exit(1);
     }
 
     if (result.status) {
+        updateE2ELastRunPhase(runRecord, phase.name, {
+            status: "failed",
+            finishedAt: new Date().toISOString(),
+            exitCode: result.status
+        });
+        finalizeAndWriteRunRecord(runRecord, result.status);
         process.exit(result.status);
     }
+
+    updateE2ELastRunPhase(runRecord, phase.name, {
+        status: "passed",
+        finishedAt: new Date().toISOString(),
+        exitCode: 0
+    });
+    writeE2ELastRunRecord(runRecord, { workspaceRoot });
 }
 
+finalizeAndWriteRunRecord(runRecord, 0);
 process.exit(0);
+
+function finalizeAndWriteRunRecord(record, exitCode, error) {
+    const extesterLastRun = exitCode === 0
+        ? { failedTests: [] }
+        : readExTesterLastRun({ workspaceRoot, minModifiedAt: record.startedAt });
+
+    finalizeE2ELastRunRecord(record, {
+        exitCode,
+        error,
+        failedTests: extesterLastRun.failedTests,
+        finishedAt: new Date().toISOString()
+    });
+    writeE2ELastRunRecord(record, { workspaceRoot });
+}

@@ -2,7 +2,7 @@
 
 Last reviewed: 2026-06-17
 
-Purpose: give Codex a stable, source-backed link index for the Kawaii VS Code Color VS Code theme extension. Use this file before changing `package.json`, `scripts/build-color-theme.js`, `src/extension.js`, `src/settings.js`, `src/settingsPersistence.js`, `src/settingsStore.js`, `src/settingsColorService.js`, `src/settingsBundle.js`, `src/settingsEffectsPersistence.js`, `src/settingsWebview.js`, `src/workbenchPatch.js`, `src/js/theme_template.js`, `src/css/editor_chrome.css`, `themes/kawaii_synthwave-color-theme-overrides.json`, packaging metadata, test tooling, or marketplace docs.
+Purpose: give Codex a stable, source-backed link index for the Kawaii VS Code Color VS Code theme extension. Use this file before changing `package.json`, `scripts/build-color-theme.js`, `scripts/e2e-last-run.js`, `scripts/run-e2e.js`, `scripts/run-test-all.js`, `src/extension.js`, `src/settings.js`, `src/settingsPersistence.js`, `src/settingsStore.js`, `src/settingsColorService.js`, `src/settingsBundle.js`, `src/settingsEffectsPersistence.js`, `src/settingsWebview.js`, `src/workbenchPatch.js`, `src/js/theme_template.js`, `src/css/editor_chrome.css`, `themes/kawaii_synthwave-color-theme-overrides.json`, packaging metadata, test tooling, or marketplace docs.
 
 ## Project Snapshot
 
@@ -70,8 +70,8 @@ Use these as primary references for manifest and runtime changes.
 | Extension lifecycle | `activate(context)`, `deactivate()` | [Extension anatomy](https://code.visualstudio.com/api/get-started/extension-anatomy), [Activation Events lifecycle note](https://code.visualstudio.com/api/references/activation-events) |
 | Extension debugging | `.vscode/launch.json` with `type: "extensionHost"` | [Your First Extension - debugging](https://code.visualstudio.com/api/get-started/your-first-extension), [VS Code debugging docs](https://code.visualstudio.com/docs/debugtest/debugging) |
 | Extension integration tests | `.vscode-test.js`, `test/integration/**/*.test.js`, and `npm run test:integration` | [VS Code extension testing](https://code.visualstudio.com/api/working-with-extensions/testing-extension), [`@vscode/test-cli`](https://github.com/microsoft/vscode-test-cli) |
-| Real VS Code UI E2E tests | `scripts/run-e2e.js`, `test/e2e/**/*.spec.js`, `npm run test:e2e`, and gated `npm run test:e2e:neon` | [ExTester repository](https://github.com/redhat-developer/vscode-extension-tester), [Mocha docs](https://mochajs.org/), [VS Code extension testing](https://code.visualstudio.com/api/working-with-extensions/testing-extension) |
-| Safe all-tests orchestration | `scripts/run-test-all.js` and `npm run test:all` | [Node child_process.spawn](https://nodejs.org/api/child_process.html#child_processspawncommand-args-options), [npm scripts](https://docs.npmjs.com/cli/v11/using-npm/scripts) |
+| Real VS Code UI E2E tests | `scripts/run-e2e.js`, `scripts/e2e-last-run.js`, `test/e2e/**/*.spec.js`, `npm run test:e2e`, project marker `test-results/e2e/kawaii-last-run.json`, and gated `npm run test:e2e:neon` | [ExTester repository](https://github.com/redhat-developer/vscode-extension-tester), [Mocha docs](https://mochajs.org/), [VS Code extension testing](https://code.visualstudio.com/api/working-with-extensions/testing-extension), [Node fs](https://nodejs.org/api/fs.html), [Node path](https://nodejs.org/api/path.html) |
+| Safe all-tests orchestration | `scripts/run-test-all.js` and `npm run test:all`; intentionally excludes gated Neon E2E | [Node child_process.spawn](https://nodejs.org/api/child_process.html#child_processspawncommand-args-options), [npm scripts](https://docs.npmjs.com/cli/v11/using-npm/scripts) |
 | Packaging/publishing | Marketplace release workflow | [Publishing Extensions](https://code.visualstudio.com/api/working-with-extensions/publishing-extension), [@vscode/vsce repository](https://github.com/microsoft/vscode-vsce) |
 
 Compatibility rule:

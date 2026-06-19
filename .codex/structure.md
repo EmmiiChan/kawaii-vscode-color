@@ -177,6 +177,7 @@ Current source of truth:
 - Deterministic effect/image persistence helpers live in `src/settingsEffectsPersistence.js`.
 - Setup webview HTML generation lives in `src/settingsWebview.js`.
 - Workbench path detection and marked HTML patch helpers live in `src/workbenchPatch.js`.
+- E2E last-run marker normalization lives in `scripts/e2e-last-run.js`; `test-results/e2e/kawaii-last-run.json` is the authoritative project marker and `.last-run.json` is ExTester diagnostics only.
 - Real VS Code E2E helpers live in `test/e2e/helpers/extester-app.js`.
 - Safe E2E PNG parsing and visual-difference assertions live in `test/e2e/helpers/png-analysis.js`.
 - Safe Settings visual before/after coverage lives in `test/e2e/settings-visual-states.spec.js`.
@@ -429,6 +430,8 @@ Local source anchors:
 - `themes/kawaii_synthwave-color-theme-overrides.json`: editable Kawaii color and token overrides.
 - `themes/kawaii_synthwave-generated-color-theme.json`: generated VS Code public color theme definition.
 - `scripts/build-color-theme.js`: base-plus-overrides theme build flow.
+- `scripts/e2e-last-run.js`: project-owned E2E last-run marker creation, phase updates, ExTester diagnostic reading, and Neon storage guard helpers.
+- `scripts/run-e2e.js`: safe and gated real VS Code E2E orchestration; writes `test-results/e2e/kawaii-last-run.json` for safe and Neon modes.
 - `scripts/run-test-all.js`: safe test orchestration for `npm run test:all`, including final aggregate pass/fail/skipped summary output.
 - `test/unit`: Node unit tests without UI.
 - `test/dom`: `jsdom` settings webview tests and `settings-webview-helper.js`.
