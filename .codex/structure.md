@@ -156,7 +156,7 @@ Keep changes inside the existing responsibility boundaries.
 | `src/css` | CSS that the generated renderer script injects into the workbench | VS Code theme color definitions and TextMate token colors |
 | `themes` | Protected base theme, editable Kawaii overrides, and generated VS Code theme output | Runtime patching code |
 | `scripts` | Small repository build utilities such as the color theme merge script | Extension runtime code loaded by VS Code |
-| `test/unit` | Node unit tests for dependency-free logic and extension-host helpers | VS Code Extension Host integration tests |
+| `test/unit` | Node unit tests for dependency-free logic, extension-host helpers, and chained Settings Sync / JSON import-export state restoration | VS Code Extension Host integration tests |
 | `test/dom` | `jsdom` tests and helpers for the settings webview DOM, safe webview events, timers, and message behavior | Runtime webview source files |
 | `test/integration` | VS Code Extension Development Host tests using `@vscode/test-cli` | Unit-only helper tests |
 | `test/e2e` | ExTester/WebDriver tests that open a disposable real VS Code window, drive the Command Palette, and interact with the real settings webview iframe | Unit logic, fake-DOM-only assertions, or safe-suite clicks that apply the real Neon patch |

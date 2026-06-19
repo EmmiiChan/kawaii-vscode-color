@@ -20,6 +20,7 @@ const BRIGHTNESS_SETTING = "kawaii_synthwave.brightness";
 const DISABLE_GLOW_SETTING = "kawaii_synthwave.disableGlow";
 const WORKBENCH_SETTING = "workbench.colorCustomizations";
 const TOKEN_SETTING = "editor.tokenColorCustomizations";
+const SYNC_SETTINGS_STATE_KEY = "kawaii_synthwave.syncedSettingsBundle";
 const EXPORT_FILE_NAME = "kawaii-vscode-color-settings.json";
 const FIXTURES_DIR = path.resolve(__dirname, "..", "fixtures", "settings");
 const darkVariant = { id: "dark", label: "Kawaii VS Code Color" };
@@ -146,6 +147,280 @@ function createBundleDependencies(overrides = {}) {
       workbenchCustomizationsSetting: WORKBENCH_SETTING
     }
   };
+}
+
+function createStatefulBundleHarness(initialSnapshot) {
+  const calls = [];
+  const memoryFiles = new Map();
+  const syncedState = new Map();
+  const settingValues = new Map();
+  let activeThemeVariantId = initialSnapshot.activeThemeVariantId;
+  let effectsState = clone(initialSnapshot.effects);
+
+  function setSettingValue(settingName, value) {
+    if (value === undefined) {
+      settingValues.delete(settingName);
+      return;
+    }
+
+    settingValues.set(settingName, clone(value));
+  }
+
+  function applySnapshot(snapshot) {
+    activeThemeVariantId = snapshot.activeThemeVariantId;
+    effectsState = clone(snapshot.effects);
+    setSettingValue(BRIGHTNESS_SETTING, snapshot.extensionConfiguration.brightness);
+    setSettingValue(DISABLE_GLOW_SETTING, snapshot.extensionConfiguration.disableGlow);
+    setSettingValue(WORKBENCH_SETTING, createThemeSettingsObject(snapshot.colorCustomizations.workbench, snapshot.unrelatedWorkbench));
+    setSettingValue(TOKEN_SETTING, createThemeSettingsObject(snapshot.colorCustomizations.token, snapshot.unrelatedToken));
+  }
+
+  const settingsStore = createSettingsStore({
+    getConfiguration() {
+      return {
+        get(settingName) {
+          return clone(settingValues.get(settingName));
+        },
+        inspect(settingName) {
+          return {
+            globalValue: clone(settingValues.get(settingName)),
+            workspaceValue: undefined
+          };
+        },
+        update(settingName, value) {
+          setSettingValue(settingName, value);
+          return Promise.resolve();
+        }
+      };
+    }
+  });
+
+  const dependencies = {
+    activeThemeService: {
+      getActiveThemeVariant() {
+        return themeVariants.find((variant) => variant.id === activeThemeVariantId) || darkVariant;
+      },
+      changeThemeVariant(themeVariantId) {
+        calls.push(`theme:${themeVariantId}`);
+        activeThemeVariantId = themeVariantId;
+        return Promise.resolve();
+      }
+    },
+    brightnessSetting: BRIGHTNESS_SETTING,
+    disableGlowSetting: DISABLE_GLOW_SETTING,
+    effectsService: {
+      getEffectsExport(context) {
+        calls.push(`effects-export:${context.id}`);
+        return Promise.resolve(clone(effectsState));
+      },
+      applyEffectsExport(context, effects) {
+        calls.push(`effects-apply:${context.id}:${effects && effects.marker}`);
+        effectsState = clone(effects);
+        return Promise.resolve();
+      }
+    },
+    fileSystem: {
+      readFile(filePath, encoding) {
+        calls.push(`read:${filePath}:${encoding}`);
+        return Promise.resolve(memoryFiles.get(filePath));
+      },
+      writeFile(filePath, content, encoding) {
+        calls.push(`write:${filePath}:${encoding}`);
+        memoryFiles.set(filePath, content);
+        return Promise.resolve();
+      }
+    },
+    homeDirectory() {
+      return "C:\\Users\\Example";
+    },
+    now() {
+      return new Date("2026-06-17T12:00:00.000Z");
+    },
+    settingsExportFileName: EXPORT_FILE_NAME,
+    settingsStore,
+    themeVariants,
+    tokenCustomizationsSetting: TOKEN_SETTING,
+    uri: {
+      file(filePath) {
+        return { fsPath: filePath, scheme: "file" };
+      }
+    },
+    window: {
+      informationMessages: [],
+      warningMessages: [],
+      openDialogResult: undefined,
+      saveDialogResult: undefined,
+      showInformationMessage(message) {
+        this.informationMessages.push(message);
+        return Promise.resolve();
+      },
+      showWarningMessage(message) {
+        this.warningMessages.push(message);
+        return Promise.resolve();
+      },
+      showOpenDialog() {
+        return Promise.resolve(this.openDialogResult);
+      },
+      showSaveDialog() {
+        return Promise.resolve(this.saveDialogResult);
+      }
+    },
+    workbenchCustomizationsSetting: WORKBENCH_SETTING
+  };
+  const context = {
+    id: "ctx",
+    globalState: {
+      get(key) {
+        return syncedState.get(key);
+      },
+      setKeysForSync(keys) {
+        calls.push(`sync-keys:${keys.join(",")}`);
+      },
+      update(key, value) {
+        if (value === undefined) {
+          syncedState.delete(key);
+        } else {
+          syncedState.set(key, clone(value));
+        }
+
+        return Promise.resolve();
+      }
+    }
+  };
+
+  applySnapshot(initialSnapshot);
+
+  return {
+    actions: createSettingsBundleActions(dependencies),
+    applySnapshot,
+    calls,
+    context,
+    dependencies,
+    memoryFiles,
+    settingValues,
+    syncedState
+  };
+}
+
+function createThemeSettingsObject(blocks, unrelatedBlock) {
+  const settings = {};
+
+  settings["[Kawaii VS Code Color]"] = clone(blocks.dark || {});
+  settings["[Kawaii VS Code Color Light]"] = clone(blocks.light || {});
+
+  if (unrelatedBlock) {
+    settings["[Unrelated Theme]"] = clone(unrelatedBlock);
+  }
+
+  return settings;
+}
+
+function createBundleSnapshot(marker, overrides = {}) {
+  return {
+    activeThemeVariantId: overrides.activeThemeVariantId || "dark",
+    extensionConfiguration: {
+      brightness: overrides.brightness === undefined ? 0.21 : overrides.brightness,
+      disableGlow: Boolean(overrides.disableGlow)
+    },
+    colorCustomizations: {
+      workbench: {
+        dark: {
+          "editor.background": `#${marker}1111`,
+          "sideBar.background": `#${marker}2222`
+        },
+        light: {
+          "editor.background": `#${marker}eeee`
+        }
+      },
+      token: {
+        dark: {
+          textMateRules: [
+            {
+              scope: "keyword",
+              settings: {
+                foreground: `#${marker}3333`
+              }
+            }
+          ]
+        },
+        light: {
+          textMateRules: [
+            {
+              scope: "string",
+              settings: {
+                foreground: `#${marker}4444`
+              }
+            }
+          ]
+        }
+      }
+    },
+    effects: {
+      marker,
+      editorBackground: {
+        opacity: overrides.editorBackgroundOpacity === undefined ? 0.11 : overrides.editorBackgroundOpacity,
+        fit: overrides.editorBackgroundFit || "top",
+        image: {
+          originalName: `${marker}-editor-background.png`
+        }
+      },
+      emptyEditorLogo: {
+        opacity: overrides.emptyEditorLogoOpacity === undefined ? 0.51 : overrides.emptyEditorLogoOpacity,
+        image: {
+          originalName: `${marker}-empty-editor-logo.png`
+        }
+      }
+    },
+    unrelatedWorkbench: {
+      "editor.background": `#${marker}9999`
+    },
+    unrelatedToken: {
+      textMateRules: [
+        {
+          scope: "comment",
+          settings: {
+            foreground: `#${marker}8888`
+          }
+        }
+      ]
+    }
+  };
+}
+
+async function assertCurrentBundleMatches(harness, expectedSnapshot) {
+  const bundle = await harness.actions.createSettingsBundle(harness.context);
+
+  assertBundleMatchesSnapshot(bundle, expectedSnapshot);
+}
+
+function assertBundleMatchesSnapshot(bundle, expectedSnapshot) {
+  assert.equal(bundle.schema, "kawaii-vscode-color-settings");
+  assert.equal(bundle.schemaVersion, 1);
+  assert.equal(bundle.activeThemeVariantId, expectedSnapshot.activeThemeVariantId);
+  assert.deepEqual(bundle.extensionConfiguration, expectedSnapshot.extensionConfiguration);
+  assert.deepEqual(bundle.colorCustomizations, expectedSnapshot.colorCustomizations);
+  assert.deepEqual(bundle.effects, expectedSnapshot.effects);
+}
+
+function assertUnrelatedThemeBlocksMatch(harness, expectedSnapshot) {
+  assert.deepEqual(
+    harness.settingValues.get(WORKBENCH_SETTING)["[Unrelated Theme]"],
+    expectedSnapshot.unrelatedWorkbench
+  );
+  assert.deepEqual(
+    harness.settingValues.get(TOKEN_SETTING)["[Unrelated Theme]"],
+    expectedSnapshot.unrelatedToken
+  );
+}
+
+function createActionSequences(actionNames, length) {
+  if (length === 0) {
+    return [[]];
+  }
+
+  return createActionSequences(actionNames, length - 1).flatMap((sequence) => (
+    actionNames.map((actionName) => sequence.concat(actionName))
+  ));
 }
 
 test("normalizeBrightnessSetting clamps, rounds, and defaults invalid values", () => {
@@ -462,8 +737,8 @@ test("settings bundle actions save/import settings sync state", async () => {
   actions.configureSettingsSync(context);
   await actions.saveSettingsToVsSync(context);
 
-  assert.deepEqual(syncedKeys, [["kawaii_synthwave.syncedSettingsBundle"]]);
-  assert.equal(state.get("kawaii_synthwave.syncedSettingsBundle").schema, "kawaii-vscode-color-settings");
+  assert.deepEqual(syncedKeys, [[SYNC_SETTINGS_STATE_KEY]]);
+  assert.equal(state.get(SYNC_SETTINGS_STATE_KEY).schema, "kawaii-vscode-color-settings");
   assert.deepEqual(dependencies.window.informationMessages, [
     "Kawaii VS Code Color settings saved to VS Code Settings Sync state."
   ]);
@@ -502,6 +777,156 @@ test("settings bundle file actions handle cancellations and read/write JSON file
     "Kawaii VS Code Color settings exported.",
     "Kawaii VS Code Color settings imported."
   ]);
+});
+
+test("settings sync and file actions restore complete snapshots across chained operations", async () => {
+  const snapshotA = createBundleSnapshot("aa", {
+    activeThemeVariantId: "dark",
+    brightness: 0.21,
+    disableGlow: false,
+    editorBackgroundOpacity: 0.11,
+    editorBackgroundFit: "top",
+    emptyEditorLogoOpacity: 0.51
+  });
+  const snapshotB = createBundleSnapshot("bb", {
+    activeThemeVariantId: "light",
+    brightness: 0.82,
+    disableGlow: true,
+    editorBackgroundOpacity: 0.22,
+    editorBackgroundFit: "bottom-right",
+    emptyEditorLogoOpacity: 0.62
+  });
+  const snapshotC = createBundleSnapshot("cc", {
+    activeThemeVariantId: "dark",
+    brightness: 0.43,
+    disableGlow: true,
+    editorBackgroundOpacity: 0.33,
+    editorBackgroundFit: "left",
+    emptyEditorLogoOpacity: 0.73
+  });
+  const harness = createStatefulBundleHarness(snapshotA);
+  const exportPath = "C:\\Temp\\snapshot-b.json";
+
+  await assertCurrentBundleMatches(harness, snapshotA);
+  await harness.actions.saveSettingsToVsSync(harness.context);
+
+  const syncedSnapshotA = harness.syncedState.get(SYNC_SETTINGS_STATE_KEY);
+  assertBundleMatchesSnapshot(syncedSnapshotA, snapshotA);
+
+  harness.applySnapshot(snapshotB);
+  harness.dependencies.window.saveDialogResult = { fsPath: exportPath };
+  assert.equal(await harness.actions.exportSettingsBundle(harness.context), true);
+  assertBundleMatchesSnapshot(JSON.parse(harness.memoryFiles.get(exportPath)), snapshotB);
+
+  harness.applySnapshot(snapshotC);
+  await assertCurrentBundleMatches(harness, snapshotC);
+
+  assert.equal(await harness.actions.importSettingsFromVsSync(harness.context), true);
+  await assertCurrentBundleMatches(harness, snapshotA);
+  assertUnrelatedThemeBlocksMatch(harness, snapshotC);
+
+  harness.dependencies.window.openDialogResult = [{ fsPath: exportPath }];
+  assert.equal(await harness.actions.importSettingsBundle(harness.context), true);
+  await assertCurrentBundleMatches(harness, snapshotB);
+  assertUnrelatedThemeBlocksMatch(harness, snapshotC);
+
+  await harness.actions.saveSettingsToVsSync(harness.context);
+  assertBundleMatchesSnapshot(harness.syncedState.get(SYNC_SETTINGS_STATE_KEY), snapshotB);
+
+  harness.applySnapshot(snapshotC);
+  assert.equal(await harness.actions.importSettingsFromVsSync(harness.context), true);
+  await assertCurrentBundleMatches(harness, snapshotB);
+  assertUnrelatedThemeBlocksMatch(harness, snapshotC);
+
+  assert.deepEqual(harness.dependencies.window.informationMessages, [
+    "Kawaii VS Code Color settings saved to VS Code Settings Sync state.",
+    "Kawaii VS Code Color settings exported.",
+    "Kawaii VS Code Color settings restored from VS Code Settings Sync state.",
+    "Kawaii VS Code Color settings imported.",
+    "Kawaii VS Code Color settings saved to VS Code Settings Sync state.",
+    "Kawaii VS Code Color settings restored from VS Code Settings Sync state."
+  ]);
+});
+
+test("settings sync and file actions match the state model for every four-step chain", async () => {
+  const snapshotA = createBundleSnapshot("da", {
+    activeThemeVariantId: "dark",
+    brightness: 0.19,
+    disableGlow: false,
+    editorBackgroundOpacity: 0.18,
+    editorBackgroundFit: "top-left",
+    emptyEditorLogoOpacity: 0.49
+  });
+  const snapshotB = createBundleSnapshot("db", {
+    activeThemeVariantId: "light",
+    brightness: 0.79,
+    disableGlow: true,
+    editorBackgroundOpacity: 0.29,
+    editorBackgroundFit: "bottom",
+    emptyEditorLogoOpacity: 0.59
+  });
+  const snapshotC = createBundleSnapshot("dc", {
+    activeThemeVariantId: "dark",
+    brightness: 0.39,
+    disableGlow: true,
+    editorBackgroundOpacity: 0.39,
+    editorBackgroundFit: "right",
+    emptyEditorLogoOpacity: 0.69
+  });
+  const actionNames = ["saveVSSync", "importVSSync", "exportAs", "import"];
+  const sequences = createActionSequences(actionNames, 4);
+
+  assert.equal(sequences.length, 256);
+
+  for (const sequence of sequences) {
+    const harness = createStatefulBundleHarness(snapshotA);
+    const exportPath = `C:\\Temp\\settings-chain-${sequence.join("-")}.json`;
+    const expectedState = {
+      current: clone(snapshotC),
+      sync: clone(snapshotA),
+      file: clone(snapshotB)
+    };
+
+    await harness.actions.saveSettingsToVsSync(harness.context);
+    harness.applySnapshot(snapshotB);
+    harness.dependencies.window.saveDialogResult = { fsPath: exportPath };
+    assert.equal(await harness.actions.exportSettingsBundle(harness.context), true);
+    harness.applySnapshot(snapshotC);
+
+    await assertCurrentBundleMatches(harness, expectedState.current);
+    assertBundleMatchesSnapshot(harness.syncedState.get(SYNC_SETTINGS_STATE_KEY), expectedState.sync);
+    assertBundleMatchesSnapshot(JSON.parse(harness.memoryFiles.get(exportPath)), expectedState.file);
+    assertUnrelatedThemeBlocksMatch(harness, snapshotC);
+
+    for (const actionName of sequence) {
+      if (actionName === "saveVSSync") {
+        await harness.actions.saveSettingsToVsSync(harness.context);
+        expectedState.sync = clone(expectedState.current);
+      }
+
+      if (actionName === "importVSSync") {
+        assert.equal(await harness.actions.importSettingsFromVsSync(harness.context), true);
+        expectedState.current = clone(expectedState.sync);
+      }
+
+      if (actionName === "exportAs") {
+        harness.dependencies.window.saveDialogResult = { fsPath: exportPath };
+        assert.equal(await harness.actions.exportSettingsBundle(harness.context), true);
+        expectedState.file = clone(expectedState.current);
+      }
+
+      if (actionName === "import") {
+        harness.dependencies.window.openDialogResult = [{ fsPath: exportPath }];
+        assert.equal(await harness.actions.importSettingsBundle(harness.context), true);
+        expectedState.current = clone(expectedState.file);
+      }
+
+      await assertCurrentBundleMatches(harness, expectedState.current);
+      assertBundleMatchesSnapshot(harness.syncedState.get(SYNC_SETTINGS_STATE_KEY), expectedState.sync);
+      assertBundleMatchesSnapshot(JSON.parse(harness.memoryFiles.get(exportPath)), expectedState.file);
+      assertUnrelatedThemeBlocksMatch(harness, snapshotC);
+    }
+  }
 });
 
 test("settings bundle file actions reject invalid JSON and unsupported schema versions", async () => {

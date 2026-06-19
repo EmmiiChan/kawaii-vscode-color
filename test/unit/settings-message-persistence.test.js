@@ -105,11 +105,13 @@ function createSettingsHarness() {
         warningMessages.push(message);
         return Promise.resolve();
       },
+      openDialogResult: undefined,
+      saveDialogResult: undefined,
       showSaveDialog() {
-        return Promise.resolve(undefined);
+        return Promise.resolve(this.saveDialogResult);
       },
       showOpenDialog() {
-        return Promise.resolve(undefined);
+        return Promise.resolve(this.openDialogResult);
       }
     },
     workspace: {
@@ -200,6 +202,8 @@ function createSettingsHarness() {
     postedMessages,
     settings,
     syncedKeys,
+    tempRoot,
+    vscodeWindow: vscodeStub.window,
     warningMessages
   };
 }
@@ -349,6 +353,140 @@ test("settings E2E bundle hook is rejected by default and applies fixture only w
     } else {
       process.env.KAWAII_E2E_ALLOW_NEON_PATCH = originalFlag;
     }
+    harness.cleanup();
+  }
+});
+
+test("settings webview sync and file messages restore saved state after chained edits", async () => {
+  const harness = createSettingsHarness();
+
+  try {
+    await harness.settings.openSettings(harness.context, {
+      enableNeon: async () => {
+        harness.actions.enable += 1;
+      },
+      disableNeon: async () => {
+        harness.actions.disable += 1;
+      }
+    });
+
+    const messageHandler = harness.getMessageHandler();
+    const exportPath = path.join(harness.tempRoot, "kawaii-settings-export.json");
+
+    harness.configurationValues.set("kawaii_synthwave.brightness", 0.31);
+    harness.configurationValues.set("kawaii_synthwave.disableGlow", false);
+
+    await messageHandler({
+      type: "update-color",
+      section: "workbench",
+      id: "editor.background",
+      value: "#111111",
+      themeVariantId: "dark"
+    });
+    await messageHandler({
+      type: "apply-neon-customizations",
+      editorBackgroundOpacity: 0.12,
+      editorBackgroundFit: "top",
+      emptyEditorLogoOpacity: 0.52
+    });
+    await messageHandler({ type: "save-settings-to-vssync" });
+
+    const savedBundle = harness.globalStateValues.get("kawaii_synthwave.syncedSettingsBundle");
+    assert.equal(savedBundle.extensionConfiguration.brightness, 0.31);
+    assert.equal(savedBundle.colorCustomizations.workbench.dark["editor.background"], "#111111");
+    assert.equal(savedBundle.effects.editorBackground.opacity, 0.12);
+    assert.equal(savedBundle.effects.editorBackground.fit, "top");
+    assert.equal(savedBundle.effects.emptyEditorLogo.opacity, 0.52);
+
+    harness.configurationValues.set("kawaii_synthwave.brightness", 0.86);
+    harness.configurationValues.set("kawaii_synthwave.disableGlow", true);
+    await messageHandler({
+      type: "change-theme-variant",
+      themeVariantId: "light"
+    });
+    await messageHandler({
+      type: "update-color",
+      section: "workbench",
+      id: "editor.background",
+      value: "#222222",
+      themeVariantId: "light"
+    });
+    await messageHandler({
+      type: "apply-neon-customizations",
+      editorBackgroundOpacity: 0.33,
+      editorBackgroundFit: "bottom-left",
+      emptyEditorLogoOpacity: 0.82
+    });
+
+    assert.equal(harness.configurationValues.get("workbench.colorTheme"), "Kawaii VS Code Color Light");
+    assert.equal(
+      harness.configurationValues.get("workbench.colorCustomizations")["[Kawaii VS Code Color Light]"]["editor.background"],
+      "#222222"
+    );
+    assert.equal(harness.globalStateValues.get("kawaii_synthwave.editorBackgroundFit"), "bottom-left");
+
+    await messageHandler({ type: "import-settings-from-vssync" });
+
+    assert.equal(harness.configurationValues.get("kawaii_synthwave.brightness"), 0.31);
+    assert.equal(harness.configurationValues.get("kawaii_synthwave.disableGlow"), false);
+    assert.equal(harness.configurationValues.get("workbench.colorTheme"), "Kawaii VS Code Color");
+    assert.equal(
+      harness.configurationValues.get("workbench.colorCustomizations")["[Kawaii VS Code Color]"]["editor.background"],
+      "#111111"
+    );
+    assert.equal(harness.configurationValues.get("workbench.colorCustomizations")["[Kawaii VS Code Color Light]"], undefined);
+    assert.equal(harness.globalStateValues.get("kawaii_synthwave.editorBackgroundOpacity"), 0.12);
+    assert.equal(harness.globalStateValues.get("kawaii_synthwave.editorBackgroundFit"), "top");
+    assert.equal(harness.globalStateValues.get("kawaii_synthwave.emptyEditorLogoOpacity"), 0.52);
+    assert.equal(harness.postedMessages.at(-1).type, "effects-pending");
+    assert.match(harness.postedMessages.at(-1).message, /Settings restored from VSSync/);
+
+    harness.vscodeWindow.saveDialogResult = createUri(exportPath);
+    await messageHandler({ type: "export-settings" });
+    const exportedBundle = JSON.parse(fs.readFileSync(exportPath, "utf8"));
+    assert.equal(exportedBundle.extensionConfiguration.brightness, 0.31);
+    assert.equal(exportedBundle.colorCustomizations.workbench.dark["editor.background"], "#111111");
+    assert.equal(exportedBundle.effects.editorBackground.fit, "top");
+
+    harness.configurationValues.set("kawaii_synthwave.brightness", 0.64);
+    harness.configurationValues.set("kawaii_synthwave.disableGlow", true);
+    await messageHandler({
+      type: "change-theme-variant",
+      themeVariantId: "light"
+    });
+    await messageHandler({
+      type: "update-color",
+      section: "workbench",
+      id: "editor.background",
+      value: "#333333",
+      themeVariantId: "light"
+    });
+    await messageHandler({
+      type: "apply-neon-customizations",
+      editorBackgroundOpacity: 0.28,
+      editorBackgroundFit: "right",
+      emptyEditorLogoOpacity: 0.66
+    });
+
+    harness.vscodeWindow.openDialogResult = [createUri(exportPath)];
+    await messageHandler({ type: "import-settings" });
+
+    assert.equal(harness.configurationValues.get("kawaii_synthwave.brightness"), 0.31);
+    assert.equal(harness.configurationValues.get("kawaii_synthwave.disableGlow"), false);
+    assert.equal(harness.configurationValues.get("workbench.colorTheme"), "Kawaii VS Code Color");
+    assert.equal(
+      harness.configurationValues.get("workbench.colorCustomizations")["[Kawaii VS Code Color]"]["editor.background"],
+      "#111111"
+    );
+    assert.equal(harness.configurationValues.get("workbench.colorCustomizations")["[Kawaii VS Code Color Light]"], undefined);
+    assert.equal(harness.globalStateValues.get("kawaii_synthwave.editorBackgroundOpacity"), 0.12);
+    assert.equal(harness.globalStateValues.get("kawaii_synthwave.editorBackgroundFit"), "top");
+    assert.equal(harness.globalStateValues.get("kawaii_synthwave.emptyEditorLogoOpacity"), 0.52);
+    assert.equal(harness.postedMessages.at(-1).type, "effects-pending");
+    assert.match(harness.postedMessages.at(-1).message, /Settings imported/);
+    assert.ok(harness.informationMessages.includes("Kawaii VS Code Color settings exported."));
+    assert.ok(harness.informationMessages.includes("Kawaii VS Code Color settings imported."));
+  } finally {
     harness.cleanup();
   }
 });
