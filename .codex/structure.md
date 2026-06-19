@@ -311,7 +311,7 @@ Current mechanics:
 - The inserted script is wrapped with marker comments so it can be removed later.
 - The gated E2E command `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` validates this only inside `.vscode-test/extest-111-neon`.
 - The gated E2E uses five separate VS Code launches: capture baseline/apply dstgroup patch, validate dstgroup runtime after full restart and apply an alternate image, validate the alternate image after full restart and reapply dstgroup, validate dstgroup after full restart and disable, then validate restored runtime after another full restart.
-- The gated E2E captures screenshots of the default watermark, dstgroup no-tab logo, alternate no-tab image, reverted dstgroup logo, and real editor-page backgrounds for dstgroup, alternate, and reverted dstgroup states; it also checks runtime CSS data URLs, real `.monaco-editor::before` background application, and `--vscode-*` token usage.
+- The gated E2E captures screenshots of the default watermark, dstgroup no-tab logo, alternate no-tab image, reverted dstgroup logo, and real editor-page backgrounds for dstgroup, alternate, and reverted dstgroup states; it also checks runtime CSS data URLs, real `.monaco-editor::before` background application, editor background fit area CSS variables, and `--vscode-*` token usage. Unit tests cover the complete `full`, `top`, `bottom`, `left`, `right`, `top-left`, `top-right`, `bottom-left`, and `bottom-right` fit area matrix.
 
 Patch marker contract:
 

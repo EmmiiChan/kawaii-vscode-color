@@ -33,13 +33,25 @@ const BASE_SETTINGS_FIXTURE = JSON.parse(fs.readFileSync(
 ));
 const DEV_IMAGES_DIR = path.join(WORKSPACE_ROOT, "images", "dev-images");
 const RANDOM_IMAGES_DIR = path.join(WORKSPACE_ROOT, "images", "random-images");
+const EDITOR_BACKGROUND_FIT_AREAS = {
+    full: { top: "0", right: "auto", bottom: "auto", left: "0", width: "100%", height: "100%" },
+    top: { top: "0", right: "auto", bottom: "auto", left: "0", width: "100%", height: "50%" },
+    bottom: { top: "auto", right: "auto", bottom: "0", left: "0", width: "100%", height: "50%" },
+    left: { top: "0", right: "auto", bottom: "auto", left: "0", width: "50%", height: "100%" },
+    right: { top: "0", right: "0", bottom: "auto", left: "auto", width: "50%", height: "100%" },
+    "top-left": { top: "0", right: "auto", bottom: "auto", left: "0", width: "50%", height: "50%" },
+    "top-right": { top: "0", right: "0", bottom: "auto", left: "auto", width: "50%", height: "50%" },
+    "bottom-left": { top: "auto", right: "auto", bottom: "0", left: "0", width: "50%", height: "50%" },
+    "bottom-right": { top: "auto", right: "0", bottom: "0", left: "auto", width: "50%", height: "50%" }
+};
 const DSTGROUP_VISUAL_CASE = createVisualSettingsCase("dstgroup", {
     editorBackgroundImagePath: path.join(DEV_IMAGES_DIR, "logo-page.png"),
     emptyEditorLogoImagePath: path.join(DEV_IMAGES_DIR, "logo-nopage.png")
 });
 const ALTERNATE_VISUAL_CASE = createVisualSettingsCase("alternate", {
     editorBackgroundImagePath: path.join(RANDOM_IMAGES_DIR, "felix-0008.jpg"),
-    emptyEditorLogoImagePath: path.join(RANDOM_IMAGES_DIR, "felix-gamer-ah.webp")
+    emptyEditorLogoImagePath: path.join(RANDOM_IMAGES_DIR, "felix-gamer-ah.webp"),
+    editorBackgroundFit: "top-right"
 });
 const NEON_STORAGE = path.resolve(
     process.env.KAWAII_E2E_STORAGE || path.join(DISPOSABLE_TEST_ROOT, "extest-111-neon")
@@ -197,7 +209,7 @@ describe("Neon real gated E2E @neon-real", function () {
 
         const alternateEditorBackgroundState = await captureAppliedEditorBackgroundVisualState(
             ALTERNATE_VISUAL_CASE,
-            "neon-real-alternate-page-background-after-full-restart"
+            "neon-real-alternate-page-background-top-right-after-full-restart"
         );
         const editorBackgroundScreenshotAnalysis = compareEditorBackgroundScreenshots(
             state.dstgroupEditorBackgroundState,
@@ -323,7 +335,7 @@ function createVisualSettingsBundle(baseBundle, options) {
     const emptyEditorLogoExtension = path.extname(options.emptyEditorLogoImagePath).slice(1).toLowerCase();
 
     bundle.effects.editorBackground.opacity = 0.3;
-    bundle.effects.editorBackground.fit = "full";
+    bundle.effects.editorBackground.fit = options.editorBackgroundFit || "full";
     bundle.effects.editorBackground.image = createImageExport(
         options.editorBackgroundImagePath,
         `editor-background-image.${editorBackgroundExtension}`
@@ -347,6 +359,7 @@ function createExpectedVisualEffects(bundle) {
         editorBackgroundDataUrl: createDataUrl(editorBackgroundImage),
         editorBackgroundOpacity: String(bundle.effects.editorBackground.opacity),
         editorBackgroundFit: bundle.effects.editorBackground.fit,
+        editorBackgroundFitArea: getExpectedEditorBackgroundFitArea(bundle.effects.editorBackground.fit),
         editorBackgroundOriginalName: editorBackgroundImage.originalName,
         editorBackgroundMimeType: editorBackgroundImage.mimeType,
         emptyEditorLogoDataUrl: createDataUrl(emptyEditorLogoImage),
@@ -627,14 +640,23 @@ function assertAppliedTemplateIncludesVisualEffects(template, visualCase) {
         `Expected ${visualCase.id} editor background image declaration in generated Neon script`
     );
     assert.match(template, new RegExp(`--kawaii-editor-background-image-opacity:\\s*${escapeRegExp(visualCase.expected.editorBackgroundOpacity)}`));
-    assert.match(template, /--kawaii-editor-background-area-width:\s*100%/);
-    assert.match(template, /--kawaii-editor-background-area-height:\s*100%/);
+    assertAppliedTemplateIncludesEditorBackgroundFitArea(template, visualCase);
     assert.ok(
         template.includes(`background-image: url("${visualCase.expected.emptyEditorLogoDataUrl}`),
         `Expected ${visualCase.id} empty editor logo background declaration in generated Neon script`
     );
     assert.match(template, new RegExp(`opacity:\\s*${escapeRegExp(visualCase.expected.emptyEditorLogoOpacity)}`));
     assert.doesNotMatch(template, /\[(?:EDITOR_BACKGROUND_IMAGE|EDITOR_BACKGROUND_IMAGE_OPACITY|EDITOR_BACKGROUND_IMAGE_POSITION|EDITOR_BACKGROUND_IMAGE_SIZE|EDITOR_BACKGROUND_IMAGE_REPEAT|EDITOR_BACKGROUND_AREA_TOP|EDITOR_BACKGROUND_AREA_RIGHT|EDITOR_BACKGROUND_AREA_BOTTOM|EDITOR_BACKGROUND_AREA_LEFT|EDITOR_BACKGROUND_AREA_WIDTH|EDITOR_BACKGROUND_AREA_HEIGHT|EMPTY_EDITOR_LOGO_STYLES)\]/);
+}
+
+function assertAppliedTemplateIncludesEditorBackgroundFitArea(template, visualCase) {
+    for (const [propertyName, expectedValue] of Object.entries(visualCase.expected.editorBackgroundFitArea)) {
+        assert.match(
+            template,
+            new RegExp(`--kawaii-editor-background-area-${propertyName}:\\s*${escapeRegExp(expectedValue)}`),
+            `Expected ${visualCase.id} editor background ${propertyName} area to be ${expectedValue}`
+        );
+    }
 }
 
 async function waitForRuntimeNeonState(predicate, message, visualCase = DSTGROUP_VISUAL_CASE, timeoutMs = 30000) {
@@ -663,7 +685,9 @@ async function getRuntimeNeonState(visualCase) {
         const expectedEmptyEditorLogoDataUrl = arguments[1];
         const expectedEditorBackgroundOpacity = arguments[2];
         const expectedEmptyEditorLogoOpacity = arguments[3];
-        const emptyEditorLogoSelectors = arguments[4];
+        const expectedEditorBackgroundFitArea = arguments[4];
+        const emptyEditorLogoSelectors = arguments[5];
+        const editorBackgroundFitProperties = ['top', 'right', 'bottom', 'left', 'width', 'height'];
         const themeSelectors = [
             '[class~="vs-dark"][class*="kawaii_synthwave-generated-color-theme-json"]',
             '[class~="vs-dark"][class*="kawaii-synthwave-generated-color-theme-json"]',
@@ -675,9 +699,23 @@ async function getRuntimeNeonState(visualCase) {
         const themeWrapper = document.querySelector(themeSelectors.join(', '));
         const chromeStyles = document.querySelector('#kawaii_synthwave-chrome-styles');
         const themeStyles = document.querySelector('#kawaii_synthwave-theme-styles');
+        const themeWrapperStyles = themeWrapper ? window.getComputedStyle(themeWrapper) : null;
         const chromeText = chromeStyles ? chromeStyles.textContent || '' : '';
         const themeText = themeStyles ? themeStyles.textContent || '' : '';
         const injectedText = chromeText + themeText;
+        const editorBackgroundFitAreaValues = {};
+        const hasExpectedEditorBackgroundFit = editorBackgroundFitProperties.every((propertyName) => {
+            const cssPropertyName = '--kawaii-editor-background-area-' + propertyName;
+            const expectedValue = expectedEditorBackgroundFitArea[propertyName];
+            const runtimeValue = themeWrapperStyles ? themeWrapperStyles.getPropertyValue(cssPropertyName).trim() : '';
+            const spacedDeclaration = cssPropertyName + ': ' + expectedValue;
+            const compactDeclaration = cssPropertyName + ':' + expectedValue;
+
+            editorBackgroundFitAreaValues[propertyName] = runtimeValue;
+
+            return runtimeValue === expectedValue
+                && (chromeText.includes(spacedDeclaration) || chromeText.includes(compactDeclaration));
+        });
         const editorTargets = Array.from(document.querySelectorAll('.monaco-editor')).filter((element) => {
             const rect = element.getBoundingClientRect();
             const styles = window.getComputedStyle(element);
@@ -713,6 +751,7 @@ async function getRuntimeNeonState(visualCase) {
             editorBackgroundTargetClassName: editorTarget ? editorTarget.className : '',
             editorBackgroundPseudoBackgroundImageLength: editorTargetStyles ? editorTargetStyles.backgroundImage.length : 0,
             editorBackgroundPseudoOpacity: editorTargetStyles ? editorTargetStyles.opacity : '',
+            editorBackgroundFitAreaValues,
             editorBackgroundRect: editorTargetRect ? {
                 left: editorTargetRect.left,
                 top: editorTargetRect.top,
@@ -729,8 +768,7 @@ async function getRuntimeNeonState(visualCase) {
                 height: logoTargetRect.height
             } : null,
             hasExpectedEditorBackgroundOpacity: new RegExp('--kawaii-editor-background-image-opacity:\\\\s*' + expectedEditorBackgroundOpacity.replace('.', '\\\\.')).test(chromeText),
-            hasExpectedEditorBackgroundFit: /--kawaii-editor-background-area-width:\\s*100%/.test(chromeText)
-                && /--kawaii-editor-background-area-height:\\s*100%/.test(chromeText),
+            hasExpectedEditorBackgroundFit,
             hasExpectedEditorBackgroundPseudoOpacity: Boolean(editorTargetStyles && editorTargetStyles.opacity === expectedEditorBackgroundOpacity),
             hasExpectedEmptyEditorLogoOpacity: Boolean(logoTargetStyles && logoTargetStyles.opacity === expectedEmptyEditorLogoOpacity)
         };
@@ -739,6 +777,7 @@ async function getRuntimeNeonState(visualCase) {
         visualCase.expected.emptyEditorLogoDataUrl,
         visualCase.expected.editorBackgroundOpacity,
         visualCase.expected.emptyEditorLogoOpacity,
+        visualCase.expected.editorBackgroundFitArea,
         EMPTY_EDITOR_LOGO_LETTERPRESS_SELECTORS
     );
 }
@@ -782,6 +821,10 @@ function compareEditorBackgroundScreenshots(beforeState, afterState) {
             && maxDifference > 10
             && changedRatio > 0.01
     };
+}
+
+function getExpectedEditorBackgroundFitArea(fit) {
+    return EDITOR_BACKGROUND_FIT_AREAS[fit] || EDITOR_BACKGROUND_FIT_AREAS.full;
 }
 
 function compareEmptyEditorLogoScreenshots(beforeState, afterState) {
