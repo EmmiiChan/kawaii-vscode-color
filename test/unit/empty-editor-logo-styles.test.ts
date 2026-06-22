@@ -1,12 +1,20 @@
-const assert = require("node:assert/strict");
-const test = require("node:test");
-const { JSDOM } = require("jsdom");
+import assert = require("node:assert/strict");
+import path = require("node:path");
+import test = require("node:test");
+
+const { JSDOM } = require("jsdom") as {
+  JSDOM: new (html: string) => { window: { document: Document } };
+};
 
 const {
   EMPTY_EDITOR_LOGO_FALLBACK_VERSION_CASES,
   EMPTY_EDITOR_LOGO_LETTERPRESS_SELECTORS,
   createEmptyEditorLogoStyles
-} = require("../../out/src/emptyEditorLogoStyles");
+} = requireOut<typeof import("../../src/emptyEditorLogoStyles")>("emptyEditorLogoStyles");
+
+function requireOut<TModule>(...segments: readonly string[]): TModule {
+  return require(path.join(process.cwd(), "out", "src", ...segments)) as TModule;
+}
 
 test("createEmptyEditorLogoStyles includes old and wrapper watermark selectors", () => {
   const css = createEmptyEditorLogoStyles("data:image/png;base64,abc123", 0.42);
@@ -82,6 +90,6 @@ test("createEmptyEditorLogoStyles applies data URI and opacity", () => {
   assert.match(css, /filter: none !important;/);
 });
 
-function escapeRegExp(value) {
+function escapeRegExp(value: string): string {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

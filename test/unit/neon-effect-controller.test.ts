@@ -1,19 +1,33 @@
-const assert = require("node:assert/strict");
-const test = require("node:test");
+import assert = require("node:assert/strict");
+import path = require("node:path");
+import test = require("node:test");
 
 const {
   COLOR_THEME_SETTING,
   createNeonEffectController
-} = require("../../out/src/extensionHost/controllers/NeonEffectController");
+} = requireOut<typeof import("../../src/extensionHost/controllers/NeonEffectController")>(
+  "extensionHost",
+  "controllers",
+  "NeonEffectController"
+);
+
+function requireOut<TModule>(...segments: readonly string[]): TModule {
+  return require(path.join(process.cwd(), "out", "src", ...segments)) as TModule;
+}
 
 test("NeonEffectController exposes settings actions that delegate to the service", async () => {
-  const calls = [];
+  const calls: unknown[][] = [];
   const controller = createNeonEffectController({
     getActiveColorThemeLabel: () => "Kawaii VS Code Color",
     getNeonConfiguration: () => ({ brightness: 0.3, disableGlow: true }),
     neonEffectService: {
-      enable: async (configuration) => calls.push(["enable", configuration]),
-      disable: async () => calls.push(["disable"]),
+      buildCustomChromeStyles: (chromeStyles) => chromeStyles,
+      enable: async (configuration) => {
+        calls.push(["enable", configuration]);
+      },
+      disable: async () => {
+        calls.push(["disable"]);
+      },
       isEnabled: () => {
         calls.push(["isEnabled"]);
         return true;
@@ -40,13 +54,18 @@ test("NeonEffectController regenerates Neon only when switching between Kawaii t
     "Kawaii VS Code Color",
     "Default Dark+"
   ];
-  const calls = [];
+  const calls: unknown[][] = [];
   const controller = createNeonEffectController({
     getActiveColorThemeLabel: () => labels.shift() || "",
     getNeonConfiguration: () => ({ brightness: 0.4, disableGlow: false }),
     neonEffectService: {
-      enable: async (configuration) => calls.push(["enable", configuration]),
-      disable: async () => calls.push(["disable"]),
+      buildCustomChromeStyles: (chromeStyles) => chromeStyles,
+      enable: async (configuration) => {
+        calls.push(["enable", configuration]);
+      },
+      disable: async () => {
+        calls.push(["disable"]);
+      },
       isEnabled: () => {
         calls.push(["isEnabled"]);
         return true;
@@ -67,9 +86,9 @@ test("NeonEffectController regenerates Neon only when switching between Kawaii t
   ]);
 });
 
-function createConfigurationEvent(affectedConfiguration) {
+function createConfigurationEvent(affectedConfiguration: string) {
   return {
-    affectsConfiguration(configuration) {
+    affectsConfiguration(configuration: string): boolean {
       return configuration === affectedConfiguration;
     }
   };
