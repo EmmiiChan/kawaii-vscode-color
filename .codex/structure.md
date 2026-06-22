@@ -469,7 +469,8 @@ Local source anchors:
 - `scripts/e2e-last-run.ts`: TypeScript implementation for project-owned E2E last-run marker creation, phase updates, ExTester diagnostic reading, and Neon storage guard helpers.
 - `scripts/run-e2e.js`: stable Node wrapper for safe, current, and gated real VS Code E2E orchestration.
 - `scripts/run-e2e.ts`: TypeScript implementation for ExTester phase selection, disposable storage configuration, E2E process execution, and `test-results/e2e/kawaii-last-run.json` updates for safe, current, and Neon modes.
-- `scripts/run-test-all.js`: safe test orchestration for `npm run test:all`, including final aggregate pass/fail/skipped summary output.
+- `scripts/run-test-all.js`: stable Node wrapper for safe test orchestration.
+- `scripts/run-test-all.ts`: TypeScript implementation for `npm run test:all`, including safe phase selection, child process execution, fail-fast behavior, and final aggregate pass/fail/skipped summary output.
 - `test/unit`: Node unit tests without UI.
 - `test/dom`: `jsdom` settings webview tests and `settings-webview-helper.js`.
 - `test/integration`: VS Code Extension Development Host tests.

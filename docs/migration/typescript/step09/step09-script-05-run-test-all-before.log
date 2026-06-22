@@ -1,0 +1,24 @@
+STEP09 SCRIPT 05 BEFORE - run-test-all JavaScript baseline
+
+> node --test scripts/run-test-all.test.js
+✔ formatSummary prints a final overview for passed, failed, and skipped phases (1.0324ms)
+✔ createSkippedResults marks remaining phases after a fail-fast stop (0.6874ms)
+✔ getNpmExecutable uses npm.exe on Windows so child process runs without a shell (0.1813ms)
+✔ formatSummary includes spawn errors for failed phases (0.2383ms)
+✔ runAllSafeTests returns a promise so the CLI can wait before exiting (0.9121ms)
+✔ getSummaryDelayMs defaults to a short pause before final output (0.1084ms)
+✔ safe phase list captures integration output before continuing (0.0914ms)
+✔ safe phase list excludes gated Neon E2E (0.0809ms)
+✔ runAllSafeTestPlan fails fast and keeps summary when Safe E2E exits non-zero (1.761ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 95.8042
+NODE_--TEST_SCRIPTS/RUN-TEST-ALL.TEST.JS_EXIT_CODE: 0
+
+> node --check scripts/run-test-all.js
+NODE_--CHECK_SCRIPTS/RUN-TEST-ALL.JS_EXIT_CODE: 0

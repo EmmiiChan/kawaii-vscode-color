@@ -23,6 +23,7 @@
         "scripts/build-color-theme.js",
         "scripts/check-codex-docs.js",
         "scripts/e2e-last-run.js",
-        "scripts/run-e2e.js"
+        "scripts/run-e2e.js",
+        "scripts/run-test-all.js"
     ]
 }
