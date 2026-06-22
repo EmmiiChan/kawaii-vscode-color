@@ -152,13 +152,13 @@ const CRITICAL_FILES = [
   "src/js/theme_template.js",
   "src/randomNekoImage.ts",
   "src/renderer",
-  "src/settings.js",
+  "src/settings.ts",
   "src/settingsBundle.ts",
   "src/settingsColorService.ts",
   "src/settingsEffectsPersistence.ts",
   "src/settingsPersistence.ts",
   "src/settingsStore.ts",
-  "src/settingsWebview.js",
+  "src/settingsWebview.ts",
   "src/webview",
   "src/workbenchPatch.ts",
   "test/dom",
@@ -178,7 +178,7 @@ function validateCodexDocs(workspaceRoot = process.cwd()): ValidationResult {
 function collectProjectFacts(workspaceRoot = process.cwd()): ProjectFacts {
   const packageManifest = readJsonFile<PackageManifest>(path.join(workspaceRoot, "package.json"));
   const packageLock = readJsonFile<PackageLock>(path.join(workspaceRoot, "package-lock.json"));
-  const settingsSource = readTextFile(path.join(workspaceRoot, "src", "settings.js"));
+  const settingsSource = readTextFile(path.join(workspaceRoot, "src", "settings.ts"));
   const extensionSource = readTextFile(path.join(workspaceRoot, "src", "extension.ts"));
   const settingsBundleSource = readTextFile(path.join(workspaceRoot, "src", "settingsBundle.ts"));
   const themeTemplateSource = readTextFile(path.join(workspaceRoot, "src", "js", "theme_template.js"));
@@ -272,7 +272,7 @@ function validateCodexDocFacts(facts: ProjectFacts, documents: CodexDocuments): 
 
   [
     "package.json",
-    "src/settings*.js",
+    "src/settings*.ts",
     "webview messages",
     ".codex/system-map.md",
     ".codex/docs.md",

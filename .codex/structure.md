@@ -29,7 +29,7 @@ Command Palette
   -> VS Code loads package.json main entry
   -> activate(context)
   -> registerCommand('kawaii_synthwave.openSettings')
-  -> src/settings.js opens a WebviewPanel editor tab
+  -> src/settings.ts opens a WebviewPanel editor tab
   -> user opens Neon Effect from the side menu
   -> webview posts enable-neon to the extension host
   -> internal enableNeon() handler resolves VS Code workbench paths
@@ -76,7 +76,7 @@ Command Palette
   -> package.json activationEvents: onStartupFinished and onCommand:kawaii_synthwave.openSettings
   -> activate(context)
   -> registerCommand('kawaii_synthwave.openSettings')
-  -> src/settings.js opens a WebviewPanel editor tab
+  -> src/settings.ts opens a WebviewPanel editor tab
   -> Home page is shown first with theme and reference links
   -> side menu switches between Home, Settings, Color Settings, Neon Effect, Image Customization, Sync/Files, and Help
   -> Color Settings reads colors from the active generated dark or light theme file
@@ -165,7 +165,7 @@ Keep changes inside the existing responsibility boundaries.
 | `test/integration` | VS Code Extension Development Host tests using `@vscode/test-cli` | Unit-only helper tests |
 | `test/e2e` | ExTester/WebDriver tests that open a disposable real VS Code window, drive the Command Palette, and interact with the real settings webview iframe | Unit logic, fake-DOM-only assertions, or safe-suite clicks that apply the real Neon patch |
 | `.vscode` | Local VS Code development/debug configuration | Extension source or published assets |
-| `.codex` | Agent-facing project guides, source-backed system maps, change-impact rules, and the color reference read by Settings UI | Extension runtime files other than the intentional `.codex/color_scheme_reference.md` read in `src/settings.js` |
+| `.codex` | Agent-facing project guides, source-backed system maps, change-impact rules, and the color reference read by Settings UI | Extension runtime files other than the intentional `.codex/color_scheme_reference.md` read in `src/settings.ts` |
 | Root image assets | README/Marketplace icon, screenshots, banners | Generated runtime assets |
 | Root legacy CSS files | Legacy/manual custom CSS assets from the upstream workflow | New Neon Dreams source of truth |
 
@@ -174,7 +174,7 @@ Current source of truth:
 - Workbench chrome injection lives in `src/css/editor_chrome.css`.
 - No-tab logo selector/style generation lives in `src/emptyEditorLogoStyles.ts`.
 - Renderer behavior lives in the JS template under `src/js`; typed browser-only renderer helper contracts live under `src/renderer`.
-- Settings webview orchestration, message routing, VS Code notifications/dialogs, native picker/download workflows, color-reference parsing, and state composition live in `src/settings.js`.
+- Settings webview orchestration, message routing, VS Code notifications/dialogs, native picker/download workflows, color-reference parsing, and state composition live in `src/settings.ts`.
 - Runtime activation and command registration live in `src/extension.ts`.
 - Extension-host Neon and Settings controllers plus service, filesystem, storage, and notification boundaries live under `src/extensionHost`.
 - Runtime asset resolution from source or `out/src` lives in `src/extensionRoot.ts`.
@@ -184,7 +184,7 @@ Current source of truth:
 - Generated-theme-aware color customization updates/resets live in `src/settingsColorService.ts`.
 - Settings bundle creation/application, Settings Sync state, and JSON import/export actions live in `src/settingsBundle.ts`.
 - Deterministic effect/image persistence helpers live in `src/settingsEffectsPersistence.ts`.
-- Setup webview HTML generation lives in `src/settingsWebview.js`.
+- Setup webview HTML generation lives in `src/settingsWebview.ts`.
 - Typed settings webview view-model serialization, CSP/HTML adapter contracts, page ids, style token names, and client message names live under `src/webview/settings`.
 - Workbench path detection and marked HTML patch helpers live in `src/workbenchPatch.ts`.
 - E2E orchestration lives in `scripts/run-e2e.ts` behind the stable `scripts/run-e2e.js` wrapper. E2E last-run marker normalization lives in `scripts/e2e-last-run.ts` behind the stable `scripts/e2e-last-run.js` wrapper; `test-results/e2e/kawaii-last-run.json` is the authoritative project marker and `.last-run.json` is ExTester diagnostics only.
@@ -223,7 +223,7 @@ Recommended extraction boundaries if the runtime grows:
 | Generated JS assembly | `src/neon/...` or a focused helper | Keep placeholders documented and validated |
 | Notification messages | A constants/helper module | Preserve user-facing clarity and avoid duplicated strings |
 | Token replacement rules | `src/js/theme_template.js` plus typed mirrors in `src/renderer/ThemeTemplate.ts` until the injected browser runtime is fully migrated | Keep in sync with theme token foreground colors |
-| Settings UI and persistence | `src/settings.js`, `src/settingsWebview.js`, `src/webview/settings`, `src/settingsPersistence.ts`, `src/settingsStore.ts`, `src/settingsColorService.ts`, `src/settingsBundle.ts`, `src/settingsEffectsPersistence.ts` | Keep Home and Color Settings in the same setup webview; keep user overrides in VS Code settings, not generated theme files; keep deterministic persistence logic unit-testable without a VS Code Extension Host |
+| Settings UI and persistence | `src/settings.ts`, `src/settingsWebview.ts`, `src/webview/settings`, `src/settingsPersistence.ts`, `src/settingsStore.ts`, `src/settingsColorService.ts`, `src/settingsBundle.ts`, `src/settingsEffectsPersistence.ts` | Keep Home and Color Settings in the same setup webview; keep user overrides in VS Code settings, not generated theme files; keep deterministic persistence logic unit-testable without a VS Code Extension Host |
 
 Avoid these unless the project is deliberately refactored:
 
@@ -274,7 +274,7 @@ Rules for changing theme colors:
 - Run `npm run build:theme` after editing overrides so `themes/kawaii_synthwave-generated-color-theme.json` is refreshed.
 - Do not edit `themes/kawaii_synthwave-generated-color-theme.json` manually; it is build output.
 - Prefer public VS Code theme keys in the overrides file for normal UI and syntax changes.
-- Use `src/settings.js` for setup state and webview orchestration; use the extracted settings modules for user-local live color changes. They should write theme-scoped settings under `[Kawaii VS Code Color]`, not mutate repository theme JSON files at runtime.
+- Use `src/settings.ts` for setup state and webview orchestration; use the extracted settings modules for user-local live color changes. They should write theme-scoped settings under `[Kawaii VS Code Color]`, not mutate repository theme JSON files at runtime.
 - Use injected CSS only for effects VS Code themes cannot express, such as text shadows and internal chrome decoration.
 - Validate TextMate scopes with `Developer: Inspect Editor Tokens and Scopes`.
 - Check semantic highlighting interactions when a language server is active.
@@ -419,7 +419,7 @@ Useful checks for this repository:
 - Manual inspection of `package.json` contribution points.
 - Manual theme validation in VS Code with `Developer: Inspect Editor Tokens and Scopes`.
 
-TypeScript compatibility configs now exist for migration validation, and `tsconfig.tests.emit.json` emits converted TypeScript tests into `out-tests`. There is still no lint script. Tests are split across unit, DOM, and VS Code integration layers, and the only behavior-changing build step remains the theme merge script.
+TypeScript strict configs now validate extension, script, and TypeScript test sources with `allowJs` disabled, and `tsconfig.tests.emit.json` emits TypeScript tests into `out-tests`. There is still no lint script. Tests are split across unit, DOM, and VS Code integration layers, and the only behavior-changing build step remains the theme merge script.
 
 ## Packaging and Release Boundaries
 
@@ -443,13 +443,13 @@ Local source anchors:
 - `src/emptyEditorLogoStyles.ts`: no-tab logo selector contract and generated logo replacement CSS.
 - `src/randomNekoImage.ts`: Random Neko payload parsing, URL resolution, guarded HTTPS fetching, and image normalization.
 - `src/renderer`: browser-only typed renderer token replacement maps, selector constants, style ids, token color helpers, and renderer placeholder boundary tests.
-- `src/settings.js`: settings webview orchestration, message handling, VS Code notifications/dialogs, native picker/download workflows, and state composition.
+- `src/settings.ts`: settings webview orchestration, message handling, VS Code notifications/dialogs, native picker/download workflows, and state composition.
 - `src/settingsPersistence.ts`: pure color customization block mutation, scope comparison, and hex validation.
 - `src/settingsStore.ts`: VS Code configuration adapter for global/workspace settings reads and writes.
 - `src/settingsColorService.ts`: generated-theme-aware color customization update/reset orchestration.
 - `src/settingsBundle.ts`: settings bundle, Settings Sync, and JSON import/export orchestration.
 - `src/settingsEffectsPersistence.ts`: effect/image persistence normalization, safe paths, metadata/state, export/restore/store/remove helpers.
-- `src/settingsWebview.js`: setup webview HTML, Home, Settings, Color Settings, Neon Effect, Image Customization, Sync/Files, and Help pages.
+- `src/settingsWebview.ts`: setup webview HTML, Home, Settings, Color Settings, Neon Effect, Image Customization, Sync/Files, and Help pages.
 - `src/webview`: typed settings webview contracts for view model serialization, CSP/HTML adapter behavior, page ids, style token names, and client message names.
 - `src/workbenchPatch.ts`: testable workbench path detection and HTML patch helpers.
 - `src/js/theme_template.js`: renderer bootstrap, theme detection, token replacement, style injection.
@@ -485,7 +485,7 @@ Local source anchors:
 - `.codex/AGENTS.md`: agent-facing operations guide.
 - `.codex/README.md`: Codex context-loading index.
 - `.codex/change-impact.md`: documentation impact matrix for additions, removals, and updates.
-- `.codex/color_scheme_reference.md`: theme reference used by agents and read at runtime by `src/settings.js`.
+- `.codex/color_scheme_reference.md`: theme reference used by agents and read at runtime by `src/settings.ts`.
 - `.codex/docs.md`: official documentation and version-specific reference index.
 - `.codex/structure.md`: architecture and workflow guide.
 - `.codex/system-map.md`: migration-oriented system contract map verified by `npm run test:docs`.

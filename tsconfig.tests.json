@@ -9,14 +9,12 @@
             "ES2018",
             "DOM"
         ],
-        "allowJs": true,
+        "allowJs": false,
         "checkJs": false
     },
     "include": [
         "test/**/*.ts",
-        "test/**/*.js",
-        "scripts/**/*.test.ts",
-        "scripts/**/*.test.js"
+        "scripts/**/*.test.ts"
     ],
     "exclude": [
         "node_modules/**",

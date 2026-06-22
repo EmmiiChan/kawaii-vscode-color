@@ -13,8 +13,8 @@ Current tooling state:
 | Area | Current state |
 | --- | --- |
 | Build step | `npm run build:theme` merges protected base themes and editable overrides into the generated themes loaded by VS Code. `npm run build:local` compiles script wrappers, bumps the patch version, then builds the themes and local VSIX through the TypeScript-backed package script. |
-| Automated tests | The lightweight gate starts with the Codex docs drift guard and Node syntax check, then the regular layers cover Node unit tests, `jsdom` DOM UI tests, VS Code Extension Development Host integration tests, and ExTester/WebDriver real VS Code UI E2E tests. A separate gated Neon E2E patches only a disposable `.vscode-test` install. |
-| TypeScript | Tooling is active for migration. `package.json.main` points to compiled `./out/src/extension.js`; the runtime entry, extracted Neon and Settings host controllers/services/adapters, shared contracts, pure settings/workbench helpers, settings webview contracts, and renderer helper contracts listed below are TypeScript. |
+| Automated tests | The lightweight gate starts with TypeScript no-emit checks, the Codex docs drift guard, and Node syntax checks, then the regular layers cover Node unit tests, `jsdom` DOM UI tests, VS Code Extension Development Host integration tests, and ExTester/WebDriver real VS Code UI E2E tests. A separate gated Neon E2E patches only a disposable `.vscode-test` install. |
+| TypeScript | Strict TypeScript mode is active with `allowJs` disabled. `package.json.main` points to compiled `./out/src/extension.js`; the runtime entry, Settings webview source, extracted Neon and Settings host controllers/services/adapters, shared contracts, pure settings/workbench helpers, settings webview contracts, and renderer helper contracts listed below are TypeScript. |
 | npm dependencies | No runtime dependencies. Dev-only tooling/test dependencies are `typescript@^6.0.3`, `@types/node@^26.0.0`, `@types/vscode@^1.33.0`, `jsdom@29.1.1`, `@vscode/test-cli@0.0.12`, `@vscode/test-electron@3.0.0`, `vscode-extension-tester@8.23.0`, and `mocha@11.7.6`. |
 | Packaging tool | Not installed permanently in this repo. Use `@vscode/vsce` through the existing npm scripts when packaging. |
 | Runtime entry | `package.json.main` points to `./out/src/extension.js`; run `npm run compile` before extension-host, E2E, or package validation. |
@@ -44,8 +44,8 @@ Expected result:
 - `npm pkg get` should show `kawaii-vscode-color`, publisher `ITEM-PIXEL`, no runtime dependency object, and the pinned dev-only tooling/test dependencies.
 - `npm run test:docs` should confirm `.codex` docs match package metadata, themes, message contracts, state keys, schemas, renderer placeholders, and `semanticTokenColors`.
 - `npm run type-check` should run the TypeScript compatibility configs in no-emit mode for current JS migration source, scripts, and tests.
-- `npm run test:check` should run `test:docs`, compile `out/`, then exit without syntax errors in selected scripts, compiled runtime output, and E2E files.
-- `npm run test:unit` should compile the TypeScript-compatible migration output first, then pass build, version, workbench patch, shared contract, settings persistence, Settings Sync / JSON import-export chain, and mocked settings message-chain unit tests.
+- `npm run test:check` should run `type-check`, `test:docs`, compile `out/`, then exit without syntax errors in selected scripts, compiled runtime output, and E2E files.
+- `npm run test:unit` should compile strict TypeScript output first, then pass build, version, workbench patch, shared contract, settings persistence, Settings Sync / JSON import-export chain, and mocked settings message-chain unit tests.
 - `npm run test:dom` should compile first, then pass settings webview DOM tests covering all safe webview events, app navigation, Help metadata, Color Settings inputs/debounce, image/logo state, incoming webview messages, warnings/errors, split webview contracts, and editor-provided `--vscode-*` tokens instead of a standalone UI palette.
 - `npm run test:integration` should compile, activate the extension in the Extension Development Host, and execute `kawaii_synthwave.openSettings` without running the real Neon Effect patch.
 - `npm run test:e2e` should compile, package the extension, open disposable VS Code `1.111.0` through ExTester/WebDriver, navigate the real settings webview, avoid all real Neon patch actions, cover safe fixture-backed upload/import/export/download and Random Neko flows without native dialogs or network, write safe Settings visual screenshots plus PNG analysis under `test-results/e2e`, and update `test-results/e2e/kawaii-last-run.json`.
@@ -58,9 +58,9 @@ Expected result:
 
 TypeScript migration note:
 
-- `tsconfig.base.json`, `tsconfig.extension.json`, `tsconfig.scripts.json`, and `tsconfig.tests.json` exist to type-check the current JavaScript-compatible migration state.
+- `tsconfig.base.json`, `tsconfig.extension.json`, `tsconfig.scripts.json`, and `tsconfig.tests.json` type-check strict TypeScript source with `allowJs` disabled.
 - `npm run compile:scripts` compiles script TypeScript into `out-scripts`; `npm run compile` compiles the extension and scripts into `out` and `out-scripts`, and the extension host runtime loads `./out/src/extension.js`.
-- `tsconfig.tests.emit.json` and `npm run compile:tests` emit converted TypeScript tests into `out-tests` without duplicating legacy JavaScript tests.
+- `tsconfig.tests.emit.json` and `npm run compile:tests` emit TypeScript tests into `out-tests` without compiling JavaScript test suites.
 - Real E2E orchestration lives in `scripts/run-e2e.ts` behind the stable `scripts/run-e2e.js` wrapper; E2E commands compile scripts before invoking the wrapper.
 - Safe all-tests orchestration lives in `scripts/run-test-all.ts` behind the stable `scripts/run-test-all.js` wrapper; `npm run test:all` compiles scripts before invoking the wrapper.
 - `vscode:prepublish`, `build:local`, integration tests, E2E scripts, gated Neon guard scripts, package version scripts, and local VSIX package scripts compile before loading or packaging the extension.
@@ -69,7 +69,7 @@ Codex documentation rule:
 
 - Any addition, removal, or update to package metadata, source modules, webview messages, theme files, settings/state keys, persistence schemas, test workflows, E2E artifacts, or renderer placeholders must update `.codex/system-map.md` and any relevant `.codex` guide in the same change.
 - Use `.codex/change-impact.md` to decide which docs must change.
-- Do not treat `.codex/color_scheme_reference.md` as only agent-facing prose; `src/settings.js` reads it at runtime for Settings color descriptions.
+- Do not treat `.codex/color_scheme_reference.md` as only agent-facing prose; `src/settings.ts` reads it at runtime for Settings color descriptions.
 
 Visual validation rule:
 
@@ -150,7 +150,7 @@ The package loads compiled runtime JavaScript from `out/` and still ships source
 - `out/src/extension.js` runs in the extension host and is compiled from `src/extension.ts`.
 - `src/extensionHost` contains typed extension-host adapters, Neon and Settings controllers, and services for script assembly, settings message dispatch, settings state boundaries, and workbench patch application/removal.
 - `src/extensionRoot.ts` owns source/compiled package-root asset resolution for runtime reads.
-- `src/settings.js` owns the settings webview orchestration, message routing, VS Code notifications/dialogs, and remaining UI-facing workflows.
+- `src/settings.ts` owns the settings webview orchestration, message routing, VS Code notifications/dialogs, and remaining UI-facing workflows.
 - `src/settingsPersistence.ts` owns pure color customization block mutation and hex/scope helpers.
 - `src/settingsStore.ts` owns the VS Code configuration adapter used by persistence services.
 - `src/settingsColorService.ts` owns generated-theme-aware color customization orchestration.
@@ -158,12 +158,12 @@ The package loads compiled runtime JavaScript from `out/` and still ships source
 - `src/settingsEffectsPersistence.ts` owns deterministic effect/image persistence helpers.
 - `src/randomNekoImage.ts` owns Random Neko payload parsing, URL resolution, guarded HTTPS fetching, and testable image response normalization.
 - `src/renderer/ThemeTemplate.ts` owns typed browser-only renderer token replacement maps, selector constants, style ids, token color matching helpers, and placeholder-adjacent tests for the injected workbench script.
-- `src/settingsWebview.js` renders the setup webview HTML as the compatibility renderer. It must use VS Code webview color tokens (`--vscode-*`) and must not define a separate hardcoded UI palette.
+- `src/settingsWebview.ts` renders the setup webview HTML as the compatibility renderer. It must use VS Code webview color tokens (`--vscode-*`) and must not define a separate hardcoded UI palette.
 - `src/webview/settings` contains typed settings webview contracts for the view model, HTML/CSP adapter, page ids, style token names, and client `postMessage` types used by the compatibility renderer.
 - `src/workbenchPatch.ts` contains pure workbench path and HTML patch helpers covered by unit tests.
 - `src/js/theme_template.js` is read as a template and written as generated `neondreams.js`.
 - `src/css/editor_chrome.css` is injected into the generated renderer script.
-- `src/shared` contains TypeScript migration contracts, models, and runtime guards used as the typed boundary for later source migration.
+- `src/shared` contains TypeScript contracts, models, and runtime guards used as typed boundaries for external inputs.
 
 ## Test Architecture
 

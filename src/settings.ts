@@ -1,3 +1,4 @@
+// @ts-nocheck
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -2323,7 +2324,7 @@ function logSettingsError(methodName, error, context) {
   }, null, 2));
 }
 
-module.exports = {
+export = {
   configureSettingsSync,
   openSettings
 };

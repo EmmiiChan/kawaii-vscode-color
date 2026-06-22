@@ -1,0 +1,149 @@
+Step10 focused tests after strict cleanup - 2026-06-22T11:27:45.7413620+01:00
+
+===== npm run compile =====
+
+> kawaii-vscode-color@0.1.31 compile
+> tsc -p tsconfig.extension.json && npm run compile:scripts
+
+
+> kawaii-vscode-color@0.1.31 compile:scripts
+> tsc -p tsconfig.scripts.json
+
+Exit code: 0
+
+===== npm run compile:tests =====
+
+> kawaii-vscode-color@0.1.31 compile:tests
+> tsc -p tsconfig.tests.emit.json
+
+Exit code: 0
+
+===== node --test out-tests/test/unit/strict-typescript-package.test.js =====
+✔ TypeScript configs disable JavaScript compatibility mode (1.5282ms)
+✔ runtime source JavaScript is limited to the intentional Neon renderer template asset (3.589ms)
+✔ VSIX ignore rules exclude development artifacts but keep runtime assets packageable (0.8699ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 99.8237
+Exit code: 0
+
+===== npx vsce ls --tree =====
+kawaii-vscode-color-0.1.31.vsix
+├─ LICENSE [34.36 KB]
+├─ README.md [18.26 KB]
+├─ icon.png [1.78 MB]
+├─ kawaii_synthwave-noglow.css [5.63 KB]
+├─ kawaii_synthwave.css [6.29 KB]
+├─ package.json [9.26 KB]
+├─ theme.jpg [187.95 KB]
+├─ images/
+│  ├─ kawaii-vscode-color-color-customization.png [115.52 KB]
+│  ├─ kawaii-vscode-color-dark-file.png [63.64 KB]
+│  ├─ kawaii-vscode-color-dark-index.png [150.49 KB]
+│  ├─ kawaii-vscode-color-features-1.png [340.6 KB]
+│  ├─ kawaii-vscode-color-image-customization.png [223.78 KB]
+│  ├─ kawaii-vscode-color-light-file.png [125.16 KB]
+│  ├─ kawaii-vscode-color-light-index.png [148.54 KB]
+│  ├─ kawaii-vscode-color-presets.png [191.6 KB]
+│  ├─ dev-images/
+│  │  ├─ logo-nopage.png [11.91 KB]
+│  │  └─ logo-page.png [10.95 KB]
+│  └─ random-images/
+│     ├─ catgirl.gif [216 KB]
+│     ├─ felix-0001.jpg [29.61 KB]
+│     ├─ felix-0002.jpg [34.69 KB]
+│     ├─ felix-0003.jpg [259.76 KB]
+│     ├─ felix-0004.jpg [259.38 KB]
+│     ├─ felix-0005.jpg [234.23 KB]
+│     ├─ felix-0006.jpg [270.23 KB]
+│     ├─ felix-0007.jpg [29.85 KB]
+│     ├─ felix-0008.jpg [27.18 KB]
+│     ├─ felix-0009.jpg [27.41 KB]
+│     ├─ felix-felix-re-zero.PNG [121.08 KB]
+│     ├─ felix-gamer-ah.webp [16.45 KB]
+│     ├─ felix-gamer-snif-0001.gif [627.78 KB]
+│     ├─ felix-gamer-speak-0003.gif [977.42 KB]
+│     ├─ felix-gamer-speak-0004.gif [675.59 KB]
+│     ├─ felix-gamer-speak-0005.gif [118.31 KB]
+│     ├─ felix-gamer-speak-0006.gif [704.19 KB]
+│     ├─ felix-gamer-speak-00062.gif [1.9 MB]
+│     ├─ felix-gamer-speak-0007.gif [278.03 KB]
+│     ├─ felix-gamer-speak-2.gif [1.15 MB]
+│     ├─ felix-gamer-speak-hi.gif [1.02 MB]
+│     ├─ felix-gamer-speak-label.gif [2.75 MB]
+│     ├─ felix-gamer-speak.gif [1.01 MB]
+│     ├─ iQqPH.jpg [171.42 KB]
+│     └─ kawaii-neko-girl-vector-51345829-709582326.jpg [83.05 KB]
+├─ out/
+│  └─ src/
+│     ├─ emptyEditorLogoStyles.js [1.51 KB]
+│     ├─ extension.js [5.31 KB]
+│     ├─ extensionRoot.js [1.21 KB]
+│     ├─ randomNekoImage.js [8.16 KB]
+│     ├─ settings.js [80.11 KB]
+│     ├─ settingsBundle.js [9.48 KB]
+│     ├─ settingsColorService.js [5.19 KB]
+│     ├─ settingsEffectsPersistence.js [12.64 KB]
+│     ├─ settingsPersistence.js [6.12 KB]
+│     ├─ settingsStore.js [2.38 KB]
+│     ├─ settingsWebview.js [58.37 KB]
+│     ├─ workbenchPatch.js [3.99 KB]
+│     ├─ extensionHost/
+│     │  ├─ adapters/
+│     │  │  ├─ NodeFileSystem.js [0.53 KB]
+│     │  │  ├─ VscodeExtensionStorage.js [0.86 KB]
+│     │  │  └─ VscodeNotificationService.js [0.98 KB]
+│     │  ├─ controllers/
+│     │  │  ├─ NeonEffectController.js [1.92 KB]
+│     │  │  ├─ SettingsCommandController.js [0.65 KB]
+│     │  │  └─ SettingsMessageController.js [11.65 KB]
+│     │  └─ services/
+│     │     ├─ NeonEffectService.js [17.32 KB]
+│     │     ├─ SettingsBundleService.js [1.08 KB]
+│     │     ├─ SettingsEffectsService.js [1.94 KB]
+│     │     ├─ SettingsStateService.js [0.38 KB]
+│     │     └─ WorkbenchPatchService.js [2.33 KB]
+│     ├─ renderer/
+│     │  └─ ThemeTemplate.js [6.62 KB]
+│     ├─ shared/
+│     │  ├─ contracts/
+│     │  │  ├─ rendererPlaceholders.js [1.77 KB]
+│     │  │  ├─ settingsBundleSchema.js [0.42 KB]
+│     │  │  └─ webviewMessages.js [2.24 KB]
+│     │  ├─ models/
+│     │  │  ├─ color.js [0.5 KB]
+│     │  │  ├─ effects.js [0.72 KB]
+│     │  │  ├─ settings.js [0.11 KB]
+│     │  │  ├─ theme.js [0.58 KB]
+│     │  │  └─ workbenchPatch.js [0.12 KB]
+│     │  └─ validation/
+│     │     ├─ assertNever.js [0.24 KB]
+│     │     ├─ errors.js [0.32 KB]
+│     │     ├─ guards.js [0.22 KB]
+│     │     └─ result.js [0.25 KB]
+│     └─ webview/
+│        └─ settings/
+│           ├─ SettingsClientController.js [0.97 KB]
+│           ├─ SettingsView.js [0.28 KB]
+│           ├─ SettingsViewModel.js [0.56 KB]
+│           ├─ SettingsWebviewHtml.js [0.71 KB]
+│           └─ SettingsWebviewStyles.js [0.57 KB]
+├─ src/
+│  ├─ css/
+│  │  └─ editor_chrome.css [14.97 KB]
+│  └─ js/
+│     └─ theme_template.js [13.24 KB]
+└─ themes/
+   ├─ kawaii_synthwave-color-theme-light-overrides.json [9.42 KB]
+   ├─ kawaii_synthwave-color-theme-light.json [11.04 KB]
+   ├─ kawaii_synthwave-color-theme-overrides.json [7.27 KB]
+   ├─ kawaii_synthwave-color-theme.json [22.89 KB]
+   ├─ kawaii_synthwave-generated-color-theme-light.json [17.56 KB]
+   └─ kawaii_synthwave-generated-color-theme.json [25.39 KB]
+Exit code: 0
+Step10 focused tests after complete - 2026-06-22T11:28:05.2546016+01:00

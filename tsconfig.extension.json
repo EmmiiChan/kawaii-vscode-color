@@ -9,12 +9,11 @@
         "lib": [
             "ES2018"
         ],
-        "allowJs": true,
+        "allowJs": false,
         "checkJs": false
     },
     "include": [
-        "src/**/*.ts",
-        "src/**/*.js"
+        "src/**/*.ts"
     ],
     "exclude": [
         "test/**",

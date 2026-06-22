@@ -8,12 +8,11 @@
         "lib": [
             "ES2018"
         ],
-        "allowJs": true,
+        "allowJs": false,
         "checkJs": false
     },
     "include": [
-        "scripts/**/*.ts",
-        "scripts/**/*.js"
+        "scripts/**/*.ts"
     ],
     "exclude": [
         "node_modules/**",

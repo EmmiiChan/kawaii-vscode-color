@@ -12,11 +12,11 @@ export interface NeonNotificationService {
 
 export interface VscodeNotificationApi {
   readonly commands: {
-    executeCommand(command: string): Thenable<unknown>;
+    executeCommand(command: string): PromiseLike<unknown>;
   };
   readonly window: {
-    showErrorMessage(message: string): Thenable<unknown>;
-    showInformationMessage(message: string, item?: NotificationAction): Thenable<unknown>;
+    showErrorMessage(message: string): PromiseLike<unknown>;
+    showInformationMessage(message: string, item?: NotificationAction): PromiseLike<unknown>;
   };
 }
 

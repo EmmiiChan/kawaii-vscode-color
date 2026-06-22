@@ -64,13 +64,13 @@ Dev dependency contract:
 - `src/js/theme_template.js`
 - `src/randomNekoImage.ts`
 - `src/renderer`
-- `src/settings.js`
+- `src/settings.ts`
 - `src/settingsBundle.ts`
 - `src/settingsColorService.ts`
 - `src/settingsEffectsPersistence.ts`
 - `src/settingsPersistence.ts`
 - `src/settingsStore.ts`
-- `src/settingsWebview.js`
+- `src/settingsWebview.ts`
 - `src/shared`
 - `src/webview`
 - `src/workbenchPatch.ts`
@@ -108,8 +108,8 @@ Build behavior:
 | `src/extensionHost` -> `out/src/extensionHost` | VS Code adapters, Neon Effect controller, Settings command/message controllers, renderer template assembly, stored image CSS values, settings host boundaries, workbench patch apply/remove orchestration, reload prompts. |
 | `src/extensionRoot.ts` -> `out/src/extensionRoot.js` | Resolves package-root asset paths from both source and compiled `out/src` runtime directories. |
 | `src/workbenchPatch.ts` -> `out/src/workbenchPatch.js` | Pure workbench path detection and marked HTML patch helpers for `neondreams.js`. |
-| `src/settings.js` | Settings webview lifecycle, message routing, Settings Sync/JSON orchestration, image workflows, color state composition, runtime read of `.codex/color_scheme_reference.md`. |
-| `src/settingsWebview.js` | Compatibility settings webview renderer for inline HTML/CSS/JS, DOM state, UI event emission, and VS Code webview token styling. |
+| `src/settings.ts` | Settings webview lifecycle, message routing, Settings Sync/JSON orchestration, image workflows, color state composition, runtime read of `.codex/color_scheme_reference.md`. |
+| `src/settingsWebview.ts` | Compatibility settings webview renderer for inline HTML/CSS/JS, DOM state, UI event emission, and VS Code webview token styling. |
 | `src/webview` -> `out/src/webview` | Typed settings webview view model, CSP/HTML helper contract, page ids, VS Code token names, and client `postMessage` names used while the renderer remains inline. |
 | `src/settingsPersistence.ts` -> `out/src/settingsPersistence.js` | Pure mutation helpers for theme-scoped workbench and TextMate customization blocks. |
 | `src/settingsStore.ts` -> `out/src/settingsStore.js` | VS Code configuration get/inspect/update adapter. |
@@ -125,7 +125,7 @@ Build behavior:
 
 ## Webview Message Contract
 
-Webview -> extension host message types handled by `src/settings.js`:
+Webview -> extension host message types handled by `src/settings.ts`:
 
 - `apply-neon-customizations`
 - `change-theme-variant`
@@ -165,7 +165,7 @@ Extension host -> webview message types:
 Rules:
 
 - `ready` and `refresh` rebuild state with `createSettingsState()`.
-- Incoming settings webview messages are dispatched through `src/extensionHost/controllers/SettingsMessageController.ts`; legacy handlers in `src/settings.js` preserve existing payload names and side effects.
+- Incoming settings webview messages are dispatched through `src/extensionHost/controllers/SettingsMessageController.ts`; legacy handlers in `src/settings.ts` preserve existing payload names and side effects.
 - Color messages write VS Code settings, never repository theme JSON.
 - Image and opacity messages update `globalState`/global storage and require `apply-neon-customizations` to refresh injected effects.
 - `e2e-apply-settings-bundle` is test-only and must remain gated by `KAWAII_E2E_ALLOW_NEON_PATCH=1`.
@@ -246,10 +246,10 @@ The renderer code must keep using VS Code workbench/theme tokens and must not de
 | Layer | Command | Contract |
 | --- | --- | --- |
 | Codex docs guard | `npm run test:docs` | Verifies this map and `.codex` guides still match critical repo facts. |
-| TypeScript compatibility check | `npm run type-check` | Runs TypeScript no-emit checks for current mixed JS/TS migration configs. |
-| TypeScript test emit | `npm run compile:tests` | Emits converted `.ts` tests to `out-tests` without compiling legacy JavaScript tests. |
-| Syntax check | `npm run test:check` | Runs `test:docs`, compiles, then Node syntax checks for selected script wrappers, converted script output, compiled runtime output, and E2E files. |
-| Unit | `npm run test:unit` | Compiles TypeScript-compatible migration output, then runs the Node test runner for scripts, shared contracts, and dependency-light runtime helpers. |
+| TypeScript strict check | `npm run type-check` | Runs TypeScript no-emit checks for extension, script, and TypeScript test configs with `allowJs` disabled. |
+| TypeScript test emit | `npm run compile:tests` | Emits `.ts` tests to `out-tests` without compiling JavaScript test suites. |
+| Syntax check | `npm run test:check` | Runs `type-check`, `test:docs`, compiles, then Node syntax checks for selected script wrappers, converted script output, compiled runtime output, and E2E files. |
+| Unit | `npm run test:unit` | Compiles strict TypeScript output, then runs the Node test runner for scripts, shared contracts, and dependency-light runtime helpers. |
 | DOM | `npm run test:dom` | Compiles first, then runs jsdom settings webview behavior, split webview contract, and visual-state DOM contracts. |
 | Integration | `npm run test:integration` | Compiles, then runs VS Code Extension Development Host activation and command smoke tests. |
 | Safe E2E | `npm run test:e2e` | Compiles, then runs disposable VS Code UI automation without applying the real Neon patch. |
