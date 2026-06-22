@@ -200,7 +200,7 @@ Current source of truth:
 - The public dark theme loaded by VS Code is generated at `themes/kawaii_synthwave-generated-color-theme.json`.
 - The public light theme loaded by VS Code is generated at `themes/kawaii_synthwave-generated-color-theme-light.json`.
 - Command registration lives in `src/extension.ts`; setting normalization, settings message dispatch, filesystem boundaries, generated script assembly, notifications, and workbench patching live in extracted host modules under `src/extensionHost`.
-- Codex documentation drift checks live in `scripts/check-codex-docs.js` and are run by `npm run test:docs`.
+- Codex documentation drift checks live in `scripts/check-codex-docs.ts`, are exposed through the stable `scripts/check-codex-docs.js` wrapper, and are run by `npm run test:docs`.
 
 Settings webview visual rule:
 
@@ -462,7 +462,8 @@ Local source anchors:
 - `themes/kawaii_synthwave-generated-color-theme.json`: generated VS Code public color theme definition.
 - `themes/kawaii_synthwave-generated-color-theme-light.json`: generated VS Code public light color theme definition.
 - `scripts/build-color-theme.js`: base-plus-overrides theme build flow.
-- `scripts/check-codex-docs.js`: Codex documentation drift guard for package facts, themes, message contracts, state keys, schemas, renderer placeholders, and `semanticTokenColors`.
+- `scripts/check-codex-docs.js`: stable Node wrapper for the Codex documentation drift guard.
+- `scripts/check-codex-docs.ts`: TypeScript implementation of Codex documentation drift checks for package facts, themes, message contracts, state keys, schemas, renderer placeholders, and `semanticTokenColors`.
 - `scripts/e2e-last-run.js`: project-owned E2E last-run marker creation, phase updates, ExTester diagnostic reading, and Neon storage guard helpers.
 - `scripts/run-e2e.js`: safe and gated real VS Code E2E orchestration; writes `test-results/e2e/kawaii-last-run.json` for safe and Neon modes.
 - `scripts/run-test-all.js`: safe test orchestration for `npm run test:all`, including final aggregate pass/fail/skipped summary output.

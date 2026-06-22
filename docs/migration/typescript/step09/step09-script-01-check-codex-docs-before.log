@@ -1,0 +1,21 @@
+COMMAND: npm run test:docs
+
+> kawaii-vscode-color@0.1.31 test:docs
+> node scripts/check-codex-docs.js
+
+Codex documentation is aligned with project facts.
+TEST_DOCS_EXIT_CODE: 0
+COMMAND: node --test scripts/check-codex-docs.test.js
+✔ validateCodexDocFacts accepts documentation that contains all critical facts (1.2928ms)
+✔ validateCodexDocFacts ignores automatic patch version drift (0.156ms)
+✔ validateCodexDocFacts reports missing webview message contracts (0.2414ms)
+✔ validateCodexDocFacts reports missing renderer placeholders (0.2112ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 81.3998
+SCRIPT_TEST_EXIT_CODE: 0

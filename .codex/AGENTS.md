@@ -59,7 +59,7 @@ Expected result:
 TypeScript migration note:
 
 - `tsconfig.base.json`, `tsconfig.extension.json`, `tsconfig.scripts.json`, and `tsconfig.tests.json` exist to type-check the current JavaScript-compatible migration state.
-- `npm run compile` compiles the extension and scripts into `out` and `out-scripts`; the extension host runtime loads `./out/src/extension.js`.
+- `npm run compile:scripts` compiles script TypeScript into `out-scripts`; `npm run compile` compiles the extension and scripts into `out` and `out-scripts`, and the extension host runtime loads `./out/src/extension.js`.
 - `tsconfig.tests.emit.json` and `npm run compile:tests` emit converted TypeScript tests into `out-tests` without duplicating legacy JavaScript tests.
 - `vscode:prepublish`, `build:local`, integration tests, and E2E scripts compile before loading or packaging the extension.
 

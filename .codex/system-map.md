@@ -15,7 +15,7 @@ This file is the migration-oriented contract map for the extension. Keep it fact
 | Extension kind | `ui` |
 | Activation events | `onStartupFinished`, `onCommand:kawaii_synthwave.openSettings` |
 | Public command | `kawaii_synthwave.openSettings` -> `Kawaii VS Code Color: Settings` |
-| Documentation guard | `npm run test:docs` -> `node scripts/check-codex-docs.js` |
+| Documentation guard | `npm run test:docs` -> `npm run compile:scripts` -> `node scripts/check-codex-docs.js` wrapper -> `out-scripts/scripts/check-codex-docs.js` |
 | Lockfile | `lockfileVersion: 3`; root package patch version is automatic and not duplicated in `.codex` docs |
 
 Dev dependency contract:
@@ -42,6 +42,7 @@ Dev dependency contract:
 - `package-lock.json`
 - `scripts/build-color-theme.js`
 - `scripts/check-codex-docs.js`
+- `scripts/check-codex-docs.ts`
 - `scripts/e2e-last-run.js`
 - `scripts/run-e2e.js`
 - `scripts/run-test-all.js`
@@ -237,7 +238,7 @@ The renderer code must keep using VS Code workbench/theme tokens and must not de
 | Codex docs guard | `npm run test:docs` | Verifies this map and `.codex` guides still match critical repo facts. |
 | TypeScript compatibility check | `npm run type-check` | Runs TypeScript no-emit checks for current mixed JS/TS migration configs. |
 | TypeScript test emit | `npm run compile:tests` | Emits converted `.ts` tests to `out-tests` without compiling legacy JavaScript tests. |
-| Syntax check | `npm run test:check` | Runs `test:docs`, compiles, then Node syntax checks for selected scripts, compiled runtime output, and E2E files. |
+| Syntax check | `npm run test:check` | Runs `test:docs`, compiles, then Node syntax checks for selected script wrappers, converted script output, compiled runtime output, and E2E files. |
 | Unit | `npm run test:unit` | Compiles TypeScript-compatible migration output, then runs the Node test runner for scripts, shared contracts, and dependency-light runtime helpers. |
 | DOM | `npm run test:dom` | Compiles first, then runs jsdom settings webview behavior, split webview contract, and visual-state DOM contracts. |
 | Integration | `npm run test:integration` | Compiles, then runs VS Code Extension Development Host activation and command smoke tests. |
