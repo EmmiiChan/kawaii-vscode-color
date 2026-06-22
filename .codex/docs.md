@@ -1,8 +1,8 @@
 # Codex Documentation Reference Guide
 
-Last reviewed: 2026-06-17
+Last reviewed: 2026-06-22
 
-Purpose: give Codex a stable, source-backed link index for the Kawaii VS Code Color VS Code theme extension. Use this file before changing `package.json`, `scripts/build-color-theme.js`, `scripts/check-codex-docs.js`, `scripts/e2e-last-run.js`, `scripts/run-e2e.js`, `scripts/run-test-all.js`, `src/extension.js`, `src/randomNekoImage.js`, `src/settings.js`, `src/settingsPersistence.js`, `src/settingsStore.js`, `src/settingsColorService.js`, `src/settingsBundle.js`, `src/settingsEffectsPersistence.js`, `src/settingsWebview.js`, `src/workbenchPatch.js`, `src/js/theme_template.js`, `src/css/editor_chrome.css`, `themes/kawaii_synthwave-color-theme-overrides.json`, `themes/kawaii_synthwave-color-theme-light-overrides.json`, packaging metadata, test tooling, or marketplace docs.
+Purpose: give Codex a stable, source-backed link index for the Kawaii VS Code Color VS Code theme extension. Use this file before changing `package.json`, `scripts/build-color-theme.js`, `scripts/check-codex-docs.js`, `scripts/e2e-last-run.js`, `scripts/increment-package-version.js`, `scripts/increment-package-version.ts`, `scripts/package-local-vsix.js`, `scripts/package-local-vsix.ts`, `scripts/require-e2e-neon-flag.js`, `scripts/require-e2e-neon-flag.ts`, `scripts/run-e2e.js`, `scripts/run-e2e.ts`, `scripts/run-test-all.js`, `scripts/run-test-all.ts`, `src/extension.ts`, `src/extensionHost`, `src/extensionRoot.ts`, `src/randomNekoImage.ts`, `src/renderer`, `src/settings.ts`, `src/settingsPersistence.ts`, `src/settingsStore.ts`, `src/settingsColorService.ts`, `src/settingsBundle.ts`, `src/settingsEffectsPersistence.ts`, `src/settingsWebview.ts`, `src/webview`, `src/workbenchPatch.ts`, `src/js/theme_template.js`, `src/css/editor_chrome.css`, `themes/kawaii_synthwave-color-theme-overrides.json`, `themes/kawaii_synthwave-color-theme-light-overrides.json`, packaging metadata, test tooling, or marketplace docs.
 
 ## Project Snapshot
 
@@ -18,7 +18,7 @@ Purpose: give Codex a stable, source-backed link index for the Kawaii VS Code Co
 | VS Code engine range | `^1.33.0` | `package.json.engines.vscode` | [VS Code manifest `engines` docs](https://code.visualstudio.com/api/references/extension-manifest), [VS Code 1.33 release notes](https://code.visualstudio.com/updates/v1_33), [VS Code 1.33.0 `vscode.d.ts`](https://raw.githubusercontent.com/microsoft/vscode/1.33.0/src/vs/vscode.d.ts) |
 | Extension kind | `ui` | `package.json.extensionKind` | [Extension manifest docs](https://code.visualstudio.com/api/references/extension-manifest) |
 | Activation events | `onStartupFinished`, `onCommand:kawaii_synthwave.openSettings` | `package.json.activationEvents` | [Activation Events](https://code.visualstudio.com/api/references/activation-events), [Commands guide](https://code.visualstudio.com/api/extension-guides/command) |
-| Main runtime file | `./src/extension.js` | `package.json.main` | [Extension anatomy](https://code.visualstudio.com/api/get-started/extension-anatomy), [Your First Extension - JavaScript note](https://code.visualstudio.com/api/get-started/your-first-extension) |
+| Main runtime file | `./out/src/extension.js` | `package.json.main` | [Extension anatomy](https://code.visualstudio.com/api/get-started/extension-anatomy), [Your First Extension - JavaScript note](https://code.visualstudio.com/api/get-started/your-first-extension) |
 | Protected base theme files | `themes/kawaii_synthwave-color-theme.json`, `themes/kawaii_synthwave-color-theme-light.json` | Upstream/base sources in `themes` | [Color Theme guide](https://code.visualstudio.com/api/extension-guides/color-theme), [Theme Color reference](https://code.visualstudio.com/api/references/theme-color) |
 | Editable override theme files | `themes/kawaii_synthwave-color-theme-overrides.json`, `themes/kawaii_synthwave-color-theme-light-overrides.json` | Kawaii-specific override sources in `themes` | [Color Theme guide](https://code.visualstudio.com/api/extension-guides/color-theme), [Theme Color reference](https://code.visualstudio.com/api/references/theme-color) |
 | Generated dark theme loaded by VS Code | `./themes/kawaii_synthwave-generated-color-theme.json`, `uiTheme: vs-dark`, label `Kawaii VS Code Color` | `package.json.contributes.themes` | [contributes.themes reference](https://code.visualstudio.com/api/references/contribution-points#contributes.themes), [Color Theme guide](https://code.visualstudio.com/api/extension-guides/color-theme) |
@@ -27,22 +27,25 @@ Purpose: give Codex a stable, source-backed link index for the Kawaii VS Code Co
 
 ## Exact Package Inventory
 
-No runtime npm packages are installed or declared. Dev-only test packages are pinned in `package.json` and `package-lock.json`.
+No runtime npm packages are installed or declared. Dev-only tooling and test packages are pinned in `package.json` and `package-lock.json`.
 
 | Package/runtime surface | Exact detected version/range | Dependency type | Docs to use |
 | --- | --- | --- | --- |
 | Root extension package | `kawaii-vscode-color` with automatic patch versioning | Local root package | [VS Code extension manifest](https://code.visualstudio.com/api/references/extension-manifest), [npm package.json](https://docs.npmjs.com/cli/v11/configuring-npm/package-json/) |
 | VS Code extension host API | `engines.vscode: ^1.33.0` means minimum compatible VS Code API `1.33.0` | Host-provided API, imported as `require('vscode')` | Prefer [VS Code 1.33.0 `vscode.d.ts`](https://raw.githubusercontent.com/microsoft/vscode/1.33.0/src/vs/vscode.d.ts) for compatibility checks; use [current VS Code API reference](https://code.visualstudio.com/api/references/vscode-api) only after confirming the API existed in 1.33.0 |
-| Node.js built-ins | No `engines.node` declared; runtime code and `scripts/build-color-theme.js` use Node CommonJS built-ins | Built-in modules, not npm packages | [Node `fs`](https://nodejs.org/api/fs.html), [Node `path`](https://nodejs.org/api/path.html), [Node CommonJS modules](https://nodejs.org/api/modules.html). Avoid modern Node-only APIs unless verified against the target runtime |
+| Node.js built-ins | No `engines.node` declared; runtime code and script wrappers such as `scripts/build-color-theme.js` use Node CommonJS built-ins | Built-in modules, not npm packages | [Node `fs`](https://nodejs.org/api/fs.html), [Node `path`](https://nodejs.org/api/path.html), [Node CommonJS modules](https://nodejs.org/api/modules.html). Avoid modern Node-only APIs unless verified against the target runtime |
 | npm lockfile | `lockfileVersion: 3`, root package plus test dependency tree | Package manager metadata | [npm package-lock.json](https://docs.npmjs.com/cli/v11/configuring-npm/package-lock-json/) |
 | npm semver parsing | VS Code engine range `^1.33.0`; package patch version is automatic and stays sourced from `package.json` | Version semantics | [npm package.json version field](https://docs.npmjs.com/cli/v11/configuring-npm/package-json/#version), [node-semver](https://github.com/npm/node-semver) |
 | Node test runner | Host Node runtime | Test runner for `npm run test:unit` and `npm run test:dom` | [Node.js test runner](https://nodejs.org/api/test.html) |
-| Codex docs guard | `scripts/check-codex-docs.js`, `scripts/check-codex-docs.test.js`, and `npm run test:docs` | Local CommonJS script with Node test coverage | [Node `fs`](https://nodejs.org/api/fs.html), [Node `path`](https://nodejs.org/api/path.html), [Node.js test runner](https://nodejs.org/api/test.html) |
+| Codex docs guard | `scripts/check-codex-docs.js` wrapper, `scripts/check-codex-docs.ts` implementation, `scripts/check-codex-docs.test.js`, and `npm run test:docs` | Local Node script with TypeScript-compiled implementation and Node test coverage | [Node `fs`](https://nodejs.org/api/fs.html), [Node `path`](https://nodejs.org/api/path.html), [Node.js test runner](https://nodejs.org/api/test.html) |
 | `jsdom` | `29.1.1` | Dev dependency for DOM UI tests | [jsdom repository and docs](https://github.com/jsdom/jsdom) |
 | `@vscode/test-cli` | `0.0.12` | Dev dependency exposing `vscode-test` | [`@vscode/test-cli` repository](https://github.com/microsoft/vscode-test-cli) |
 | `@vscode/test-electron` | `3.0.0` | Dev dependency used by VS Code integration tests | [`@vscode/test-electron` repository](https://github.com/microsoft/vscode-test) |
+| `@types/node` | `^26.0.0` | Dev dependency for TypeScript migration checks over Node APIs | [DefinitelyTyped `@types/node`](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node) |
+| `@types/vscode` | `^1.33.0` | Dev dependency for TypeScript migration checks against the VS Code extension API type surface | [VS Code API reference](https://code.visualstudio.com/api/references/vscode-api), [VS Code 1.33.0 `vscode.d.ts`](https://raw.githubusercontent.com/microsoft/vscode/1.33.0/src/vs/vscode.d.ts) |
 | `vscode-extension-tester` | `8.23.0` | Dev dependency for real VS Code UI E2E through Selenium WebDriver | [ExTester repository](https://github.com/redhat-developer/vscode-extension-tester) |
 | `mocha` | `11.7.6` | Dev dependency used as the ExTester test runner | [Mocha docs](https://mochajs.org/) |
+| `typescript` | `^6.0.3` | Dev dependency for migration type-check and compile scripts | [TypeScript docs](https://www.typescriptlang.org/docs/) |
 
 When adding any dependency later, update this table with:
 
@@ -62,20 +65,22 @@ Use these as primary references for manifest and runtime changes.
 | Color theme contribution | `contributes.themes[].label`, `uiTheme`, `path` | [Color Theme guide](https://code.visualstudio.com/api/extension-guides/color-theme), [contributes.themes reference](https://code.visualstudio.com/api/references/contribution-points#contributes.themes) |
 | Theme color keys | Edit `themes/kawaii_synthwave-color-theme-overrides.json.colors`; build output is `themes/kawaii_synthwave-generated-color-theme.json.colors` | [Theme Color reference](https://code.visualstudio.com/api/references/theme-color) |
 | TextMate token colors | Edit `themes/kawaii_synthwave-color-theme-overrides.json.tokenColors`; build replaces matching base token rules by `name` or `scope`, and appends new token rules | [Syntax Highlight Guide](https://code.visualstudio.com/api/language-extensions/syntax-highlight-guide), [TextMate scope selectors](https://macromates.com/manual/en/scope_selectors) |
-| Main setup webview | `src/settings.js` opens `Kawaii VS Code Color: Settings`; `src/settingsWebview.js` renders Home, Settings, `Color Settings`, `Neon Effect`, `Image Customization`, `Sync/Files`, and `Help` pages | [Webview API](https://code.visualstudio.com/api/extension-guides/webview), [Commands guide](https://code.visualstudio.com/api/extension-guides/command) |
-| Settings webview color contract | `src/settingsWebview.js` uses VS Code webview color tokens such as `--vscode-editor-background`, not an independent palette | [Webview API](https://code.visualstudio.com/api/extension-guides/webview), [Theme Color reference](https://code.visualstudio.com/api/references/theme-color) |
-| Live user color settings | `src/settings.js` routes webview messages; `src/settingsColorService.js`, `src/settingsPersistence.js`, and `src/settingsStore.js` write `[Kawaii VS Code Color]` and `[Kawaii VS Code Color Light]` blocks to `workbench.colorCustomizations` and `editor.tokenColorCustomizations` | [Themes customization](https://code.visualstudio.com/docs/configure/themes#_customize-a-color-theme), [User and workspace settings](https://code.visualstudio.com/docs/configure/settings), [WorkspaceConfiguration.update](https://code.visualstudio.com/api/references/vscode-api#WorkspaceConfiguration) |
+| Main setup webview | `src/settings.ts` opens `Kawaii VS Code Color: Settings`; `src/settingsWebview.ts` renders Home, Settings, `Color Settings`, `Neon Effect`, `Image Customization`, `Sync/Files`, and `Help` pages; `src/webview/settings` holds typed view model, HTML/CSP, page-id, style-token, and client-message contracts | [Webview API](https://code.visualstudio.com/api/extension-guides/webview), [Commands guide](https://code.visualstudio.com/api/extension-guides/command) |
+| Settings webview color contract | `src/settingsWebview.ts` and `src/webview/settings/SettingsWebviewStyles.ts` use VS Code webview color tokens such as `--vscode-editor-background`, not an independent palette | [Webview API](https://code.visualstudio.com/api/extension-guides/webview), [Theme Color reference](https://code.visualstudio.com/api/references/theme-color) |
+| Live user color settings | `src/settings.ts` routes webview messages; `src/settingsColorService.ts`, `src/settingsPersistence.ts`, and `src/settingsStore.ts` write `[Kawaii VS Code Color]` and `[Kawaii VS Code Color Light]` blocks to `workbench.colorCustomizations` and `editor.tokenColorCustomizations` | [Themes customization](https://code.visualstudio.com/docs/configure/themes#_customize-a-color-theme), [User and workspace settings](https://code.visualstudio.com/docs/configure/settings), [WorkspaceConfiguration.update](https://code.visualstudio.com/api/references/vscode-api#WorkspaceConfiguration) |
 | Semantic highlighting opt-in | Protected base currently defines `semanticHighlighting`; generated theme carries the merged value | [Semantic Highlight Guide](https://code.visualstudio.com/api/language-extensions/semantic-highlight-guide) |
 | Commands | `kawaii_synthwave.openSettings`, `vscode.commands.registerCommand`, `vscode.commands.executeCommand` | [Commands guide](https://code.visualstudio.com/api/extension-guides/command), [VS Code API reference](https://code.visualstudio.com/api/references/vscode-api) |
 | Activation | `onStartupFinished`, `onCommand:*` activation events | [Activation Events](https://code.visualstudio.com/api/references/activation-events) |
 | Configuration | `kawaii_synthwave.brightness`, `kawaii_synthwave.disableGlow`, `workspace.getConfiguration("kawaii_synthwave")` | [contributes.configuration](https://code.visualstudio.com/api/references/contribution-points#contributes.configuration), [VS Code API reference](https://code.visualstudio.com/api/references/vscode-api) |
 | Extension lifecycle | `activate(context)`, `deactivate()` | [Extension anatomy](https://code.visualstudio.com/api/get-started/extension-anatomy), [Activation Events lifecycle note](https://code.visualstudio.com/api/references/activation-events) |
 | Extension debugging | `.vscode/launch.json` with `type: "extensionHost"` | [Your First Extension - debugging](https://code.visualstudio.com/api/get-started/your-first-extension), [VS Code debugging docs](https://code.visualstudio.com/docs/debugtest/debugging) |
-| Extension integration tests | `.vscode-test.js`, `test/integration/**/*.test.js`, and `npm run test:integration` | [VS Code extension testing](https://code.visualstudio.com/api/working-with-extensions/testing-extension), [`@vscode/test-cli`](https://github.com/microsoft/vscode-test-cli) |
-| Real VS Code UI E2E tests | `scripts/run-e2e.js`, `scripts/e2e-last-run.js`, `test/e2e/**/*.spec.js`, `npm run test:e2e`, experimental `npm run test:e2e:current`, project marker `test-results/e2e/kawaii-last-run.json`, and gated `npm run test:e2e:neon` | [ExTester repository](https://github.com/redhat-developer/vscode-extension-tester), [Mocha docs](https://mochajs.org/), [VS Code extension testing](https://code.visualstudio.com/api/working-with-extensions/testing-extension), [Node fs](https://nodejs.org/api/fs.html), [Node path](https://nodejs.org/api/path.html) |
-| Random Neko image fetcher | `src/randomNekoImage.js` and fixture-backed E2E hooks in `src/settings.js`; safe tests must mock or fixture network responses and avoid external API calls in gates | [Node https](https://nodejs.org/api/https.html), [Node URL](https://nodejs.org/api/url.html), [Nekos.moe API docs](https://docs.nekos.moe/) |
-| Safe all-tests orchestration | `scripts/run-test-all.js` and `npm run test:all`; intentionally excludes gated Neon E2E | [Node child_process.spawn](https://nodejs.org/api/child_process.html#child_processspawncommand-args-options), [npm scripts](https://docs.npmjs.com/cli/v11/using-npm/scripts) |
-| Codex documentation drift guard | `scripts/check-codex-docs.js`, `scripts/check-codex-docs.test.js`, `npm run test:docs`, and `npm run test:check` | [Node `fs`](https://nodejs.org/api/fs.html), [Node `path`](https://nodejs.org/api/path.html), [Node.js test runner](https://nodejs.org/api/test.html), [npm scripts](https://docs.npmjs.com/cli/v11/using-npm/scripts) |
+| Extension integration tests | `.vscode-test.js`, `test/integration/**/*.test.js`, and `npm run test:integration`; the script compiles before launching the Extension Development Host | [VS Code extension testing](https://code.visualstudio.com/api/working-with-extensions/testing-extension), [`@vscode/test-cli`](https://github.com/microsoft/vscode-test-cli) |
+| Real VS Code UI E2E tests | `scripts/run-e2e.js` wrapper, `scripts/run-e2e.ts` implementation, `scripts/e2e-last-run.js` wrapper, `scripts/e2e-last-run.ts` implementation, `scripts/require-e2e-neon-flag.js` wrapper, `scripts/require-e2e-neon-flag.ts` implementation, `test/e2e/**/*.spec.js`, `npm run test:e2e`, experimental `npm run test:e2e:current`, project marker `test-results/e2e/kawaii-last-run.json`, and gated `npm run test:e2e:neon`; E2E scripts compile before launch/package work | [ExTester repository](https://github.com/redhat-developer/vscode-extension-tester), [Mocha docs](https://mochajs.org/), [VS Code extension testing](https://code.visualstudio.com/api/working-with-extensions/testing-extension), [Node fs](https://nodejs.org/api/fs.html), [Node path](https://nodejs.org/api/path.html) |
+| Random Neko image fetcher | `src/randomNekoImage.ts` and fixture-backed E2E hooks in `src/settings.ts`; safe tests must mock or fixture network responses and avoid external API calls in gates | [Node https](https://nodejs.org/api/https.html), [Node URL](https://nodejs.org/api/url.html), [Nekos.moe API docs](https://docs.nekos.moe/) |
+| Local VSIX package check | `scripts/package-local-vsix.js` wrapper, `scripts/package-local-vsix.ts` implementation, and `npm run test:package`; validates the VSIX packaging path without incrementing `package.json.version` | [Publishing Extensions](https://code.visualstudio.com/api/working-with-extensions/publishing-extension), [@vscode/vsce repository](https://github.com/microsoft/vscode-vsce), [npm scripts](https://docs.npmjs.com/cli/v11/using-npm/scripts) |
+| Safe all-tests orchestration | `scripts/run-test-all.js` wrapper, `scripts/run-test-all.ts` implementation, and `npm run test:all`; runs `test:check`, unit, DOM, integration, `test:package`, and safe E2E phases while intentionally excluding gated Neon E2E | [Node child_process.spawn](https://nodejs.org/api/child_process.html#child_processspawncommand-args-options), [npm scripts](https://docs.npmjs.com/cli/v11/using-npm/scripts) |
+| Codex documentation drift guard | `scripts/check-codex-docs.js`, `scripts/check-codex-docs.ts`, `scripts/check-codex-docs.test.js`, `npm run test:docs`, and `npm run test:check` | [Node `fs`](https://nodejs.org/api/fs.html), [Node `path`](https://nodejs.org/api/path.html), [Node.js test runner](https://nodejs.org/api/test.html), [npm scripts](https://docs.npmjs.com/cli/v11/using-npm/scripts) |
+| TypeScript migration checks | `tsconfig.base.json`, `tsconfig.extension.json`, `tsconfig.scripts.json`, `tsconfig.tests.json`, `tsconfig.tests.emit.json`, `npm run type-check`, `npm run compile`, `npm run compile:scripts`, and `npm run compile:tests` | [TypeScript TSConfig reference](https://www.typescriptlang.org/tsconfig/), [TypeScript command line compiler](https://www.typescriptlang.org/docs/handbook/compiler-options.html) |
 | Packaging/publishing | Marketplace release workflow | [Publishing Extensions](https://code.visualstudio.com/api/working-with-extensions/publishing-extension), [@vscode/vsce repository](https://github.com/microsoft/vscode-vsce) |
 
 Compatibility rule:
@@ -85,16 +90,13 @@ Compatibility rule:
 
 ## Runtime API References
 
-### `src/extension.js`
+### `src/extension.ts` and `src/extensionHost`
 
 | API/surface | Current usage | Official docs |
 | --- | --- | --- |
-| CommonJS modules | `require('path')`, `require('fs')`, `require('vscode')`, `module.exports` | [Node CommonJS modules](https://nodejs.org/api/modules.html) |
-| `path.dirname` | Derives VS Code app directory from `vscode.env.appRoot` | [Node `path.dirname`](https://nodejs.org/api/path.html#pathdirnamepath) |
-| `path.join` | Builds workbench and generated script paths | [Node `path.join`](https://nodejs.org/api/path.html#pathjoinpaths) |
-| `fs.readFileSync` | Reads CSS, JS template, and VS Code workbench HTML | [Node `fs.readFileSync`](https://nodejs.org/api/fs.html#fsreadfilesyncpath-options) |
-| `fs.writeFileSync` | Writes `neondreams.js` and patched workbench HTML | [Node `fs.writeFileSync`](https://nodejs.org/api/fs.html#fswritefilesyncfile-data-options) |
-| `fs.existsSync` | Detects possible VS Code workbench HTML paths | [Node `fs.existsSync`](https://nodejs.org/api/fs.html#fsexistssyncpath) |
+| TypeScript CommonJS output | `src/extension.ts` compiles to `out/src/extension.js`; `src/extensionHost` compiles to `out/src/extensionHost` | [Node CommonJS modules](https://nodejs.org/api/modules.html), [TypeScript Modules](https://www.typescriptlang.org/docs/handbook/modules.html) |
+| `path.dirname` / `path.join` | Derives VS Code app directory from `vscode.env.appRoot` and builds workbench/generated script paths in services | [Node `path.dirname`](https://nodejs.org/api/path.html#pathdirnamepath), [Node `path.join`](https://nodejs.org/api/path.html#pathjoinpaths) |
+| `fs.readFileSync` / `fs.writeFileSync` / `fs.existsSync` | Adapter-backed filesystem reads/writes for CSS, JS template, workbench HTML, `neondreams.js`, and stored images | [Node `fs.readFileSync`](https://nodejs.org/api/fs.html#fsreadfilesyncpath-options), [Node `fs.writeFileSync`](https://nodejs.org/api/fs.html#fswritefilesyncfile-data-options), [Node `fs.existsSync`](https://nodejs.org/api/fs.html#fsexistssyncpath) |
 | `vscode.workspace.getConfiguration` | Reads `kawaii_synthwave` settings | [VS Code API reference](https://code.visualstudio.com/api/references/vscode-api) |
 | `vscode.env.appRoot` | Locates VS Code installation root | [VS Code API reference - env](https://code.visualstudio.com/api/references/vscode-api#env) |
 | `vscode.commands.registerCommand` | Registers enable/disable commands | [VS Code Commands guide](https://code.visualstudio.com/api/extension-guides/command) |
@@ -107,7 +109,7 @@ Implementation caution:
 - This extension modifies VS Code internal workbench files. Internal paths such as `out/vs/code/electron-browser/workbench` and `out/vs/code/electron-sandbox/workbench` are not a stable public VS Code API. Before changing this logic, check current VS Code installation layout and upstream issues.
 - Prefer graceful error handling around filesystem writes because permission errors are expected on some installations.
 
-### `src/settings.js`
+### `src/settings.ts`
 
 | API/surface | Current usage | Official docs |
 | --- | --- | --- |
@@ -130,14 +132,21 @@ Implementation caution:
 
 | Module | Responsibility | Validation |
 | --- | --- | --- |
-| `src/settingsPersistence.js` | Pure color customization block mutation, TextMate scope comparison, and hex validation | `test/unit/settings-persistence.test.js` |
-| `src/settingsStore.js` | VS Code configuration get/inspect/update adapter for global and workspace targets | `test/unit/settings-store.test.js` |
-| `src/settingsColorService.js` | Generated-theme-aware color update/reset/theme-switch orchestration | `test/unit/settings-color-service.test.js` |
-| `src/settingsBundle.js` | Portable bundle creation/application, Settings Sync state, and JSON import/export actions | `test/unit/settings-bundle.test.js`, including chained state-model coverage for Save VSSync, Import VSSync, Export As, and Import |
-| `src/settingsEffectsPersistence.js` | Effect/image normalization, safe storage paths, metadata/state, export/restore/store/remove helpers | `test/unit/settings-effects-persistence.test.js` |
-| `src/settings.js` message chain | Mocked `openSettings -> onDidReceiveMessage -> persistence` wiring | `test/unit/settings-message-persistence.test.js` |
+| `src/settingsPersistence.ts` | Pure color customization block mutation, TextMate scope comparison, and hex validation | `test/unit/settings-persistence.test.js` |
+| `src/settingsStore.ts` | VS Code configuration get/inspect/update adapter for global and workspace targets | `test/unit/settings-store.test.js` |
+| `src/settingsColorService.ts` | Generated-theme-aware color update/reset/theme-switch orchestration | `test/unit/settings-color-service.test.js` |
+| `src/settingsBundle.ts` | Portable bundle creation/application, Settings Sync state, and JSON import/export actions | `test/unit/settings-bundle.test.js`, including chained state-model coverage for Save VSSync, Import VSSync, Export As, and Import |
+| `src/settingsEffectsPersistence.ts` | Effect/image normalization, safe storage paths, metadata/state, export/restore/store/remove helpers | `test/unit/settings-effects-persistence.test.js` |
+| `src/settings.ts` message chain | Mocked `openSettings -> onDidReceiveMessage -> persistence` wiring | `test/unit/settings-message-persistence.test.js` |
+| `src/webview/settings` | Typed settings webview view model, CSP helper, page ids, style token names, and client message names while the legacy inline renderer remains in `src/settingsWebview.ts` | `test/dom/settings-webview-split.test.js` |
 
-### `src/js/theme_template.js`
+### `src/renderer` and `src/js/theme_template.js`
+
+| Module | Responsibility | Validation |
+| --- | --- | --- |
+| `src/renderer/ThemeTemplate.ts` | Browser-only typed constants and pure helpers for renderer token replacement maps, Kawaii wrapper selectors, runtime style ids, token color normalization, and token CSS replacement behavior | `test/unit/renderer-theme-template.test.js` |
+| `src/shared/contracts/rendererPlaceholders.ts` | Typed renderer placeholder names plus helper functions to find and replace known placeholders without touching unknown template text | `test/unit/renderer-theme-template.test.js`, `test/unit/shared-contracts.test.js` |
+| `src/js/theme_template.js` | Injected browser runtime template still read by the extension host and written as `neondreams.js` | Safe E2E and gated Neon E2E when renderer behavior changes |
 
 | API/surface | Current usage | Docs |
 | --- | --- | --- |
@@ -188,8 +197,8 @@ The theme palette is intentionally split so the upstream/base file is preserved.
 | `themes/kawaii_synthwave-color-theme-light-overrides.json` | Editable light Kawaii override source | Put new light `colors`, `tokenColors`, or `semanticTokenColors` overrides here. |
 | `themes/kawaii_synthwave-generated-color-theme.json` | Generated dark file loaded by `package.json.contributes.themes` as `Kawaii VS Code Color` / `vs-dark` | Do not edit manually; regenerate with `npm run build:theme`. |
 | `themes/kawaii_synthwave-generated-color-theme-light.json` | Generated light file loaded by `package.json.contributes.themes` as `Kawaii VS Code Color Light` / `vs` | Do not edit manually; regenerate with `npm run build:theme`. |
-| `scripts/build-color-theme.js` | Build script that applies base first, then overrides | Keep dependency-free unless a future task explicitly adds a JSONC parser dependency. |
-| User settings `[Kawaii VS Code Color]` blocks | Local live user overrides written by `src/settings.js` | Do not treat these as source theme files; they are per-user VS Code settings. |
+| `scripts/build-color-theme.js` / `scripts/build-color-theme.ts` | Stable wrapper plus TypeScript implementation that applies base first, then overrides | Keep dependency-free unless a future task explicitly adds a JSONC parser dependency. |
+| User settings `[Kawaii VS Code Color]` blocks | Local live user overrides written by `src/settings.ts` | Do not treat these as source theme files; they are per-user VS Code settings. |
 
 | Theme section | Use in this project | Docs |
 | --- | --- | --- |

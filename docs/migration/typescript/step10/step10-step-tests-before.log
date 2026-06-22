@@ -1,0 +1,604 @@
+Step10 focused tests before strict cleanup - 2026-06-22T11:22:24.2308205+01:00
+
+===== npm run compile:tests =====
+
+> kawaii-vscode-color@0.1.31 compile:tests
+> tsc -p tsconfig.tests.emit.json
+
+Exit code: 0
+
+===== node --test out-tests/test/unit/strict-typescript-package.test.js =====
+✖ TypeScript configs disable JavaScript compatibility mode (1.2198ms)
+✖ runtime source JavaScript is limited to the intentional Neon renderer template asset (3.4499ms)
+✖ VSIX ignore rules exclude development artifacts but keep runtime assets packageable (0.4322ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 0
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 95.7421
+
+✖ failing tests:
+
+test at out-tests\test\unit\strict-typescript-package.test.js:14:1
+✖ TypeScript configs disable JavaScript compatibility mode (1.2198ms)
+  AssertionError [ERR_ASSERTION]: tsconfig.extension.json must not enable allowJs
+      at TestContext.<anonymous> (C:\w\p\item-pixel\vscode\kawaii-vscode-color\out-tests\test\unit\strict-typescript-package.test.js:18:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: true,
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at out-tests\test\unit\strict-typescript-package.test.js:24:1
+✖ runtime source JavaScript is limited to the intentional Neon renderer template asset (3.4499ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+    [
+      'src/js/theme_template.js',
+  +   'src/settings.js',
+  +   'src/settingsWebview.js'
+    ]
+
+      at TestContext.<anonymous> (C:\w\p\item-pixel\vscode\kawaii-vscode-color\out-tests\test\unit\strict-typescript-package.test.js:29:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'src/js/theme_template.js', 'src/settings.js', 'src/settingsWebview.js' ],
+    expected: [ 'src/js/theme_template.js' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at out-tests\test\unit\strict-typescript-package.test.js:31:1
+✖ VSIX ignore rules exclude development artifacts but keep runtime assets packageable (0.4322ms)
+  AssertionError [ERR_ASSERTION]: .vscodeignore must exclude .github/**
+      at TestContext.<anonymous> (C:\w\p\item-pixel\vscode\kawaii-vscode-color\out-tests\test\unit\strict-typescript-package.test.js:55:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+Exit code: 1
+
+===== npx vsce ls --tree =====
+kawaii-vscode-color-0.1.31.vsix
+├─ .vscode-test.js [0.35 KB]
+├─ CHANGELOG.md [1.92 KB]
+├─ LICENSE [34.36 KB]
+├─ README.md [18.26 KB]
+├─ README_LEGACY.md [6.2 KB]
+├─ README_PRE_FORK.md [7.13 KB]
+├─ icon.png [1.78 MB]
+├─ kawaii_synthwave-noglow.css [5.63 KB]
+├─ kawaii_synthwave.css [6.29 KB]
+├─ package.json [9.29 KB]
+├─ theme.jpg [187.95 KB]
+├─ tsconfig.base.json [0.63 KB]
+├─ tsconfig.extension.json [0.51 KB]
+├─ tsconfig.json [0.25 KB]
+├─ tsconfig.scripts.json [0.78 KB]
+├─ tsconfig.tests.emit.json [0.39 KB]
+├─ tsconfig.tests.json [0.6 KB]
+├─ .github/
+│  └─ release.yml [0.83 KB]
+├─ docs/
+│  └─ migration/
+│     └─ typescript/
+│        ├─ step00/
+│        │  ├─ comparison.md [1.53 KB]
+│        │  ├─ context-review.md [1.4 KB]
+│        │  ├─ e2e-last-run-marker.log [1.51 KB]
+│        │  ├─ step00-after.log [13.49 KB]
+│        │  └─ step00-before.log [13.48 KB]
+│        ├─ step01/
+│        │  ├─ comparison.md [2.3 KB]
+│        │  ├─ step01-after.log [14.08 KB]
+│        │  ├─ step01-before.log [13.49 KB]
+│        │  ├─ step01-compile-after.log [0.16 KB]
+│        │  ├─ step01-step-tests-after.log [0.8 KB]
+│        │  └─ step01-step-tests-before.log [0.41 KB]
+│        ├─ step02/
+│        │  ├─ comparison.md [2.03 KB]
+│        │  ├─ step02-after.log [10.13 KB]
+│        │  ├─ step02-before.log [9.31 KB]
+│        │  ├─ step02-step-tests-after.log [0.89 KB]
+│        │  └─ step02-step-tests-before.log [1.63 KB]
+│        ├─ step03/
+│        │  ├─ comparison.md [3.29 KB]
+│        │  ├─ step03-after-failed.log [20.25 KB]
+│        │  ├─ step03-after.log [20.76 KB]
+│        │  ├─ step03-before.log [2.04 KB]
+│        │  ├─ step03-module-01-settings-persistence-after.log [2.58 KB]
+│        │  ├─ step03-module-02-settings-effects-persistence-after.log [2.59 KB]
+│        │  ├─ step03-module-03-settings-bundle-after.log [2.57 KB]
+│        │  ├─ step03-module-04-settings-store-after.log [2.57 KB]
+│        │  ├─ step03-module-05-settings-color-service-after.log [2.58 KB]
+│        │  ├─ step03-module-06-random-neko-image-after.log [2.58 KB]
+│        │  ├─ step03-module-07-empty-editor-logo-styles-after.log [2.58 KB]
+│        │  ├─ step03-module-08-workbench-patch-after.log [2.57 KB]
+│        │  ├─ step03-module-09-compiled-runtime-entry-after.log [2.58 KB]
+│        │  ├─ step03-module-10-settings-message-persistence-after.log [2.59 KB]
+│        │  ├─ step03-module-11-extension-editor-background-fit-after.log [2.59 KB]
+│        │  ├─ step03-runtime-green.log [1.38 KB]
+│        │  └─ step03-runtime-red.log [1.4 KB]
+│        ├─ step04/
+│        │  ├─ comparison.md [2.34 KB]
+│        │  ├─ step04-after.log [20.07 KB]
+│        │  ├─ step04-before.log [2.09 KB]
+│        │  ├─ step04-step-tests-after-failed.log [1.52 KB]
+│        │  ├─ step04-step-tests-after.log [1.52 KB]
+│        │  └─ step04-step-tests-before.log [1.47 KB]
+│        ├─ step05/
+│        │  ├─ comparison.md [2.25 KB]
+│        │  ├─ step05-after.log [1.88 KB]
+│        │  ├─ step05-before.log [1.85 KB]
+│        │  ├─ step05-step-tests-after-failed.log [1.44 KB]
+│        │  ├─ step05-step-tests-after.log [1.44 KB]
+│        │  └─ step05-step-tests-before.log [1.4 KB]
+│        ├─ step06/
+│        │  ├─ comparison.md [2.69 KB]
+│        │  ├─ step06-after.log [12.34 KB]
+│        │  ├─ step06-before.log [35.44 KB]
+│        │  ├─ step06-dom-runtime-fix.log [2.88 KB]
+│        │  ├─ step06-step-tests-after.log [1.39 KB]
+│        │  └─ step06-step-tests-before.log [1.4 KB]
+│        ├─ step07/
+│        │  ├─ comparison.md [2.46 KB]
+│        │  ├─ step07-after.log [21.26 KB]
+│        │  ├─ step07-before.log [17.02 KB]
+│        │  ├─ step07-step-tests-after.log [1.94 KB]
+│        │  └─ step07-step-tests-before.log [1.76 KB]
+│        ├─ step08/
+│        │  ├─ step08-after.log [27.16 KB]
+│        │  ├─ step08-before.log [22.22 KB]
+│        │  ├─ step08-comparison.md [2.93 KB]
+│        │  ├─ step08-layer-unit-after.log [11.86 KB]
+│        │  ├─ step08-layer-unit-before.log [11.7 KB]
+│        │  ├─ step08-layer-unit-check.log [4.32 KB]
+│        │  ├─ step08-layer-unit-host-small-after.log [11.87 KB]
+│        │  ├─ step08-layer-unit-host-small-check.log [4.64 KB]
+│        │  ├─ step08-layer-unit-neon-service-after.log [11.86 KB]
+│        │  ├─ step08-layer-unit-neon-service-check.log [4.79 KB]
+│        │  ├─ step08-layer-unit-runtime-ts-after.log [11.87 KB]
+│        │  ├─ step08-layer-unit-runtime-ts-check.log [4.55 KB]
+│        │  ├─ step08-layer-unit-settings-bundle-after.log [11.73 KB]
+│        │  ├─ step08-layer-unit-settings-bundle-check.log [4.75 KB]
+│        │  ├─ step08-layer-unit-settings-color-after.log [11.86 KB]
+│        │  ├─ step08-layer-unit-settings-color-check.log [4.71 KB]
+│        │  ├─ step08-layer-unit-settings-effects-after.log [11.87 KB]
+│        │  ├─ step08-layer-unit-settings-effects-check.log [4.79 KB]
+│        │  ├─ step08-layer-unit-settings-message-controller-after.log [11.87 KB]
+│        │  └─ step08-layer-unit-settings-message-controller-check.log [4.8 KB]
+│        ├─ step09/
+│        │  ├─ step09-after.log [29.29 KB]
+│        │  ├─ step09-before.log [18.41 KB]
+│        │  ├─ step09-comparison.md [2.63 KB]
+│        │  ├─ step09-script-01-check-codex-docs-after.log [0.97 KB]
+│        │  ├─ step09-script-01-check-codex-docs-before.log [0.69 KB]
+│        │  ├─ step09-script-01-check-codex-docs-check.log [16.91 KB]
+│        │  ├─ step09-script-02-build-color-theme-after.log [1.64 KB]
+│        │  ├─ step09-script-02-build-color-theme-before.log [1.1 KB]
+│        │  ├─ step09-script-02-build-color-theme-check.log [17.66 KB]
+│        │  ├─ step09-script-03-e2e-last-run-after.log [1.15 KB]
+│        │  ├─ step09-script-03-e2e-last-run-before.log [0.92 KB]
+│        │  ├─ step09-script-03-e2e-last-run-check.log [22.81 KB]
+│        │  ├─ step09-script-04-run-e2e-after.log [0.5 KB]
+│        │  ├─ step09-script-04-run-e2e-before.log [0.07 KB]
+│        │  ├─ step09-script-04-run-e2e-check.log [22.88 KB]
+│        │  ├─ step09-script-05-run-test-all-after.log [1.47 KB]
+│        │  ├─ step09-script-05-run-test-all-before.log [1.08 KB]
+│        │  ├─ step09-script-05-run-test-all-check.log [29.08 KB]
+│        │  ├─ step09-script-06-increment-package-version-after.log [1 KB]
+│        │  ├─ step09-script-06-increment-package-version-before.log [0.56 KB]
+│        │  ├─ step09-script-06-increment-package-version-check.log [17.96 KB]
+│        │  ├─ step09-script-07-package-local-vsix-after.log [1.16 KB]
+│        │  ├─ step09-script-07-package-local-vsix-before.log [0.14 KB]
+│        │  ├─ step09-script-07-package-local-vsix-check.log [18.46 KB]
+│        │  ├─ step09-script-08-require-e2e-neon-flag-after.log [1 KB]
+│        │  ├─ step09-script-08-require-e2e-neon-flag-before.log [0.58 KB]
+│        │  └─ step09-script-08-require-e2e-neon-flag-check.log [18.51 KB]
+│        └─ step10/
+│           ├─ step10-before.log [29.42 KB]
+│           └─ step10-step-tests-before.log [3.58 KB]
+├─ images/
+│  ├─ kawaii-vscode-color-color-customization.png [115.52 KB]
+│  ├─ kawaii-vscode-color-dark-file.png [63.64 KB]
+│  ├─ kawaii-vscode-color-dark-index.png [150.49 KB]
+│  ├─ kawaii-vscode-color-features-1.png [340.6 KB]
+│  ├─ kawaii-vscode-color-image-customization.png [223.78 KB]
+│  ├─ kawaii-vscode-color-light-file.png [125.16 KB]
+│  ├─ kawaii-vscode-color-light-index.png [148.54 KB]
+│  ├─ kawaii-vscode-color-presets.png [191.6 KB]
+│  ├─ dev-images/
+│  │  ├─ logo-nopage.png [11.91 KB]
+│  │  └─ logo-page.png [10.95 KB]
+│  └─ random-images/
+│     ├─ catgirl.gif [216 KB]
+│     ├─ felix-0001.jpg [29.61 KB]
+│     ├─ felix-0002.jpg [34.69 KB]
+│     ├─ felix-0003.jpg [259.76 KB]
+│     ├─ felix-0004.jpg [259.38 KB]
+│     ├─ felix-0005.jpg [234.23 KB]
+│     ├─ felix-0006.jpg [270.23 KB]
+│     ├─ felix-0007.jpg [29.85 KB]
+│     ├─ felix-0008.jpg [27.18 KB]
+│     ├─ felix-0009.jpg [27.41 KB]
+│     ├─ felix-felix-re-zero.PNG [121.08 KB]
+│     ├─ felix-gamer-ah.webp [16.45 KB]
+│     ├─ felix-gamer-snif-0001.gif [627.78 KB]
+│     ├─ felix-gamer-speak-0003.gif [977.42 KB]
+│     ├─ felix-gamer-speak-0004.gif [675.59 KB]
+│     ├─ felix-gamer-speak-0005.gif [118.31 KB]
+│     ├─ felix-gamer-speak-0006.gif [704.19 KB]
+│     ├─ felix-gamer-speak-00062.gif [1.9 MB]
+│     ├─ felix-gamer-speak-0007.gif [278.03 KB]
+│     ├─ felix-gamer-speak-2.gif [1.15 MB]
+│     ├─ felix-gamer-speak-hi.gif [1.02 MB]
+│     ├─ felix-gamer-speak-label.gif [2.75 MB]
+│     ├─ felix-gamer-speak.gif [1.01 MB]
+│     ├─ iQqPH.jpg [171.42 KB]
+│     └─ kawaii-neko-girl-vector-51345829-709582326.jpg [83.05 KB]
+├─ out/
+│  ├─ package.json [5.71 KB]
+│  └─ src/
+│     ├─ emptyEditorLogoStyles.js [1.51 KB]
+│     ├─ emptyEditorLogoStyles.js.map [0.65 KB]
+│     ├─ extension.js [5.31 KB]
+│     ├─ extension.js.map [2.74 KB]
+│     ├─ extensionRoot.js [1.21 KB]
+│     ├─ extensionRoot.js.map [0.71 KB]
+│     ├─ randomNekoImage.js [8.16 KB]
+│     ├─ randomNekoImage.js.map [7.16 KB]
+│     ├─ settings.js [80.1 KB]
+│     ├─ settings.js.map [43.49 KB]
+│     ├─ settingsBundle.js [9.48 KB]
+│     ├─ settingsBundle.js.map [6.83 KB]
+│     ├─ settingsColorService.js [5.19 KB]
+│     ├─ settingsColorService.js.map [3.78 KB]
+│     ├─ settingsEffectsPersistence.js [12.64 KB]
+│     ├─ settingsEffectsPersistence.js.map [10.07 KB]
+│     ├─ settingsPersistence.js [6.12 KB]
+│     ├─ settingsPersistence.js.map [4.88 KB]
+│     ├─ settingsStore.js [2.38 KB]
+│     ├─ settingsStore.js.map [1.86 KB]
+│     ├─ settingsWebview.js [58.35 KB]
+│     ├─ settingsWebview.js.map [2.57 KB]
+│     ├─ workbenchPatch.js [3.99 KB]
+│     ├─ workbenchPatch.js.map [2.01 KB]
+│     ├─ extensionHost/
+│     │  ├─ adapters/
+│     │  │  ├─ NodeFileSystem.js [0.53 KB]
+│     │  │  ├─ NodeFileSystem.js.map [0.53 KB]
+│     │  │  ├─ VscodeExtensionStorage.js [0.86 KB]
+│     │  │  ├─ VscodeExtensionStorage.js.map [0.8 KB]
+│     │  │  ├─ VscodeNotificationService.js [0.98 KB]
+│     │  │  └─ VscodeNotificationService.js.map [0.81 KB]
+│     │  ├─ controllers/
+│     │  │  ├─ NeonEffectController.js [1.92 KB]
+│     │  │  ├─ NeonEffectController.js.map [1.49 KB]
+│     │  │  ├─ SettingsCommandController.js [0.65 KB]
+│     │  │  ├─ SettingsCommandController.js.map [0.54 KB]
+│     │  │  ├─ SettingsMessageController.js [11.65 KB]
+│     │  │  └─ SettingsMessageController.js.map [6.88 KB]
+│     │  └─ services/
+│     │     ├─ NeonEffectService.js [17.32 KB]
+│     │     ├─ NeonEffectService.js.map [13.55 KB]
+│     │     ├─ SettingsBundleService.js [1.08 KB]
+│     │     ├─ SettingsBundleService.js.map [0.94 KB]
+│     │     ├─ SettingsEffectsService.js [1.94 KB]
+│     │     ├─ SettingsEffectsService.js.map [1.57 KB]
+│     │     ├─ SettingsStateService.js [0.38 KB]
+│     │     ├─ SettingsStateService.js.map [0.33 KB]
+│     │     ├─ WorkbenchPatchService.js [2.33 KB]
+│     │     └─ WorkbenchPatchService.js.map [2.07 KB]
+│     ├─ js/
+│     │  ├─ theme_template.js [13.79 KB]
+│     │  └─ theme_template.js.map [6.34 KB]
+│     ├─ renderer/
+│     │  ├─ ThemeTemplate.js [6.62 KB]
+│     │  └─ ThemeTemplate.js.map [3.03 KB]
+│     ├─ shared/
+│     │  ├─ contracts/
+│     │  │  ├─ rendererPlaceholders.js [1.77 KB]
+│     │  │  ├─ rendererPlaceholders.js.map [1.15 KB]
+│     │  │  ├─ settingsBundleSchema.js [0.42 KB]
+│     │  │  ├─ settingsBundleSchema.js.map [0.26 KB]
+│     │  │  ├─ webviewMessages.js [2.24 KB]
+│     │  │  └─ webviewMessages.js.map [1.55 KB]
+│     │  ├─ models/
+│     │  │  ├─ color.js [0.5 KB]
+│     │  │  ├─ color.js.map [0.4 KB]
+│     │  │  ├─ effects.js [0.72 KB]
+│     │  │  ├─ effects.js.map [0.62 KB]
+│     │  │  ├─ settings.js [0.11 KB]
+│     │  │  ├─ settings.js.map [0.13 KB]
+│     │  │  ├─ theme.js [0.58 KB]
+│     │  │  ├─ theme.js.map [0.37 KB]
+│     │  │  ├─ workbenchPatch.js [0.12 KB]
+│     │  │  └─ workbenchPatch.js.map [0.14 KB]
+│     │  └─ validation/
+│     │     ├─ assertNever.js [0.24 KB]
+│     │     ├─ assertNever.js.map [0.26 KB]
+│     │     ├─ errors.js [0.32 KB]
+│     │     ├─ errors.js.map [0.26 KB]
+│     │     ├─ guards.js [0.22 KB]
+│     │     ├─ guards.js.map [0.23 KB]
+│     │     ├─ result.js [0.25 KB]
+│     │     └─ result.js.map [0.32 KB]
+│     └─ webview/
+│        └─ settings/
+│           ├─ SettingsClientController.js [0.97 KB]
+│           ├─ SettingsClientController.js.map [0.49 KB]
+│           ├─ SettingsView.js [0.28 KB]
+│           ├─ SettingsView.js.map [0.24 KB]
+│           ├─ SettingsViewModel.js [0.56 KB]
+│           ├─ SettingsViewModel.js.map [0.53 KB]
+│           ├─ SettingsWebviewHtml.js [0.71 KB]
+│           ├─ SettingsWebviewHtml.js.map [0.44 KB]
+│           ├─ SettingsWebviewStyles.js [0.57 KB]
+│           └─ SettingsWebviewStyles.js.map [0.32 KB]
+├─ out-scripts/
+│  ├─ package.json [8.91 KB]
+│  └─ scripts/
+│     ├─ build-color-theme.js [13.44 KB]
+│     ├─ build-color-theme.js.map [9.62 KB]
+│     ├─ check-codex-docs.js [13.31 KB]
+│     ├─ check-codex-docs.js.map [10.81 KB]
+│     ├─ check-codex-docs.test.js [7.63 KB]
+│     ├─ check-codex-docs.test.js.map [3.95 KB]
+│     ├─ e2e-last-run.js [8.39 KB]
+│     ├─ e2e-last-run.js.map [7.98 KB]
+│     ├─ e2e-last-run.test.js [7.6 KB]
+│     ├─ e2e-last-run.test.js.map [7.01 KB]
+│     ├─ increment-package-version.js [4.85 KB]
+│     ├─ increment-package-version.js.map [3.66 KB]
+│     ├─ increment-package-version.test.js [2.18 KB]
+│     ├─ increment-package-version.test.js.map [2.23 KB]
+│     ├─ package-local-vsix.js [4.64 KB]
+│     ├─ package-local-vsix.js.map [3.42 KB]
+│     ├─ package-local-vsix.test.js [4.01 KB]
+│     ├─ package-local-vsix.test.js.map [4.08 KB]
+│     ├─ require-e2e-neon-flag.js [1.09 KB]
+│     ├─ require-e2e-neon-flag.js.map [0.88 KB]
+│     ├─ require-e2e-neon-flag.test.js [1.4 KB]
+│     ├─ require-e2e-neon-flag.test.js.map [1.5 KB]
+│     ├─ run-e2e.js [7.15 KB]
+│     ├─ run-e2e.js.map [5.82 KB]
+│     ├─ run-test-all.js [11.31 KB]
+│     ├─ run-test-all.js.map [11.34 KB]
+│     ├─ run-test-all.test.js [4.95 KB]
+│     └─ run-test-all.test.js.map [4.93 KB]
+├─ out-tests/
+│  ├─ scripts/
+│  │  ├─ build-color-theme.js [13.44 KB]
+│  │  ├─ build-color-theme.js.map [9.62 KB]
+│  │  ├─ check-codex-docs.js [13.31 KB]
+│  │  ├─ check-codex-docs.js.map [10.81 KB]
+│  │  ├─ e2e-last-run.js [8.39 KB]
+│  │  ├─ e2e-last-run.js.map [7.98 KB]
+│  │  ├─ increment-package-version.js [4.85 KB]
+│  │  ├─ increment-package-version.js.map [3.66 KB]
+│  │  ├─ package-local-vsix.js [4.64 KB]
+│  │  ├─ package-local-vsix.js.map [3.42 KB]
+│  │  ├─ require-e2e-neon-flag.js [1.09 KB]
+│  │  ├─ require-e2e-neon-flag.js.map [0.88 KB]
+│  │  ├─ run-e2e.js [7.15 KB]
+│  │  ├─ run-e2e.js.map [5.82 KB]
+│  │  ├─ run-test-all.js [11.31 KB]
+│  │  └─ run-test-all.js.map [11.34 KB]
+│  ├─ src/
+│  │  ├─ emptyEditorLogoStyles.js [1.51 KB]
+│  │  ├─ emptyEditorLogoStyles.js.map [0.65 KB]
+│  │  ├─ extensionRoot.js [1.21 KB]
+│  │  ├─ extensionRoot.js.map [0.71 KB]
+│  │  ├─ randomNekoImage.js [8.16 KB]
+│  │  ├─ randomNekoImage.js.map [7.16 KB]
+│  │  ├─ settingsBundle.js [9.48 KB]
+│  │  ├─ settingsBundle.js.map [6.83 KB]
+│  │  ├─ settingsColorService.js [5.19 KB]
+│  │  ├─ settingsColorService.js.map [3.78 KB]
+│  │  ├─ settingsEffectsPersistence.js [12.64 KB]
+│  │  ├─ settingsEffectsPersistence.js.map [10.07 KB]
+│  │  ├─ settingsPersistence.js [6.12 KB]
+│  │  ├─ settingsPersistence.js.map [4.88 KB]
+│  │  ├─ settingsStore.js [2.38 KB]
+│  │  ├─ settingsStore.js.map [1.86 KB]
+│  │  ├─ workbenchPatch.js [3.99 KB]
+│  │  ├─ workbenchPatch.js.map [2.01 KB]
+│  │  ├─ extensionHost/
+│  │  │  ├─ adapters/
+│  │  │  │  ├─ NodeFileSystem.js [0.53 KB]
+│  │  │  │  ├─ NodeFileSystem.js.map [0.53 KB]
+│  │  │  │  ├─ VscodeExtensionStorage.js [0.86 KB]
+│  │  │  │  ├─ VscodeExtensionStorage.js.map [0.8 KB]
+│  │  │  │  ├─ VscodeNotificationService.js [0.98 KB]
+│  │  │  │  └─ VscodeNotificationService.js.map [0.81 KB]
+│  │  │  ├─ controllers/
+│  │  │  │  ├─ NeonEffectController.js [1.92 KB]
+│  │  │  │  ├─ NeonEffectController.js.map [1.49 KB]
+│  │  │  │  ├─ SettingsCommandController.js [0.65 KB]
+│  │  │  │  ├─ SettingsCommandController.js.map [0.54 KB]
+│  │  │  │  ├─ SettingsMessageController.js [11.65 KB]
+│  │  │  │  └─ SettingsMessageController.js.map [6.88 KB]
+│  │  │  └─ services/
+│  │  │     ├─ NeonEffectService.js [17.32 KB]
+│  │  │     ├─ NeonEffectService.js.map [13.55 KB]
+│  │  │     ├─ SettingsBundleService.js [1.08 KB]
+│  │  │     ├─ SettingsBundleService.js.map [0.94 KB]
+│  │  │     ├─ SettingsEffectsService.js [1.94 KB]
+│  │  │     ├─ SettingsEffectsService.js.map [1.57 KB]
+│  │  │     ├─ SettingsStateService.js [0.38 KB]
+│  │  │     ├─ SettingsStateService.js.map [0.33 KB]
+│  │  │     ├─ WorkbenchPatchService.js [2.33 KB]
+│  │  │     └─ WorkbenchPatchService.js.map [2.07 KB]
+│  │  ├─ renderer/
+│  │  │  ├─ ThemeTemplate.js [6.62 KB]
+│  │  │  └─ ThemeTemplate.js.map [3.03 KB]
+│  │  └─ shared/
+│  │     ├─ contracts/
+│  │     │  ├─ rendererPlaceholders.js [1.77 KB]
+│  │     │  ├─ rendererPlaceholders.js.map [1.15 KB]
+│  │     │  ├─ settingsBundleSchema.js [0.42 KB]
+│  │     │  ├─ settingsBundleSchema.js.map [0.26 KB]
+│  │     │  ├─ webviewMessages.js [2.24 KB]
+│  │     │  └─ webviewMessages.js.map [1.55 KB]
+│  │     ├─ models/
+│  │     │  ├─ color.js [0.5 KB]
+│  │     │  ├─ color.js.map [0.4 KB]
+│  │     │  ├─ effects.js [0.72 KB]
+│  │     │  ├─ effects.js.map [0.62 KB]
+│  │     │  ├─ theme.js [0.58 KB]
+│  │     │  └─ theme.js.map [0.37 KB]
+│  │     └─ validation/
+│  │        ├─ guards.js [0.22 KB]
+│  │        ├─ guards.js.map [0.23 KB]
+│  │        ├─ result.js [0.25 KB]
+│  │        └─ result.js.map [0.32 KB]
+│  └─ test/
+│     └─ unit/
+│        ├─ compiled-runtime-entry.test.js [1.38 KB]
+│        ├─ compiled-runtime-entry.test.js.map [1.42 KB]
+│        ├─ empty-editor-logo-styles.test.js [3.41 KB]
+│        ├─ empty-editor-logo-styles.test.js.map [1.98 KB]
+│        ├─ extension-editor-background-fit.test.js [2.08 KB]
+│        ├─ extension-editor-background-fit.test.js.map [2.35 KB]
+│        ├─ neon-effect-controller.test.js [3.1 KB]
+│        ├─ neon-effect-controller.test.js.map [2.72 KB]
+│        ├─ neon-effect-service.test.js [12.21 KB]
+│        ├─ neon-effect-service.test.js.map [9.6 KB]
+│        ├─ random-neko-image.test.js [2.92 KB]
+│        ├─ random-neko-image.test.js.map [2.5 KB]
+│        ├─ renderer-theme-template.test.js [2.79 KB]
+│        ├─ renderer-theme-template.test.js.map [2.16 KB]
+│        ├─ settings-bundle.test.js [35.96 KB]
+│        ├─ settings-bundle.test.js.map [28.68 KB]
+│        ├─ settings-color-service.test.js [11.81 KB]
+│        ├─ settings-color-service.test.js.map [9.63 KB]
+│        ├─ settings-effects-persistence.test.js [15.54 KB]
+│        ├─ settings-effects-persistence.test.js.map [12.82 KB]
+│        ├─ settings-message-controller.test.js [13.42 KB]
+│        ├─ settings-message-controller.test.js.map [11.69 KB]
+│        ├─ settings-persistence.test.js [8 KB]
+│        ├─ settings-persistence.test.js.map [7.21 KB]
+│        ├─ settings-store.test.js [5.53 KB]
+│        ├─ settings-store.test.js.map [5.08 KB]
+│        ├─ shared-contracts.test.js [3.24 KB]
+│        ├─ shared-contracts.test.js.map [3.27 KB]
+│        ├─ strict-typescript-package.test.js [2.99 KB]
+│        ├─ strict-typescript-package.test.js.map [2.58 KB]
+│        ├─ workbench-patch-service.test.js [4.62 KB]
+│        ├─ workbench-patch-service.test.js.map [4.59 KB]
+│        ├─ workbench-patch.test.js [2.82 KB]
+│        └─ workbench-patch.test.js.map [2.27 KB]
+├─ scripts/
+│  ├─ build-color-theme.js [0.19 KB]
+│  ├─ build-color-theme.ts [13.45 KB]
+│  ├─ check-codex-docs.js [0.19 KB]
+│  ├─ check-codex-docs.test.js [6.81 KB]
+│  ├─ check-codex-docs.ts [15.97 KB]
+│  ├─ e2e-last-run.js [0.08 KB]
+│  ├─ e2e-last-run.test.js [7.6 KB]
+│  ├─ e2e-last-run.ts [11.6 KB]
+│  ├─ increment-package-version.js [0.2 KB]
+│  ├─ increment-package-version.test.js [2.04 KB]
+│  ├─ increment-package-version.ts [5.26 KB]
+│  ├─ package-local-vsix.js [0.19 KB]
+│  ├─ package-local-vsix.test.js [3.74 KB]
+│  ├─ package-local-vsix.ts [5.26 KB]
+│  ├─ require-e2e-neon-flag.js [0.2 KB]
+│  ├─ require-e2e-neon-flag.test.js [1.39 KB]
+│  ├─ require-e2e-neon-flag.ts [0.9 KB]
+│  ├─ run-e2e.js [0.19 KB]
+│  ├─ run-e2e.ts [8.19 KB]
+│  ├─ run-test-all.js [0.28 KB]
+│  ├─ run-test-all.test.js [5 KB]
+│  └─ run-test-all.ts [13.48 KB]
+├─ src/
+│  ├─ emptyEditorLogoStyles.ts [1.42 KB]
+│  ├─ extension.ts [3.9 KB]
+│  ├─ extensionRoot.ts [1.07 KB]
+│  ├─ randomNekoImage.ts [9.34 KB]
+│  ├─ settings.js [79.16 KB]
+│  ├─ settingsBundle.ts [12.37 KB]
+│  ├─ settingsColorService.ts [6.77 KB]
+│  ├─ settingsEffectsPersistence.ts [15.58 KB]
+│  ├─ settingsPersistence.ts [6.24 KB]
+│  ├─ settingsStore.ts [3.3 KB]
+│  ├─ settingsWebview.js [58.33 KB]
+│  ├─ workbenchPatch.ts [3.91 KB]
+│  ├─ css/
+│  │  └─ editor_chrome.css [14.97 KB]
+│  ├─ extensionHost/
+│  │  ├─ adapters/
+│  │  │  ├─ NodeFileSystem.ts [0.68 KB]
+│  │  │  ├─ VscodeExtensionStorage.ts [1.16 KB]
+│  │  │  └─ VscodeNotificationService.ts [1.5 KB]
+│  │  ├─ controllers/
+│  │  │  ├─ NeonEffectController.ts [2.77 KB]
+│  │  │  ├─ SettingsCommandController.ts [1.08 KB]
+│  │  │  └─ SettingsMessageController.ts [14.8 KB]
+│  │  └─ services/
+│  │     ├─ NeonEffectService.ts [19.73 KB]
+│  │     ├─ SettingsBundleService.ts [2.04 KB]
+│  │     ├─ SettingsEffectsService.ts [4.08 KB]
+│  │     ├─ SettingsStateService.ts [0.51 KB]
+│  │     └─ WorkbenchPatchService.ts [3.32 KB]
+│  ├─ js/
+│  │  └─ theme_template.js [13.24 KB]
+│  ├─ renderer/
+│  │  └─ ThemeTemplate.ts [6.46 KB]
+│  ├─ shared/
+│  │  ├─ contracts/
+│  │  │  ├─ rendererPlaceholders.ts [1.71 KB]
+│  │  │  ├─ settingsBundleSchema.ts [0.19 KB]
+│  │  │  └─ webviewMessages.ts [4.22 KB]
+│  │  ├─ models/
+│  │  │  ├─ color.ts [0.55 KB]
+│  │  │  ├─ effects.ts [0.77 KB]
+│  │  │  ├─ settings.ts [0.6 KB]
+│  │  │  ├─ theme.ts [0.68 KB]
+│  │  │  └─ workbenchPatch.ts [0.23 KB]
+│  │  └─ validation/
+│  │     ├─ assertNever.ts [0.12 KB]
+│  │     ├─ errors.ts [0.15 KB]
+│  │     ├─ guards.ts [0.13 KB]
+│  │     └─ result.ts [0.33 KB]
+│  └─ webview/
+│     └─ settings/
+│        ├─ SettingsClientController.ts [0.79 KB]
+│        ├─ SettingsView.ts [0.14 KB]
+│        ├─ SettingsViewModel.ts [0.5 KB]
+│        ├─ SettingsWebviewHtml.ts [0.88 KB]
+│        └─ SettingsWebviewStyles.ts [0.41 KB]
+└─ themes/
+   ├─ kawaii_synthwave-color-theme-light-overrides.json [9.42 KB]
+   ├─ kawaii_synthwave-color-theme-light.json [11.04 KB]
+   ├─ kawaii_synthwave-color-theme-overrides.json [7.27 KB]
+   ├─ kawaii_synthwave-color-theme.json [22.89 KB]
+   ├─ kawaii_synthwave-generated-color-theme-light.json [17.56 KB]
+   └─ kawaii_synthwave-generated-color-theme.json [25.39 KB]
+Exit code: 0
+Step10 focused tests before complete - 2026-06-22T11:22:38.2554514+01:00

@@ -22,11 +22,11 @@ const {
     isWorkbenchPatchEnabled,
     removeWorkbenchPatchScriptTag,
     resolveWorkbenchPatchPaths
-} = require("../../src/workbenchPatch");
+} = require("../../out/src/workbenchPatch");
 const {
     EMPTY_EDITOR_LOGO_FALLBACK_VERSION_CASES,
     EMPTY_EDITOR_LOGO_LETTERPRESS_SELECTORS
-} = require("../../src/emptyEditorLogoStyles");
+} = require("../../out/src/emptyEditorLogoStyles");
 
 const WORKSPACE_ROOT = path.resolve(__dirname, "..", "..");
 const DISPOSABLE_TEST_ROOT = path.join(WORKSPACE_ROOT, ".vscode-test");

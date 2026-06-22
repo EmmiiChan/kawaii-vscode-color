@@ -1,0 +1,35 @@
+Step 00 E2E last-run marker
+{
+  "schemaVersion": 1,
+  "marker": "kawaii-last-run.json",
+  "mode": "safe",
+  "status": "passed",
+  "startedAt": "2026-06-19T12:44:04.156Z",
+  "command": "node scripts/run-e2e.js",
+  "codeVersion": "1.111.0",
+  "storage": "C:\\w\\p\\item-pixel\\vscode\\kawaii-vscode-color\\.vscode-test\\extest-111",
+  "extensionsDir": "C:\\w\\p\\item-pixel\\vscode\\kawaii-vscode-color\\.vscode-test\\extest-111-extensions",
+  "codeSettings": "C:\\w\\p\\item-pixel\\vscode\\kawaii-vscode-color\\test\\e2e\\settings.json",
+  "openResource": "C:\\w\\p\\item-pixel\\vscode\\kawaii-vscode-color\\test\\fixtures\\workspace",
+  "phases": [
+    {
+      "name": "safe",
+      "mochaConfig": "test/e2e/.mocharc.js",
+      "status": "passed",
+      "startedAt": "2026-06-19T12:44:04.158Z",
+      "finishedAt": "2026-06-19T12:45:16.740Z",
+      "exitCode": 0,
+      "durationMs": 72582
+    }
+  ],
+  "artifacts": {
+    "projectLastRun": "C:\\w\\p\\item-pixel\\vscode\\kawaii-vscode-color\\test-results\\e2e\\kawaii-last-run.json",
+    "extesterLastRun": "C:\\w\\p\\item-pixel\\vscode\\kawaii-vscode-color\\test-results\\e2e\\.last-run.json",
+    "settingsVisualAnalysis": "C:\\w\\p\\item-pixel\\vscode\\kawaii-vscode-color\\test-results\\e2e\\settings-visual-state-analysis.json",
+    "neonRealState": "C:\\w\\p\\item-pixel\\vscode\\kawaii-vscode-color\\test-results\\e2e\\neon-real-state.json"
+  },
+  "failedTests": [],
+  "finishedAt": "2026-06-19T12:45:16.741Z",
+  "exitCode": 0,
+  "durationMs": 72585
+}

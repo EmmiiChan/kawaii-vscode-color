@@ -1,0 +1,4 @@
+STEP09 SCRIPT 07 BEFORE - package-local-vsix JavaScript baseline
+
+> node --check scripts/package-local-vsix.js
+NODE_CHECK_EXIT_CODE: 0

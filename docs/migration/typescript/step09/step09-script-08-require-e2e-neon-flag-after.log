@@ -1,0 +1,31 @@
+STEP09 SCRIPT 08 AFTER - require-e2e-neon-flag TypeScript conversion
+
+> npm run compile:scripts
+
+> kawaii-vscode-color@0.1.31 compile:scripts
+> tsc -p tsconfig.scripts.json
+
+NPM_RUN_COMPILE:SCRIPTS_EXIT_CODE: 0
+
+> node --test scripts/require-e2e-neon-flag.test.js
+✔ require-e2e-neon-flag rejects Neon E2E without explicit acknowledgement (80.3458ms)
+✔ require-e2e-neon-flag allows Neon E2E with explicit acknowledgement (87.7828ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 269.488
+NODE_--TEST_SCRIPTS/REQUIRE-E2E-NEON-FLAG.TEST.JS_EXIT_CODE: 0
+
+> node --check scripts/require-e2e-neon-flag.js
+NODE_--CHECK_SCRIPTS/REQUIRE-E2E-NEON-FLAG.JS_EXIT_CODE: 0
+
+> node --check out-scripts/scripts/require-e2e-neon-flag.js
+NODE_--CHECK_OUT-SCRIPTS/SCRIPTS/REQUIRE-E2E-NEON-FLAG.JS_EXIT_CODE: 0
+
+> node require scripts/require-e2e-neon-flag.js exports
+NEON_FLAG_EXPORTS_OK
+NODE_REQUIRE_SCRIPTS/REQUIRE-E2E-NEON-FLAG.JS_EXPORTS_EXIT_CODE: 0

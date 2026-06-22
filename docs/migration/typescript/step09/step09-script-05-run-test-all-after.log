@@ -1,0 +1,38 @@
+STEP09 SCRIPT 05 AFTER - run-test-all TypeScript conversion
+
+> npm run compile:scripts
+
+> kawaii-vscode-color@0.1.31 compile:scripts
+> tsc -p tsconfig.scripts.json
+
+NPM_RUN_COMPILE:SCRIPTS_EXIT_CODE: 0
+
+> node --test scripts/run-test-all.test.js
+✔ formatSummary prints a final overview for passed, failed, and skipped phases (1.6974ms)
+✔ createSkippedResults marks remaining phases after a fail-fast stop (0.7587ms)
+✔ getNpmExecutable uses npm.exe on Windows so child process runs without a shell (0.2121ms)
+✔ formatSummary includes spawn errors for failed phases (0.1928ms)
+✔ runAllSafeTests returns a promise so the CLI can wait before exiting (0.5502ms)
+✔ getSummaryDelayMs defaults to a short pause before final output (0.1682ms)
+✔ safe phase list captures integration output before continuing (0.1687ms)
+✔ safe phase list excludes gated Neon E2E (0.1355ms)
+✔ runAllSafeTestPlan fails fast and keeps summary when Safe E2E exits non-zero (2.5239ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 112.5891
+NODE_--TEST_SCRIPTS/RUN-TEST-ALL.TEST.JS_EXIT_CODE: 0
+
+> node --check scripts/run-test-all.js
+NODE_--CHECK_SCRIPTS/RUN-TEST-ALL.JS_EXIT_CODE: 0
+
+> node --check out-scripts/scripts/run-test-all.js
+NODE_--CHECK_OUT-SCRIPTS/SCRIPTS/RUN-TEST-ALL.JS_EXIT_CODE: 0
+
+> node require scripts/run-test-all.js exports
+TEST_ALL_EXPORTS_OK
+NODE_REQUIRE_SCRIPTS/RUN-TEST-ALL.JS_EXPORTS_EXIT_CODE: 0

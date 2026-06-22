@@ -1,0 +1,22 @@
+Step 02 step-specific AFTER: shared contracts test should pass
+
+> kawaii-vscode-color@0.1.31 compile
+> tsc -p tsconfig.extension.json && tsc -p tsconfig.scripts.json
+
+CompileExitCode: 0
+✔ shared color guards accept VS Code hex colors and reject invalid values (1.3636ms)
+✔ shared opacity normalization clamps incoming numeric values (0.1803ms)
+✔ shared theme guards identify supported Kawaii theme variants (0.0958ms)
+✔ webview message guard accepts known messages and rejects unknown payloads (0.1608ms)
+✔ settings bundle schema constants preserve current and legacy schema names (0.1172ms)
+✔ renderer placeholder contract includes required Neon placeholders (0.0807ms)
+✔ shared result helpers create explicit success and failure values (0.612ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 75.6416
+TestExitCode: 0

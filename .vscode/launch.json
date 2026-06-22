@@ -91,7 +91,7 @@
             "internalConsoleOptions": "neverOpen"
         },
         {
-            "name": "Test: all safe",
+            "name": "Test: all",
             "type": "node",
             "request": "launch",
             "runtimeExecutable": "npm",

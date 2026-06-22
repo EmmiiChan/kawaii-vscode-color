@@ -1,7 +1,7 @@
 const assert = require("node:assert/strict");
 const { JSDOM } = require("jsdom");
 
-const { createSettingsWebviewHtml } = require("../../src/settingsWebview");
+const { createSettingsWebviewHtml } = require("../../out/src/settingsWebview");
 
 const baseState = {
   themeLabel: "Kawaii VS Code Color",

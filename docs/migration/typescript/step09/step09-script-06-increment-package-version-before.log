@@ -1,0 +1,17 @@
+STEP09 SCRIPT 06 BEFORE - increment-package-version JavaScript baseline
+
+> node --test scripts/increment-package-version.test.js
+✔ increments the package patch version and synchronizes package-lock (5.4684ms)
+✔ rejects unsupported package versions (0.4284ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 106.4102
+NODE_--TEST_SCRIPTS/INCREMENT-PACKAGE-VERSION.TEST.JS_EXIT_CODE: 0
+
+> node --check scripts/increment-package-version.js
+NODE_--CHECK_SCRIPTS/INCREMENT-PACKAGE-VERSION.JS_EXIT_CODE: 0

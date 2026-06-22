@@ -16,7 +16,7 @@ Build script: [scripts/build-color-theme.js](../scripts/build-color-theme.js)
 
 This guide explains how to navigate and change the Kawaii VS Code Color dark and light themes. Treat protected base files as read-only, place Kawaii changes in the matching overrides file, and regenerate the generated themes before testing or packaging.
 
-Runtime note: `src/settings.js` reads this file to populate Color Settings descriptions. Keep the Workbench and Token table headings stable unless the parser and tests are updated with the documentation change.
+Runtime note: `src/settings.ts` reads this file to populate Color Settings descriptions. Keep the Workbench and Token table headings stable unless the parser and tests are updated with the documentation change.
 
 ## How To Inspect Changes
 
@@ -391,7 +391,7 @@ Use these mappings when moving white or pseudo-white values into the light pink 
 | Source of truth | Preserve [themes/kawaii_synthwave-color-theme.json](../themes/kawaii_synthwave-color-theme.json) and [themes/kawaii_synthwave-color-theme-light.json](../themes/kawaii_synthwave-color-theme-light.json); edit [themes/kawaii_synthwave-color-theme-overrides.json](../themes/kawaii_synthwave-color-theme-overrides.json) or [themes/kawaii_synthwave-color-theme-light-overrides.json](../themes/kawaii_synthwave-color-theme-light-overrides.json), then run `npm run build:theme`. |
 | Generated output | Do not edit [themes/kawaii_synthwave-generated-color-theme.json](../themes/kawaii_synthwave-generated-color-theme.json) or [themes/kawaii_synthwave-generated-color-theme-light.json](../themes/kawaii_synthwave-generated-color-theme-light.json) manually; both are replaced by the build script. |
 | Override merge | `colors` and `semanticTokenColors` values in the overrides file replace/merge base keys when defined; matching `tokenColors` rules replace base rules by `name` first, then by `scope`; new token rules append. |
-| User color settings | `src/settings.js` reads the generated theme as defaults and writes local user overrides under `[Kawaii VS Code Color]` or `[Kawaii VS Code Color Light]` in `workbench.colorCustomizations` and `editor.tokenColorCustomizations`. |
+| User color settings | `src/settings.ts` reads the generated theme as defaults and writes local user overrides under `[Kawaii VS Code Color]` or `[Kawaii VS Code Color Light]` in `workbench.colorCustomizations` and `editor.tokenColorCustomizations`. |
 | Transparency | VS Code color values can use `#RRGGBBAA`; alpha is part of the color value, not animation or runtime opacity logic. |
 | Semantic highlighting | The generated dark and light themes currently enable semantic highlighting and define `semanticTokenColors`; verify semantic tokens when changing language-specific colors. |
 | Token specificity | More specific TextMate scopes should be placed after broader rules when they must override them. |

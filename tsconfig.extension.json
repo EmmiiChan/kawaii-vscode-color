@@ -1,0 +1,26 @@
+{
+    "extends": "./tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "out",
+        "types": [
+            "node",
+            "vscode"
+        ],
+        "lib": [
+            "ES2018"
+        ],
+        "allowJs": false,
+        "checkJs": false
+    },
+    "include": [
+        "src/**/*.ts"
+    ],
+    "exclude": [
+        "test/**",
+        "out/**",
+        "out-tests/**",
+        "out-scripts/**",
+        "dist/**",
+        "node_modules/**"
+    ]
+}

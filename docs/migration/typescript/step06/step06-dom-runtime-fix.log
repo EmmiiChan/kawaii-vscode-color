@@ -1,0 +1,51 @@
+Step 06 DOM runtime import fix validation
+Started: 2026-06-22 08:24:30 +01:00
+> npm run test:dom
+
+> kawaii-vscode-color@0.1.31 test:dom
+> npm run compile && node --test "test/dom/**/*.test.js"
+
+
+> kawaii-vscode-color@0.1.31 compile
+> tsc -p tsconfig.extension.json && tsc -p tsconfig.scripts.json
+
+✔ settings webview split modules preserve state serialization and CSP contracts (1.593ms)
+✔ settings webview split modules expose stable page, style, and client message contracts (0.2356ms)
+✔ settings webview HTML adapter can delegate legacy document rendering with typed helpers (0.3082ms)
+✔ settings webview filters color rows and shows empty state (233.6909ms)
+✔ settings webview switches workbench and syntax sections (67.1287ms)
+✔ settings webview validates hex input before posting color updates (1373.8284ms)
+✔ settings webview posts color picker updates and preserves alpha (294.1442ms)
+✔ settings webview posts reset color, refresh, and reset all (28.8272ms)
+✔ settings webview posts theme variant changes (22.1696ms)
+✔ settings webview clears pending color updates before sync (290.9421ms)
+✔ settings webview renders neon effect page without running real patch (226.7677ms)
+✔ settings webview posts home apply effects without running real patch (54.6288ms)
+✔ settings webview posts color settings apply effects with dark image customizations (56.3876ms)
+✔ settings webview posts color settings apply effects with light missing-image state (54.4641ms)
+✔ settings webview apply effects cancels pending image timers (282.828ms)
+✔ settings webview posts editor background image actions (279.7162ms)
+✔ settings webview posts editor background opacity and fit updates (315.4168ms)
+✔ settings webview posts empty editor logo actions (35.8504ms)
+✔ settings webview posts empty editor logo opacity updates (288.6633ms)
+✔ settings webview applies state messages and clears loading indicators (35.1824ms)
+✔ settings webview posts ready and can request Neon Effect actions (223.5173ms)
+✔ settings webview exposes app-specific navigation and help links (61.0408ms)
+✔ settings webview toggles each app page and keeps one active nav item (95.4121ms)
+✔ settings webview renders home and help metadata links (34.7427ms)
+✔ settings webview shows effects pending warnings (229.6423ms)
+✔ settings webview handles neon status messages (62.9981ms)
+✔ settings webview handles error messages and clears loading (65.7988ms)
+✔ settings webview styles consume editor-provided vscode tokens instead of a standalone palette (0.5823ms)
+✔ settings webview exposes E2E postMessage hook only when explicitly enabled (54.8907ms)
+✔ settings webview posts sync and file action messages (232.5179ms)
+ℹ tests 30
+ℹ suites 0
+ℹ pass 30
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3109.4739
+Exit code: 0
+Finished: 2026-06-22 08:24:36 +01:00

@@ -1,0 +1,32 @@
+COMMAND: npm run type-check
+
+> kawaii-vscode-color@0.1.31 type-check
+> tsc -p tsconfig.extension.json --noEmit --pretty false && tsc -p tsconfig.scripts.json --noEmit --pretty false && tsc -p tsconfig.tests.json --noEmit --pretty false
+
+TYPE_CHECK_EXIT_CODE: 0
+COMMAND: npm run test:docs
+
+> kawaii-vscode-color@0.1.31 test:docs
+> node scripts/check-codex-docs.js
+
+Codex documentation is aligned with project facts.
+TEST_DOCS_EXIT_CODE: 0
+COMMAND: npm run test:check
+
+> kawaii-vscode-color@0.1.31 test:check
+> npm run test:docs && npm run compile && npm run compile:tests && node --check scripts/build-color-theme.js && node --check scripts/check-codex-docs.js && node --check scripts/check-codex-docs.test.js && node --check scripts/e2e-last-run.js && node --check scripts/e2e-last-run.test.js && node --check scripts/increment-package-version.js && node --check scripts/require-e2e-neon-flag.js && node --check scripts/run-e2e.js && node --check scripts/run-test-all.js && node --check out/src/emptyEditorLogoStyles.js && node --check out/src/extension.js && node --check out/src/extensionHost/adapters/NodeFileSystem.js && node --check out/src/extensionHost/adapters/VscodeExtensionStorage.js && node --check out/src/extensionHost/adapters/VscodeNotificationService.js && node --check out/src/extensionHost/controllers/NeonEffectController.js && node --check out/src/extensionHost/controllers/SettingsCommandController.js && node --check out/src/extensionHost/controllers/SettingsMessageController.js && node --check out/src/extensionHost/services/NeonEffectService.js && node --check out/src/extensionHost/services/SettingsBundleService.js && node --check out/src/extensionHost/services/SettingsEffectsService.js && node --check out/src/extensionHost/services/SettingsStateService.js && node --check out/src/extensionHost/services/WorkbenchPatchService.js && node --check out/src/extensionRoot.js && node --check out/src/randomNekoImage.js && node --check out/src/renderer/ThemeTemplate.js && node --check out/src/settings.js && node --check out/src/settingsBundle.js && node --check out/src/settingsColorService.js && node --check out/src/settingsEffectsPersistence.js && node --check out/src/settingsPersistence.js && node --check out/src/settingsStore.js && node --check out/src/settingsWebview.js && node --check out/src/webview/settings/SettingsClientController.js && node --check out/src/webview/settings/SettingsView.js && node --check out/src/webview/settings/SettingsViewModel.js && node --check out/src/webview/settings/SettingsWebviewHtml.js && node --check out/src/webview/settings/SettingsWebviewStyles.js && node --check out/src/workbenchPatch.js && node --check src/js/theme_template.js && node --check test/dom/settings-webview-split.test.js && node --check out-tests/test/unit/compiled-runtime-entry.test.js && node --check out-tests/test/unit/empty-editor-logo-styles.test.js && node --check out-tests/test/unit/extension-editor-background-fit.test.js && node --check out-tests/test/unit/neon-effect-controller.test.js && node --check out-tests/test/unit/neon-effect-service.test.js && node --check out-tests/test/unit/random-neko-image.test.js && node --check out-tests/test/unit/renderer-theme-template.test.js && node --check out-tests/test/unit/settings-bundle.test.js && node --check out-tests/test/unit/settings-color-service.test.js && node --check out-tests/test/unit/settings-effects-persistence.test.js && node --check out-tests/test/unit/settings-message-controller.test.js && node --check out-tests/test/unit/settings-persistence.test.js && node --check out-tests/test/unit/settings-store.test.js && node --check out-tests/test/unit/shared-contracts.test.js && node --check out-tests/test/unit/workbench-patch.test.js && node --check out-tests/test/unit/workbench-patch-service.test.js && node --check test/e2e/.mocharc.js && node --check test/e2e/.mocharc.neon.js && node --check test/e2e/.mocharc.neon-apply.js && node --check test/e2e/.mocharc.neon-applied.js && node --check test/e2e/.mocharc.neon-alternate.js && node --check test/e2e/.mocharc.neon-reverted.js && node --check test/e2e/.mocharc.neon-restored.js && node --check test/e2e/helpers/extester-app.js && node --check test/e2e/helpers/png-analysis.js && node --check test/e2e/vscode-launcher.spec.js && node --check test/e2e/settings-webview.spec.js && node --check test/e2e/settings-safe-flows.spec.js && node --check test/e2e/settings-visual-states.spec.js && node --check test/e2e/neon-real.spec.js
+
+
+> kawaii-vscode-color@0.1.31 test:docs
+> node scripts/check-codex-docs.js
+
+Codex documentation is aligned with project facts.
+
+> kawaii-vscode-color@0.1.31 compile
+> tsc -p tsconfig.extension.json && tsc -p tsconfig.scripts.json
+
+
+> kawaii-vscode-color@0.1.31 compile:tests
+> tsc -p tsconfig.tests.emit.json
+
+TEST_CHECK_EXIT_CODE: 0

@@ -196,7 +196,9 @@ npm run test:check
 npm run test:unit
 npm run test:dom
 npm run test:integration
+npm run test:package
 npm run test:e2e
+npm run test:all
 npm run build:theme
 ```
 
@@ -206,14 +208,15 @@ The project has four regular automated test layers, plus one gated Neon Effect E
 
 | Command | Layer | Purpose |
 | --- | --- | --- |
-| `npm run test:check` | Static syntax check | Runs `node --check` against runtime and build JavaScript files. |
+| `npm run test:check` | Static project check | Runs TypeScript no-emit checks, the Codex docs drift guard, compile checks, and `node --check` against runtime and build JavaScript files. |
 | `npm run test:unit` | Unit tests without UI | Uses Node's built-in test runner for build logic, workbench patch helpers, settings persistence modules, chained Settings Sync / JSON import-export state matrices, and mocked settings message chains. |
 | `npm run test:dom` | DOM UI tests | Uses `jsdom` to load the settings webview HTML and verify safe `postMessage` events, app navigation, Help metadata, Color Settings inputs/debounce, image/logo state, incoming webview messages, warnings/errors, and `--vscode-*` token usage. |
 | `npm run test:integration` | VS Code integration | Uses `@vscode/test-cli` and `@vscode/test-electron` to activate the extension in an Extension Development Host and execute the settings command. |
+| `npm run test:package` | Local package check | Compiles script wrappers and runs the TypeScript-backed local VSIX package helper without bumping the package version. |
 | `npm run test:e2e` | Real VS Code UI E2E | Uses ExTester/WebDriver to package the extension, open a disposable VS Code, run `Kawaii VS Code Color: Settings`, navigate the real webview, validate safe UI flows, and write the project-owned last-run marker. |
 | `npm run test:e2e:current` | Experimental real VS Code UI E2E | Runs the same safe E2E suite in separate `.vscode-test/extest-current` storage using ExTester's `max` VS Code version by default; override with `KAWAII_E2E_CURRENT_CODE_VERSION=<version>` when probing a specific stable VS Code build. |
 | `npm test` | Full suite | Runs unit, DOM, and VS Code integration tests in sequence. |
-| `npm run test:all` | Full suite plus safe E2E | Runs unit, DOM, integration, and safe E2E layers in order, then prints a final pass/fail/skipped summary. It is the safe local gate and intentionally excludes the gated Neon patch flow. |
+| `npm run test:all` | Safe local gate | Runs static checks, unit, DOM, integration, local package, and safe E2E layers in order, then prints a final pass/fail/skipped summary. It intentionally excludes the gated Neon patch flow. |
 
 Safety matrix:
 
@@ -222,10 +225,11 @@ Safety matrix:
 | `npm run test:unit` | Yes | No | Logic, settings persistence, bundles, effects, fixtures, and mocked message chains. |
 | `npm run test:dom` | Yes | No | Isolated settings webview DOM and `--vscode-*` token contract. |
 | `npm run test:integration` | Yes | No | Extension Host activation and command smoke tests. |
+| `npm run test:package` | Yes | No | Local package helper, VSIX contents, and prepublish compile/theme build path without a version bump. |
 | `npm run test:e2e` | Yes | No | Real disposable VS Code UI without destructive actions. |
 | `npm run test:e2e:current` | Yes | No | Experimental compatibility probe for the safe E2E suite in separate storage. |
 | `npm test` | Yes | No | Unit, DOM, and integration layers. |
-| `npm run test:all` | Yes | No | Unit, DOM, integration, and safe E2E local gate. |
+| `npm run test:all` | Yes | No | Static, unit, DOM, integration, package, and safe E2E local gate. |
 | `npm run test:e2e:neon` | No, requires flag | Yes, only under `.vscode-test/extest-111-neon` | Real `Apply Effects`, Neon patch, injected CSS, restart, image switch/revert, disable, and restore lifecycle. |
 
 The integration suite opens `Kawaii VS Code Color: Settings`, but it does not control the rendered VS Code window. The safe E2E suite does control the real window and webview, but it is still safe by default: it does not click `Enable Neon Effect`, `Disable Neon Effect`, or `Apply Effects`. Upload/import/export/download and Random Neko flows are covered only through explicit E2E fixture hooks, so no native OS dialog or external network request is used. E2E screenshots and state notes are written under `test-results/e2e`.
@@ -253,6 +257,12 @@ Package the extension:
 
 ```powershell
 npm run build:local
+```
+
+Validate the package helper without changing `package.json.version`:
+
+```powershell
+npm run test:package
 ```
 
 Install the generated VSIX in VS Code:

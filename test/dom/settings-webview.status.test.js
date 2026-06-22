@@ -1,7 +1,7 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 
-const { createSettingsWebviewHtml } = require("../../src/settingsWebview");
+const { createSettingsWebviewHtml } = require("../../out/src/settingsWebview");
 const {
   click,
   createInitialState,

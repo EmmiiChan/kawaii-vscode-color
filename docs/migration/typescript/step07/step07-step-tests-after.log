@@ -1,0 +1,35 @@
+Step 07 step tests after implementation
+Started: 2026-06-22 08:39:34 +01:00
+> npm run compile
+> node --test test/unit/renderer-theme-template.test.js test/unit/shared-contracts.test.js test/unit/neon-effect-service.test.js
+
+> kawaii-vscode-color@0.1.31 compile
+> tsc -p tsconfig.extension.json && tsc -p tsconfig.scripts.json
+
+✔ NeonEffectService generates the runtime script with typed configuration and stored images (4.2188ms)
+✔ NeonEffectService disables active patches and reports inactive patches (1.2118ms)
+✔ NeonEffectService reports file access failures while disabling the patch (0.4635ms)
+✔ NeonEffectService logs unexpected isEnabled failures and returns false (0.2649ms)
+✔ NeonEffectService normalizes supported editor background fit values (0.1564ms)
+✔ NeonEffectService reports missing workbench files without writing the patch (0.2524ms)
+✔ renderer token helpers preserve VS Code token color matching contracts (1.3821ms)
+✔ renderer token replacement keeps dark and light glow maps explicit (0.3196ms)
+✔ renderer template module keeps browser boundary identifiers and no Node imports (1.1248ms)
+✔ renderer placeholder helpers replace only known placeholders (0.3266ms)
+✔ shared color guards accept VS Code hex colors and reject invalid values (1.5658ms)
+✔ shared opacity normalization clamps incoming numeric values (0.2048ms)
+✔ shared theme guards identify supported Kawaii theme variants (0.1038ms)
+✔ webview message guard accepts known messages and rejects unknown payloads (0.2328ms)
+✔ settings bundle schema constants preserve current and legacy schema names (0.1741ms)
+✔ renderer placeholder contract includes required Neon placeholders (0.1441ms)
+✔ shared result helpers create explicit success and failure values (0.8625ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 125.5903
+Exit codes: 0, 0
+Finished: 2026-06-22 08:39:39 +01:00

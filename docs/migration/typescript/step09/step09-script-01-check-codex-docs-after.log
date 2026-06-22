@@ -1,0 +1,29 @@
+COMMAND: npm run test:docs
+
+> kawaii-vscode-color@0.1.31 test:docs
+> npm run compile:scripts && node scripts/check-codex-docs.js
+
+
+> kawaii-vscode-color@0.1.31 compile:scripts
+> tsc -p tsconfig.scripts.json
+
+Codex documentation is aligned with project facts.
+TEST_DOCS_EXIT_CODE: 0
+COMMAND: node --test scripts/check-codex-docs.test.js
+✔ validateCodexDocFacts accepts documentation that contains all critical facts (1.2499ms)
+✔ validateCodexDocFacts ignores automatic patch version drift (0.2188ms)
+✔ validateCodexDocFacts reports missing webview message contracts (0.3054ms)
+✔ validateCodexDocFacts reports missing renderer placeholders (0.1923ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 80.311
+SCRIPT_TEST_EXIT_CODE: 0
+COMMAND: node --check scripts/check-codex-docs.js
+WRAPPER_CHECK_EXIT_CODE: 0
+COMMAND: node --check out-scripts/scripts/check-codex-docs.js
+COMPILED_CHECK_EXIT_CODE: 0

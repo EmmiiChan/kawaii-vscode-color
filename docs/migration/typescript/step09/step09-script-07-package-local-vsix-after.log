@@ -1,0 +1,33 @@
+STEP09 SCRIPT 07 AFTER - package-local-vsix TypeScript conversion
+
+> npm run compile:scripts
+
+> kawaii-vscode-color@0.1.31 compile:scripts
+> tsc -p tsconfig.scripts.json
+
+NPM_RUN_COMPILE:SCRIPTS_EXIT_CODE: 0
+
+> node --test scripts/package-local-vsix.test.js
+✔ getVsixOutputPath creates a dist VSIX path from package identity (0.8257ms)
+✔ getVsceCommand prefers npm exec when npm exposes its own executable path (0.7277ms)
+✔ createLocalVsix creates dist and calls vsce package without running real vsce (2.8831ms)
+✔ createLocalVsix returns package command failures without printing success (2.3986ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 98.4436
+NODE_--TEST_SCRIPTS/PACKAGE-LOCAL-VSIX.TEST.JS_EXIT_CODE: 0
+
+> node --check scripts/package-local-vsix.js
+NODE_--CHECK_SCRIPTS/PACKAGE-LOCAL-VSIX.JS_EXIT_CODE: 0
+
+> node --check out-scripts/scripts/package-local-vsix.js
+NODE_--CHECK_OUT-SCRIPTS/SCRIPTS/PACKAGE-LOCAL-VSIX.JS_EXIT_CODE: 0
+
+> node require scripts/package-local-vsix.js exports
+PACKAGE_LOCAL_VSIX_EXPORTS_OK
+NODE_REQUIRE_SCRIPTS/PACKAGE-LOCAL-VSIX.JS_EXPORTS_EXIT_CODE: 0

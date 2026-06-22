@@ -3,4 +3,7 @@
 .codex/.temp/
 test-results/
 playwright-report/
+out/
+out-scripts/
+out-tests/
 #*.vsix

@@ -45,7 +45,7 @@ function createFacts() {
     package: {
       name: "kawaii-vscode-color",
       publisher: "ITEM-PIXEL",
-      main: "./src/extension.js",
+      main: "./out/src/extension.js",
       vscodeEngine: "^1.33.0",
       activationEvents: [
         "onStartupFinished",
@@ -82,8 +82,8 @@ function createFacts() {
       }
     ],
     criticalFiles: [
-      "src/settings.js",
-      "src/settingsWebview.js",
+      "src/settings.ts",
+      "src/settingsWebview.ts",
       "scripts/check-codex-docs.js"
     ],
     webviewMessageTypes: [
@@ -142,7 +142,7 @@ function createBaseDocs() {
     docs: [
       "kawaii-vscode-color",
       "ITEM-PIXEL",
-      "./src/extension.js",
+      "./out/src/extension.js",
       "^1.33.0",
       "onStartupFinished",
       "onCommand:kawaii_synthwave.openSettings",
@@ -155,13 +155,13 @@ function createBaseDocs() {
       "Kawaii VS Code Color Light",
       "vs-dark",
       "vs",
-      "src/settings.js",
-      "src/settingsWebview.js",
+      "src/settings.ts",
+      "src/settingsWebview.ts",
       "scripts/check-codex-docs.js",
       "onStartupFinished",
       "onCommand:kawaii_synthwave.openSettings",
       "enableNeon() reads kawaii_synthwave settings at execution time",
-      ".codex/color_scheme_reference.md is read by src/settings.js"
+      ".codex/color_scheme_reference.md is read by src/settings.ts"
     ].join("\n"),
     colorReference: [
       "Kawaii VS Code Color Scheme Reference",
@@ -174,11 +174,11 @@ function createBaseDocs() {
       "themes/kawaii_synthwave-color-theme-light-overrides.json",
       "themes/kawaii_synthwave-generated-color-theme.json",
       "themes/kawaii_synthwave-generated-color-theme-light.json",
-      ".codex/color_scheme_reference.md is read by src/settings.js"
+      ".codex/color_scheme_reference.md is read by src/settings.ts"
     ].join("\n"),
     systemMap: [
-      "src/settings.js",
-      "src/settingsWebview.js",
+      "src/settings.ts",
+      "src/settingsWebview.ts",
       "scripts/check-codex-docs.js",
       "Kawaii VS Code Color",
       "Kawaii VS Code Color Light",
@@ -207,7 +207,7 @@ function createBaseDocs() {
     ].join("\n"),
     changeImpact: [
       "package.json",
-      "src/settings*.js",
+      "src/settings*.ts",
       "webview messages",
       ".codex/system-map.md",
       ".codex/docs.md",

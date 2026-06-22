@@ -156,7 +156,7 @@ function createSettingsHarness() {
     return originalLoad.call(this, request, parent, isMain);
   };
 
-  const settingsPath = path.join(workspaceRoot, "src", "settings.js");
+  const settingsPath = path.join(workspaceRoot, "out", "src", "settings.js");
   delete require.cache[require.resolve(settingsPath)];
   const settings = require(settingsPath);
   const context = {

@@ -1,0 +1,27 @@
+COMMAND: npm run compile:scripts
+
+> kawaii-vscode-color@0.1.31 compile:scripts
+> tsc -p tsconfig.scripts.json
+
+COMPILE_SCRIPTS_EXIT_CODE: 0
+COMMAND: node --test scripts/e2e-last-run.test.js
+✔ createE2ELastRunRecord normalizes safe run metadata and artifact paths (1.6704ms)
+✔ createE2ELastRunRecord keeps current VS Code E2E metadata isolated (0.8054ms)
+✔ updateE2ELastRunPhase and finalizeE2ELastRunRecord preserve failure details (0.4125ms)
+✔ writeE2ELastRunRecord writes the project-owned marker without depending on ExTester marker freshness (1.7304ms)
+✔ readExTesterLastRun treats missing or stale ExTester marker as optional diagnostics (1.8926ms)
+✔ readExTesterLastRun ignores failed tests from a marker older than the current run (1.3946ms)
+✔ validateE2ERunOptions requires gated Neon runs to stay inside disposable storage (0.5984ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 101.0523
+SCRIPT_TEST_EXIT_CODE: 0
+COMMAND: node --check scripts/e2e-last-run.js
+WRAPPER_CHECK_EXIT_CODE: 0
+COMMAND: node --check out-scripts/scripts/e2e-last-run.js
+COMPILED_CHECK_EXIT_CODE: 0

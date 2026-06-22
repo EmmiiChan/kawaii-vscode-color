@@ -6,7 +6,7 @@ suite("Kawaii VS Code Color extension", () => {
     const extension = vscode.extensions.getExtension("ITEM-PIXEL.kawaii-vscode-color");
 
     assert.ok(extension, "Expected extension to be registered in the extension host.");
-    assert.equal(extension.packageJSON.main, "./src/extension.js");
+    assert.equal(extension.packageJSON.main, "./out/src/extension.js");
     assert.ok(
       extension.packageJSON.contributes.commands.some(
         (command) => command.command === "kawaii_synthwave.openSettings"

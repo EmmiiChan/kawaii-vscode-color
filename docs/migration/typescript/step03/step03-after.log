@@ -1,0 +1,254 @@
+**********************
+PowerShell transcript start
+Start time: 20260619155518
+Username: PC_PT_3891C\CodexSandboxOnline
+RunAs User: PC_PT_3891C\CodexSandboxOnline
+Configuration Name:
+Machine: PC_PT_3891C (Microsoft Windows NT 10.0.26100.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -NoProfile -Command try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+$log = 'docs\migration\typescript\step03\step03-after.log'
+$exitCodes = @()
+Start-Transcript -Path $log -Force | Out-Null
+Write-Host '## git status --short --branch'
+git status --short --branch
+$exitCodes += $LASTEXITCODE
+Write-Host '## npm pkg get name version publisher dependencies devDependencies engines main scripts.compile scripts.type-check scripts.test:check scripts.test:unit scripts.test:integration scripts.test:e2e scripts.vscode:prepublish'
+npm pkg get name version publisher dependencies devDependencies engines main scripts.compile scripts.type-check scripts.test:check scripts.test:unit scripts.test:integration scripts.test:e2e scripts.vscode:prepublish
+$exitCodes += $LASTEXITCODE
+Write-Host '## npm run type-check'
+npm run type-check
+$exitCodes += $LASTEXITCODE
+Write-Host '## npm run test:docs'
+npm run test:docs
+$exitCodes += $LASTEXITCODE
+Write-Host '## npm run test:check'
+npm run test:check
+$exitCodes += $LASTEXITCODE
+Write-Host '## npm run test:unit'
+npm run test:unit
+$exitCodes += $LASTEXITCODE
+Write-Host '## npm run test:dom'
+npm run test:dom
+$exitCodes += $LASTEXITCODE
+Write-Host '## npm run test:integration'
+npm run test:integration
+$exitCodes += $LASTEXITCODE
+Write-Host '## npm run test:e2e'
+npm run test:e2e
+$exitCodes += $LASTEXITCODE
+Write-Host "## exit codes: $($exitCodes -join ', ')"
+Stop-Transcript | Out-Null
+if (($exitCodes | Where-Object { $_ -ne 0 }).Count -gt 0) { exit 1 }
+exit 0
+Process ID: 176360
+PSVersion: 7.5.2
+PSEdition: Core
+GitCommitId: 7.5.2
+OS: Microsoft Windows 10.0.26100
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+## git status --short --branch
+
+## npm pkg get name version publisher dependencies devDependencies engines main scripts.compile scripts.type-check scripts.test:check scripts.test:unit scripts.test:integration scripts.test:e2e scripts.vscode:prepublish
+
+## npm run type-check
+
+## npm run test:docs
+
+## npm run test:check
+
+## npm run test:unit
+
+## npm run test:dom
+
+## npm run test:integration
+
+## npm run test:e2e
+
+
+DevTools listening on ws://127.0.0.1:17093/devtools/browser/97db640f-0d13-4f69-83be-1fac4dc028a7
+Warning: 'allow-pre-commit-input' is not in the list of known options, but still passed to Electron/Chromium.
+Warning: 'disable-background-networking' is not in the list of known options, but still passed to Electron/Chromium.
+Warning: 'disable-backgrounding-occluded-windows' is not in the list of known options, but still passed to Electron/Chro
+mium.
+Warning: 'disable-client-side-phishing-detection' is not in the list of known options, but still passed to Electron/Chro
+mium.
+Warning: 'disable-default-apps' is not in the list of known options, but still passed to Electron/Chromium.
+Warning: 'disable-features' is not in the list of known options, but still passed to Electron/Chromium.
+Warning: 'disable-hang-monitor' is not in the list of known options, but still passed to Electron/Chromium.
+Warning: 'disable-popup-blocking' is not in the list of known options, but still passed to Electron/Chromium.
+Warning: 'disable-prompt-on-repost' is not in the list of known options, but still passed to Electron/Chromium.
+Warning: 'disable-sync' is not in the list of known options, but still passed to Electron/Chromium.
+Warning: 'enable-automation' is not in the list of known options, but still passed to Electron/Chromium.
+Warning: 'enable-logging' is not in the list of known options, but still passed to Electron/Chromium.
+Warning: 'log-level' is not in the list of known options, but still passed to Electron/Chromium.
+Warning: 'first-run' is not in the list of known options, but still passed to Electron/Chromium.
+Warning: 'service-autorun' is not in the list of known options, but still passed to Electron/Chromium.
+Warning: 'remote-debugging-port' is not in the list of known options, but still passed to Electron/Chromium.
+Warning: 'test-type' is not in the list of known options, but still passed to Electron/Chromium.
+Warning: 'use-mock-keychain' is not in the list of known options, but still passed to Electron/Chromium.
+[main 2026-06-19T14:56:04.504Z] Error: Error mutex already exists
+    at ls.installMutex (file:///C:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extest-111/VSCode-win32-x64-ar
+chive/ce099c1ed2/resources/app/out/main.js:550:23404)
+[main 2026-06-19T14:56:04.518Z] update#setState disabled
+[main 2026-06-19T14:56:04.518Z] update#ctor - updates are disabled by user preference
+[main 2026-06-19T14:56:04.528Z] qt [Error]: Unable to write file 'c:\Users\dst3891\.vscode\argv.json' (NoPermissions (Fi
+leSystemError): Error: EPERM: operation not permitted, open 'c:\Users\dst3891\.vscode\argv.json')
+    at ds.writeFile (file:///C:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extest-111/VSCode-win32-x64-archi
+ve/ce099c1ed2/resources/app/out/main.js:572:7941)
+    at async ls.updateCrashReporterEnablement (file:///C:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extest-
+111/VSCode-win32-x64-archive/ce099c1ed2/resources/app/out/main.js:552:189) {
+  fileOperationResult: 6,
+  options: undefined
+}
+[177416:0619/155605.704:INFO:CONSOLE:414] "%c WARN color: #993 [LM] Failed to request chat control data Failed to fetch"
+, source: vscode-file://vscode-app/c:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extest-111/VSCode-win32-x64
+-archive/ce099c1ed2/resources/app/out/vs/workbench/workbench.desktop.main.js (414)
+[main 2026-06-19T14:56:05.911Z] [UtilityProcessWorker]: createWorker() found an existing worker that will be terminated
+(window: 1, moduleId: vs/platform/files/node/watcher/watcherMain)
+[177416:0619/155605.973:INFO:CONSOLE:414] "%c INFO color: #33f Started local extension host with pid 180132.", source: v
+scode-file://vscode-app/c:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extest-111/VSCode-win32-x64-archive/ce
+099c1ed2/resources/app/out/vs/workbench/workbench.desktop.main.js (414)
+[177416:0619/155606.631:INFO:CONSOLE:414] "%c INFO color: #33f MCP Registry configured: https://api.mcp.github.com", sou
+rce: vscode-file://vscode-app/c:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extest-111/VSCode-win32-x64-arch
+ive/ce099c1ed2/resources/app/out/vs/workbench/workbench.desktop.main.js (414)
+[177416:0619/155606.675:INFO:CONSOLE:414] "%c INFO color: #33f Settings Sync: Account status changed from uninitialized
+to unavailable", source: vscode-file://vscode-app/c:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extest-111/V
+SCode-win32-x64-archive/ce099c1ed2/resources/app/out/vs/workbench/workbench.desktop.main.js (414)
+[177416:0619/155607.047:ERROR:electron\shell\browser\api\electron_api_app.cc:1393] Failed to commit changes to custom Ju
+mp List.
+[main 2026-06-19T14:56:07.047Z] updateWindowsJumpList#setJumpList unexpected result: error
+[177416:0619/155607.302:INFO:CONSOLE:5251] "Unrecognized feature: 'local-network-access'.", source: vscode-file://vscode
+-app/c:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extest-111/VSCode-win32-x64-archive/ce099c1ed2/resources/
+app/out/vs/workbench/workbench.desktop.main.js (5251)
+[177416:0619/155607.307:INFO:CONSOLE:5251] "An iframe which has both allow-scripts and allow-same-origin for its sandbox
+ attribute can escape its sandboxing.", source: vscode-file://vscode-app/c:/w/p/item-pixel/vscode/kawaii-vscode-color/.v
+scode-test/extest-111/VSCode-win32-x64-archive/ce099c1ed2/resources/app/out/vs/workbench/workbench.desktop.main.js (5251
+)
+[177416:0619/155607.337:INFO:CONSOLE:414] "%c  ERR color: #f33 [Extension Host] {
+  "timestamp": "2026-06-19T14:56:07.295Z",
+  "methodName": "readColorDescriptionReference",
+  "context": {
+    "path": "c:\\w\\p\\item-pixel\\vscode\\kawaii-vscode-color\\.vscode-test\\extest-111-extensions\\item-pixel.kawaii-v
+scode-color-0.1.31\\.codex\\color_scheme_reference.md"
+  },
+  "message": "ENOENT: no such file or directory, open 'c:\\w\\p\\item-pixel\\vscode\\kawaii-vscode-color\\.vscode-test\\
+extest-111-extensions\\item-pixel.kawaii-vscode-color-0.1.31\\.codex\\color_scheme_reference.md'",
+  "stack": "Error: ENOENT: no such file or directory, open 'c:\\w\\p\\item-pixel\\vscode\\kawaii-vscode-color\\.vscode-t
+est\\extest-111-extensions\\item-pixel.kawaii-vscode-color-0.1.31\\.codex\\color_scheme_reference.md'\n\tat Object.readF
+ileSync (node:fs:441:20)\n\tat t.readFileSync (node:electron/js2c/node_init:2:11013)\n\tat readColorDescriptionReference
+ (c:\\w\\p\\item-pixel\\vscode\\kawaii-vscode-color\\.vscode-test\\extest-111-extensions\\item-pixel.kawaii-vscode-color
+-0.1.31\\out\\src\\settings.js:1804:29)\n\tat getColorDescriptionReference (c:\\w\\p\\item-pixel\\vscode\\kawaii-vscode-
+color\\.vscode-test\\extest-111-extensions\\item-pixel.kawaii-vscode-color-0.1.31\\out\\src\\settings.js:1793:42)\n\tat
+createSettingsState (c:\\w\\p\\item-pixel\\vscode\\kawaii-vscode-color\\.vscode-test\\extest-111-extensions\\item-pixel.
+kawaii-vscode-color-0.1.31\\out\\src\\settings.js:1723:39)\n\tat Object.openSettings (c:\\w\\p\\item-pixel\\vscode\\kawa
+ii-vscode-color\\.vscode-test\\extest-111-extensions\\item-pixel.kawaii-vscode-color-0.1.31\\out\\src\\settings.js:353:7
+9)\n\tat c:\\w\\p\\item-pixel\\vscode\\kawaii-vscode-color\\.vscode-test\\extest-111-extensions\\item-pixel.kawaii-vscod
+e-color-0.1.31\\out\\src\\extension.js:72:25\n\tat Zm._executeContributedCommand (file:///c:/w/p/item-pixel/vscode/kawai
+i-vscode-color/.vscode-test/extest-111/VSCode-win32-x64-archive/ce099c1ed2/resources/app/out/vs/workbench/api/node/exten
+sionHostProcess.js:494:48683)\n\tat Zm.$executeContributedCommand (file:///c:/w/p/item-pixel/vscode/kawaii-vscode-color/
+.vscode-test/extest-111/VSCode-win32-x64-archive/ce099c1ed2/resources/app/out/vs/workbench/api/node/extensionHostProcess
+.js:494:49654)\n\tat r._doInvokeHandler (file:///c:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extest-111/VS
+Code-win32-x64-archive/ce099c1ed2/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:407:153944)\n\tat r._i
+nvokeHandler (file:///c:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extest-111/VSCode-win32-x64-archive/ce09
+9c1ed2/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:407:153692)\n\tat r._receiveRequest (file:///c:/w
+/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extest-111/VSCode-win32-x64-archive/ce099c1ed2/resources/app/out/v
+s/workbench/api/node/extensionHostProcess.js:407:152474)\n\tat r._receiveOneMessage (file:///c:/w/p/item-pixel/vscode/ka
+waii-vscode-color/.vscode-test/extest-111/VSCode-win32-x64-archive/ce099c1ed2/resources/app/out/vs/workbench/api/node/ex
+tensionHostProcess.js:407:151312)\n\tat Bu.value (file:///c:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/exte
+st-111/VSCode-win32-x64-archive/ce099c1ed2/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:407:149387)\n
+\tat E._deliver (file:///c:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extest-111/VSCode-win32-x64-archive/c
+e099c1ed2/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:403:2869)\n\tat E.fire (file:///c:/w/p/item-pi
+xel/vscode/kawaii-vscode-color/.vscode-test/extest-111/VSCode-win32-x64-archive/ce099c1ed2/resources/app/out/vs/workbenc
+h/api/node/extensionHostProcess.js:403:3187)\n\tat Ji.fire (file:///c:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode
+-test/extest-111/VSCode-win32-x64-archive/ce099c1ed2/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:405
+:8437)\n\tat Bu.value (file:///c:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extest-111/VSCode-win32-x64-arc
+hive/ce099c1ed2/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:800:9911)\n\tat E._deliver (file:///c:/w
+/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extest-111/VSCode-win32-x64-archive/ce099c1ed2/resources/app/out/v
+s/workbench/api/node/extensionHostProcess.js:403:2869)\n\tat E.fire (file:///c:/w/p/item-pixel/vscode/kawaii-vscode-colo
+r/.vscode-test/extest-111/VSCode-win32-x64-archive/ce099c1ed2/resources/app/out/vs/workbench/api/node/extensionHostProce
+ss.js:403:3187)\n\tat Ji.fire (file:///c:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extest-111/VSCode-win32
+-x64-archive/ce099c1ed2/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:405:8437)\n\tat MessagePortMain.
+<anonymous> (file:///c:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extest-111/VSCode-win32-x64-archive/ce099
+c1ed2/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:800:8082)\n\tat MessagePortMain.emit (node:events:
+519:28)\n\tat MessagePortMain._internalPort.emit (node:electron/js2c/utility_init:2:2959)"
+}", source: vscode-file://vscode-app/c:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extest-111/VSCode-win32-x
+64-archive/ce099c1ed2/resources/app/out/vs/workbench/workbench.desktop.main.js (414)
+[177416:0619/155607.337:INFO:CONSOLE:955] "%c[Extension Host] %c{
+  "timestamp": "2026-06-19T14:56:07.295Z",
+  "methodName": "readColorDescriptionReference",
+  "context": {
+    "path": "c:\\w\\p\\item-pixel\\vscode\\kawaii-vscode-color\\.vscode-test\\extest-111-extensions\\item-pixel.kawaii-v
+scode-color-0.1.31\\.codex\\color_scheme_reference.md"
+  },
+  "message": "ENOENT: no such file or directory, open 'c:\\w\\p\\item-pixel\\vscode\\kawaii-vscode-color\\.vscode-test\\
+extest-111-extensions\\item-pixel.kawaii-vscode-color-0.1.31\\.codex\\color_scheme_reference.md'",
+  "stack": "Error: ENOENT: no such file or directory, open 'c:\\w\\p\\item-pixel\\vscode\\kawaii-vscode-color\\.vscode-t
+est\\extest-111-extensions\\item-pixel.kawaii-vscode-color-0.1.31\\.codex\\color_scheme_reference.md'\n\tat Object.readF
+ileSync (node:fs:441:20)\n\tat t.readFileSync (node:electron/js2c/node_init:2:11013)\n\tat readColorDescriptionReference
+ (c:\\w\\p\\item-pixel\\vscode\\kawaii-vscode-color\\.vscode-test\\extest-111-extensions\\item-pixel.kawaii-vscode-color
+-0.1.31\\out\\src\\settings.js:1804:29)\n\tat getColorDescriptionReference (c:\\w\\p\\item-pixel\\vscode\\kawaii-vscode-
+color\\.vscode-test\\extest-111-extensions\\item-pixel.kawaii-vscode-color-0.1.31\\out\\src\\settings.js:1793:42)\n\tat
+createSettingsState (c:\\w\\p\\item-pixel\\vscode\\kawaii-vscode-color\\.vscode-test\\extest-111-extensions\\item-pixel.
+kawaii-vscode-color-0.1.31\\out\\src\\settings.js:1723:39)\n\tat Object.openSettings (c:\\w\\p\\item-pixel\\vscode\\kawa
+ii-vscode-color\\.vscode-test\\extest-111-extensions\\item-pixel.kawaii-vscode-color-0.1.31\\out\\src\\settings.js:353:7
+9)\n\tat c:\\w\\p\\item-pixel\\vscode\\kawaii-vscode-color\\.vscode-test\\extest-111-extensions\\item-pixel.kawaii-vscod
+e-color-0.1.31\\out\\src\\extension.js:72:25\n\tat Zm._executeContributedCommand (file:///c:/w/p/item-pixel/vscode/kawai
+i-vscode-color/.vscode-test/extest-111/VSCode-win32-x64-archive/ce099c1ed2/resources/app/out/vs/workbench/api/node/exten
+sionHostProcess.js:494:48683)\n\tat Zm.$executeContributedCommand (file:///c:/w/p/item-pixel/vscode/kawaii-vscode-color/
+.vscode-test/extest-111/VSCode-win32-x64-archive/ce099c1ed2/resources/app/out/vs/workbench/api/node/extensionHostProcess
+.js:494:49654)\n\tat r._doInvokeHandler (file:///c:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extest-111/VS
+Code-win32-x64-archive/ce099c1ed2/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:407:153944)\n\tat r._i
+nvokeHandler (file:///c:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extest-111/VSCode-win32-x64-archive/ce09
+9c1ed2/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:407:153692)\n\tat r._receiveRequest (file:///c:/w
+/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extest-111/VSCode-win32-x64-archive/ce099c1ed2/resources/app/out/v
+s/workbench/api/node/extensionHostProcess.js:407:152474)\n\tat r._receiveOneMessage (file:///c:/w/p/item-pixel/vscode/ka
+waii-vscode-color/.vscode-test/extest-111/VSCode-win32-x64-archive/ce099c1ed2/resources/app/out/vs/workbench/api/node/ex
+tensionHostProcess.js:407:151312)\n\tat Bu.value (file:///c:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/exte
+st-111/VSCode-win32-x64-archive/ce099c1ed2/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:407:149387)\n
+\tat E._deliver (file:///c:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extest-111/VSCode-win32-x64-archive/c
+e099c1ed2/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:403:2869)\n\tat E.fire (file:///c:/w/p/item-pi
+xel/vscode/kawaii-vscode-color/.vscode-test/extest-111/VSCode-win32-x64-archive/ce099c1ed2/resources/app/out/vs/workbenc
+h/api/node/extensionHostProcess.js:403:3187)\n\tat Ji.fire (file:///c:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode
+-test/extest-111/VSCode-win32-x64-archive/ce099c1ed2/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:405
+:8437)\n\tat Bu.value (file:///c:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extest-111/VSCode-win32-x64-arc
+hive/ce099c1ed2/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:800:9911)\n\tat E._deliver (file:///c:/w
+/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extest-111/VSCode-win32-x64-archive/ce099c1ed2/resources/app/out/v
+s/workbench/api/node/extensionHostProcess.js:403:2869)\n\tat E.fire (file:///c:/w/p/item-pixel/vscode/kawaii-vscode-colo
+r/.vscode-test/extest-111/VSCode-win32-x64-archive/ce099c1ed2/resources/app/out/vs/workbench/api/node/extensionHostProce
+ss.js:403:3187)\n\tat Ji.fire (file:///c:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extest-111/VSCode-win32
+-x64-archive/ce099c1ed2/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:405:8437)\n\tat MessagePortMain.
+<anonymous> (file:///c:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extest-111/VSCode-win32-x64-archive/ce099
+c1ed2/resources/app/out/vs/workbench/api/node/extensionHostProcess.js:800:8082)\n\tat MessagePortMain.emit (node:events:
+519:28)\n\tat MessagePortMain._internalPort.emit (node:electron/js2c/utility_init:2:2959)"
+} color: blue color: ", source: vscode-file://vscode-app/c:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extes
+t-111/VSCode-win32-x64-archive/ce099c1ed2/resources/app/out/vs/workbench/workbench.desktop.main.js (955)
+[177416:0619/155607.399:INFO:CONSOLE:303] "No service worker controller found. Waiting for controllerchange.", source: v
+scode-webview://0n75r5vnfg8tavdlafhftdeg6i1nbehm93t3nl1tg6psud2s20oi/index.html?id=ff8966ce-3941-4d28-9eb6-26743cfe7045&
+parentId=1&origin=47ece96b-7c87-4aa6-bc81-c5cc41346eb5&swVersion=4&extensionId=ITEM-PIXEL.kawaii-vscode-color&platform=e
+lectron&vscode-resource-base-authority=vscode-resource.vscode-cdn.net&parentOrigin=vscode-file%3A%2F%2Fvscode-app (303)
+[177416:0619/155607.410:INFO:CONSOLE:1060] "Unrecognized feature: 'local-network-access'.", source: vscode-webview://0n7
+5r5vnfg8tavdlafhftdeg6i1nbehm93t3nl1tg6psud2s20oi/index.html?id=ff8966ce-3941-4d28-9eb6-26743cfe7045&parentId=1&origin=4
+7ece96b-7c87-4aa6-bc81-c5cc41346eb5&swVersion=4&extensionId=ITEM-PIXEL.kawaii-vscode-color&platform=electron&vscode-reso
+urce-base-authority=vscode-resource.vscode-cdn.net&parentOrigin=vscode-file%3A%2F%2Fvscode-app (1060)
+[177416:0619/155608.557:INFO:CONSOLE:414] "%c INFO color: #33f [perf] Render performance baseline is 15ms", source: vsco
+de-file://vscode-app/c:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/extest-111/VSCode-win32-x64-archive/ce099
+c1ed2/resources/app/out/vs/workbench/workbench.desktop.main.js (414)
+[177416:0619/155625.673:INFO:CONSOLE:5251] "An iframe which has both allow-scripts and allow-same-origin for its sandbox
+ attribute can escape its sandboxing.", source: vscode-file://vscode-app/c:/w/p/item-pixel/vscode/kawaii-vscode-color/.v
+scode-test/extest-111/VSCode-win32-x64-archive/ce099c1ed2/resources/app/out/vs/workbench/workbench.desktop.main.js (5251
+)
+[177416:0619/155625.699:INFO:CONSOLE:1060] "Unrecognized feature: 'local-network-access'.", source: vscode-webview://0n7
+5r5vnfg8tavdlafhftdeg6i1nbehm93t3nl1tg6psud2s20oi/index.html?id=9e346606-e566-48df-a02f-8f8196749b89&parentId=1&origin=4
+7ece96b-7c87-4aa6-bc81-c5cc41346eb5&swVersion=4&extensionId=ITEM-PIXEL.kawaii-vscode-color&platform=electron&vscode-reso
+urce-base-authority=vscode-resource.vscode-cdn.net&parentOrigin=vscode-file%3A%2F%2Fvscode-app (1060)
+[main 2026-06-19T14:56:52.718Z] Extension host with pid 180132 exited with code: 0, signal: unknown.
+## exit codes: 0, 0, 0, 0, 0, 0, 0, 0, 0
+**********************
+PowerShell transcript end
+End time: 20260619155653
+**********************
