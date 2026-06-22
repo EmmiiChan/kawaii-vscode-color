@@ -467,6 +467,8 @@ Local source anchors:
 - `scripts/check-codex-docs.ts`: TypeScript implementation of Codex documentation drift checks for package facts, themes, message contracts, state keys, schemas, renderer placeholders, and `semanticTokenColors`.
 - `scripts/e2e-last-run.js`: stable Node wrapper for E2E last-run marker helpers.
 - `scripts/e2e-last-run.ts`: TypeScript implementation for project-owned E2E last-run marker creation, phase updates, ExTester diagnostic reading, and Neon storage guard helpers.
+- `scripts/increment-package-version.js`: stable Node wrapper for package patch version increments.
+- `scripts/increment-package-version.ts`: TypeScript implementation for package patch version increments and `package-lock.json` root version synchronization.
 - `scripts/run-e2e.js`: stable Node wrapper for safe, current, and gated real VS Code E2E orchestration.
 - `scripts/run-e2e.ts`: TypeScript implementation for ExTester phase selection, disposable storage configuration, E2E process execution, and `test-results/e2e/kawaii-last-run.json` updates for safe, current, and Neon modes.
 - `scripts/run-test-all.js`: stable Node wrapper for safe test orchestration.

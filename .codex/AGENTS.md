@@ -12,7 +12,7 @@ Current tooling state:
 
 | Area | Current state |
 | --- | --- |
-| Build step | `npm run build:theme` merges protected base themes and editable overrides into the generated themes loaded by VS Code. `npm run build:local` bumps the patch version, then builds the themes and local VSIX. |
+| Build step | `npm run build:theme` merges protected base themes and editable overrides into the generated themes loaded by VS Code. `npm run build:local` compiles script wrappers, bumps the patch version, then builds the themes and local VSIX. |
 | Automated tests | The lightweight gate starts with the Codex docs drift guard and Node syntax check, then the regular layers cover Node unit tests, `jsdom` DOM UI tests, VS Code Extension Development Host integration tests, and ExTester/WebDriver real VS Code UI E2E tests. A separate gated Neon E2E patches only a disposable `.vscode-test` install. |
 | TypeScript | Tooling is active for migration. `package.json.main` points to compiled `./out/src/extension.js`; the runtime entry, extracted Neon and Settings host controllers/services/adapters, shared contracts, pure settings/workbench helpers, settings webview contracts, and renderer helper contracts listed below are TypeScript. |
 | npm dependencies | No runtime dependencies. Dev-only tooling/test dependencies are `typescript@^6.0.3`, `@types/node@^26.0.0`, `@types/vscode@^1.33.0`, `jsdom@29.1.1`, `@vscode/test-cli@0.0.12`, `@vscode/test-electron@3.0.0`, `vscode-extension-tester@8.23.0`, and `mocha@11.7.6`. |
@@ -63,7 +63,7 @@ TypeScript migration note:
 - `tsconfig.tests.emit.json` and `npm run compile:tests` emit converted TypeScript tests into `out-tests` without duplicating legacy JavaScript tests.
 - Real E2E orchestration lives in `scripts/run-e2e.ts` behind the stable `scripts/run-e2e.js` wrapper; E2E commands compile scripts before invoking the wrapper.
 - Safe all-tests orchestration lives in `scripts/run-test-all.ts` behind the stable `scripts/run-test-all.js` wrapper; `npm run test:all` compiles scripts before invoking the wrapper.
-- `vscode:prepublish`, `build:local`, integration tests, and E2E scripts compile before loading or packaging the extension.
+- `vscode:prepublish`, `build:local`, integration tests, E2E scripts, and package version scripts compile before loading or packaging the extension.
 
 Codex documentation rule:
 
@@ -187,11 +187,12 @@ Preferred command:
 npm run build:local
 ```
 
-This command increments `package.json.version` by one patch version before packaging and synchronizes `package-lock.json` root version fields.
+This command compiles script wrappers, increments `package.json.version` by one patch version before packaging, and synchronizes `package-lock.json` root version fields.
 
 Equivalent one-off commands:
 
 ```powershell
+npm run compile:scripts
 node .\scripts\increment-package-version.js
 npm run build:theme
 npx --yes @vscode/vsce package --out .\dist\kawaii-vscode-color-<version>.vsix

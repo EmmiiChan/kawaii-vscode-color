@@ -1,0 +1,31 @@
+STEP09 SCRIPT 06 AFTER - increment-package-version TypeScript conversion
+
+> npm run compile:scripts
+
+> kawaii-vscode-color@0.1.31 compile:scripts
+> tsc -p tsconfig.scripts.json
+
+NPM_RUN_COMPILE:SCRIPTS_EXIT_CODE: 0
+
+> node --test scripts/increment-package-version.test.js
+✔ increments the package patch version and synchronizes package-lock (5.184ms)
+✔ rejects unsupported package versions (0.4063ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 118.5467
+NODE_--TEST_SCRIPTS/INCREMENT-PACKAGE-VERSION.TEST.JS_EXIT_CODE: 0
+
+> node --check scripts/increment-package-version.js
+NODE_--CHECK_SCRIPTS/INCREMENT-PACKAGE-VERSION.JS_EXIT_CODE: 0
+
+> node --check out-scripts/scripts/increment-package-version.js
+NODE_--CHECK_OUT-SCRIPTS/SCRIPTS/INCREMENT-PACKAGE-VERSION.JS_EXIT_CODE: 0
+
+> node require scripts/increment-package-version.js exports
+VERSION_EXPORTS_OK
+NODE_REQUIRE_SCRIPTS/INCREMENT-PACKAGE-VERSION.JS_EXPORTS_EXIT_CODE: 0
