@@ -1,15 +1,51 @@
-const assert = require("node:assert/strict");
-const path = require("node:path");
-const test = require("node:test");
+import assert = require("node:assert/strict");
+import path = require("node:path");
+import test = require("node:test");
 
 const {
   createNeonEffectService,
   getEditorBackgroundFitArea,
   normalizeEditorBackgroundFit
-} = require("../../out/src/extensionHost/services/NeonEffectService");
+} = requireOut<typeof import("../../src/extensionHost/services/NeonEffectService")>(
+  "extensionHost",
+  "services",
+  "NeonEffectService"
+);
 const {
   createWorkbenchPatchService
-} = require("../../out/src/extensionHost/services/WorkbenchPatchService");
+} = requireOut<typeof import("../../src/extensionHost/services/WorkbenchPatchService")>(
+  "extensionHost",
+  "services",
+  "WorkbenchPatchService"
+);
+
+type MemoryFileValue = string | Buffer;
+
+interface FileError extends Error {
+  code?: string;
+}
+
+interface NotificationCall {
+  readonly type: "error" | "info" | "reload";
+  readonly message: string;
+  readonly actionTitle?: string;
+}
+
+interface LogCall {
+  readonly methodName: string;
+  readonly loggedError: unknown;
+  readonly context: unknown;
+}
+
+interface MemoryHarness {
+  readonly files: Map<string, MemoryFileValue>;
+  readonly notificationCalls: NotificationCall[];
+  readonly service: ReturnType<typeof createNeonEffectService>;
+}
+
+function requireOut<TModule>(...segments: readonly string[]): TModule {
+  return require(path.join(process.cwd(), "out", "src", ...segments)) as TModule;
+}
 
 test("NeonEffectService generates the runtime script with typed configuration and stored images", async () => {
   const extensionRoot = path.normalize("C:/extension");
@@ -20,7 +56,7 @@ test("NeonEffectService generates the runtime script with typed configuration an
   const scriptFile = path.join(workbenchBase, "electron-sandbox", "workbench", "neondreams.js");
   const editorImagePath = path.join(storageRoot, "editor-background-image.png");
   const logoPath = path.join(storageRoot, "empty-editor-logo-image.svg");
-  const files = new Map([
+  const files = new Map<string, MemoryFileValue>([
     [path.join(extensionRoot, "src", "css", "editor_chrome.css"), [
       "image=[EDITOR_BACKGROUND_IMAGE]",
       "opacity=[EDITOR_BACKGROUND_IMAGE_OPACITY]",
@@ -32,12 +68,12 @@ test("NeonEffectService generates the runtime script with typed configuration an
     [editorImagePath, Buffer.from("editor image").toString("binary")],
     [logoPath, "<svg></svg>"]
   ]);
-  const notificationCalls = [];
+  const notificationCalls: NotificationCall[] = [];
   const service = createNeonEffectService({
     appRoot,
     extensionRoot,
     fileSystem: createMemoryFileSystem(files),
-    storage: createStorage(storageRoot, new Map([
+    storage: createStorage(storageRoot, new Map<string, unknown>([
       ["kawaii_synthwave.editorBackgroundImage", {
         fileName: "editor-background-image.png",
         mimeType: "image/png"
@@ -62,14 +98,14 @@ test("NeonEffectService generates the runtime script with typed configuration an
     disableGlow: true
   });
 
-  const script = files.get(scriptFile);
+  const script = String(files.get(scriptFile) || "");
   assert.match(script, /brightness=7F/);
   assert.match(script, /glow=true/);
   assert.match(script, /data:image\/png;base64,/);
   assert.match(script, /opacity=0\.2/);
   assert.match(script, /area=auto,0,0,auto,50%,50%/);
   assert.match(script, /data:image\/svg\+xml;base64,/);
-  assert.match(files.get(htmlFile), /neondreams\.js\?v=neon/);
+  assert.match(String(files.get(htmlFile) || ""), /neondreams\.js\?v=neon/);
   assert.deepEqual(notificationCalls, [{
     type: "reload",
     message: "Neon Dreams enabled. VS code must reload for this change to take effect. Code may display a warning that it is corrupted, this is normal. You can dismiss this message by choosing 'Don't show this again' on the notification.",
@@ -93,16 +129,16 @@ test("NeonEffectService disables active patches and reports inactive patches", a
 });
 
 test("NeonEffectService reports file access failures while disabling the patch", async () => {
-  const notificationCalls = [];
-  const logCalls = [];
-  const error = new Error("Access denied");
+  const notificationCalls: NotificationCall[] = [];
+  const logCalls: LogCall[] = [];
+  const error: FileError = new Error("Access denied");
   error.code = "EACCES";
   const service = createNeonEffectService({
     appRoot: path.normalize("C:/VSCode/resources/app"),
     extensionRoot: path.normalize("C:/extension"),
     fileSystem: createMemoryFileSystem(new Map()),
     logger: {
-      logError(methodName, loggedError, context) {
+      logError(methodName: string, loggedError: unknown, context: unknown): void {
         logCalls.push({ methodName, loggedError, context });
       }
     },
@@ -131,19 +167,19 @@ test("NeonEffectService reports file access failures while disabling the patch",
     message: "Neon Dreams was unable to modify the core VS code files needed to launch the extension. You may need to run VS code with admin privileges in order to enable Neon Dreams."
   }]);
   assert.equal(logCalls.length, 1);
-  assert.equal(logCalls[0].methodName, "disableNeon");
-  assert.equal(logCalls[0].loggedError, error);
+  assert.equal(logCalls[0]!.methodName, "disableNeon");
+  assert.equal(logCalls[0]!.loggedError, error);
 });
 
 test("NeonEffectService logs unexpected isEnabled failures and returns false", () => {
-  const logCalls = [];
+  const logCalls: LogCall[] = [];
   const error = new Error("Unexpected read failure");
   const service = createNeonEffectService({
     appRoot: path.normalize("C:/VSCode/resources/app"),
     extensionRoot: path.normalize("C:/extension"),
     fileSystem: createMemoryFileSystem(new Map()),
     logger: {
-      logError(methodName, loggedError, context) {
+      logError(methodName: string, loggedError: unknown, context: unknown): void {
         logCalls.push({ methodName, loggedError, context });
       }
     },
@@ -189,11 +225,11 @@ test("NeonEffectService normalizes supported editor background fit values", () =
 
 test("NeonEffectService reports missing workbench files without writing the patch", async () => {
   const extensionRoot = path.normalize("C:/extension");
-  const files = new Map([
+  const files = new Map<string, MemoryFileValue>([
     [path.join(extensionRoot, "src", "css", "editor_chrome.css"), "styles"],
     [path.join(extensionRoot, "src", "js", "theme_template.js"), "brightness=[NEON_BRIGHTNESS];styles=[CHROME_STYLES]"]
   ]);
-  const notificationCalls = [];
+  const notificationCalls: NotificationCall[] = [];
   const service = createNeonEffectService({
     appRoot: path.normalize("C:/missing/resources/app"),
     extensionRoot,
@@ -214,17 +250,17 @@ test("NeonEffectService reports missing workbench files without writing the patc
   assert.equal([...files.keys()].some((filePath) => filePath.endsWith("neondreams.js")), false);
 });
 
-function createMinimalServiceHarness(html) {
+function createMinimalServiceHarness(html: string): MemoryHarness {
   const extensionRoot = path.normalize("C:/extension");
   const appRoot = path.normalize("C:/VSCode/resources/app");
   const workbenchBase = path.normalize("C:/VSCode/resources/app/out/vs/code");
   const htmlFile = path.join(workbenchBase, "electron-browser", "workbench", "workbench.html");
-  const files = new Map([
+  const files = new Map<string, MemoryFileValue>([
     [path.join(extensionRoot, "src", "css", "editor_chrome.css"), "styles=[EDITOR_BACKGROUND_IMAGE]"],
     [path.join(extensionRoot, "src", "js", "theme_template.js"), "brightness=[NEON_BRIGHTNESS];glow=[DISABLE_GLOW];styles=[CHROME_STYLES]"],
     [htmlFile, html]
   ]);
-  const notificationCalls = [];
+  const notificationCalls: NotificationCall[] = [];
   const fileSystem = createMemoryFileSystem(files);
 
   return {
@@ -244,26 +280,26 @@ function createMinimalServiceHarness(html) {
   };
 }
 
-function createMemoryFileSystem(files) {
+function createMemoryFileSystem(files: Map<string, MemoryFileValue>) {
   return {
-    exists(filePath) {
+    exists(filePath: string): boolean {
       return files.has(filePath);
     },
-    readTextFile(filePath) {
+    readTextFile(filePath: string): string {
       if (!files.has(filePath)) {
-        const error = new Error(`Missing file: ${filePath}`);
+        const error: FileError = new Error(`Missing file: ${filePath}`);
         error.code = "ENOENT";
         throw error;
       }
 
       return String(files.get(filePath));
     },
-    writeTextFile(filePath, content) {
+    writeTextFile(filePath: string, content: string): void {
       files.set(filePath, content);
     },
-    readFile(filePath) {
+    readFile(filePath: string): Buffer {
       if (!files.has(filePath)) {
-        const error = new Error(`Missing file: ${filePath}`);
+        const error: FileError = new Error(`Missing file: ${filePath}`);
         error.code = "ENOENT";
         throw error;
       }
@@ -274,26 +310,26 @@ function createMemoryFileSystem(files) {
   };
 }
 
-function createStorage(storageRoot, values) {
+function createStorage(storageRoot: string, values: Map<string, unknown>) {
   return {
-    getValue(key) {
+    getValue(key: string): unknown {
       return values.get(key);
     },
-    getGlobalStoragePath() {
+    getGlobalStoragePath(): string {
       return storageRoot;
     }
   };
 }
 
-function createNotificationService(calls) {
+function createNotificationService(calls: NotificationCall[]) {
   return {
-    async requestWorkbenchReload(message, actionTitle) {
+    async requestWorkbenchReload(message: string, actionTitle: string): Promise<void> {
       calls.push({ type: "reload", message, actionTitle });
     },
-    async showInformationMessage(message) {
+    async showInformationMessage(message: string): Promise<void> {
       calls.push({ type: "info", message });
     },
-    async showErrorMessage(message) {
+    async showErrorMessage(message: string): Promise<void> {
       calls.push({ type: "error", message });
     }
   };
