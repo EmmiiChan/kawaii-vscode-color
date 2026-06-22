@@ -1,0 +1,2 @@
+COMMAND: node --check scripts/run-e2e.js
+SCRIPT_CHECK_EXIT_CODE: 0

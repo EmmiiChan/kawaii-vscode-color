@@ -135,6 +135,7 @@ const CRITICAL_FILES = [
   "scripts/e2e-last-run.js",
   "scripts/e2e-last-run.ts",
   "scripts/run-e2e.js",
+  "scripts/run-e2e.ts",
   "scripts/run-test-all.js",
   "src/css/editor_chrome.css",
   "src/emptyEditorLogoStyles.ts",

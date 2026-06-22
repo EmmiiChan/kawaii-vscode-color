@@ -1,0 +1,18 @@
+STEP09 SCRIPT 04 AFTER - run-e2e TypeScript conversion
+
+> npm run compile:scripts
+
+> kawaii-vscode-color@0.1.31 compile:scripts
+> tsc -p tsconfig.scripts.json
+
+NPM RUN COMPILE:SCRIPTS_EXIT_CODE: 0
+
+> node --check scripts/run-e2e.js
+NODE --CHECK SCRIPTS/RUN-E2E.JS_EXIT_CODE: 0
+
+> node --check out-scripts/scripts/run-e2e.js
+NODE --CHECK OUT-SCRIPTS/SCRIPTS/RUN-E2E.JS_EXIT_CODE: 0
+
+> node require scripts/run-e2e.js exports
+RUNNER_EXPORTS_OK
+NODE REQUIRE SCRIPTS/RUN-E2E.JS EXPORTS_EXIT_CODE: 0
