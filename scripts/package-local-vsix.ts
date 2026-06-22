@@ -33,6 +33,7 @@ interface PackageLocalVsixResult {
 
 const DIST_DIRECTORY_NAME = "dist";
 const VSIX_EXTENSION = ".vsix";
+const WORKSPACE_MARKER_FILES = ["package.json", "tsconfig.extension.json"] as const;
 const WORKSPACE_ROOT = resolveWorkspaceRoot(__dirname);
 
 function resolveWorkspaceRoot(scriptDirectory: string): string {
@@ -41,10 +42,16 @@ function resolveWorkspaceRoot(scriptDirectory: string): string {
     path.resolve(scriptDirectory, "..", "..")
   ];
   const workspaceRoot = candidateRoots.find((candidateRoot) => (
-    fs.existsSync(path.join(candidateRoot, "package.json"))
+    hasWorkspaceMarkerFiles(candidateRoot)
   ));
 
   return workspaceRoot || path.resolve(scriptDirectory, "..");
+}
+
+function hasWorkspaceMarkerFiles(candidateRoot: string): boolean {
+  return WORKSPACE_MARKER_FILES.every((fileName) => (
+    fs.existsSync(path.join(candidateRoot, fileName))
+  ));
 }
 
 /**
@@ -114,7 +121,7 @@ function getVsceCommand(options: PackageLocalVsixOptions = {}): VsceCommand {
   }
 
   return {
-    command: options.platform === "win32" ? "npx.cmd" : "npx",
+    command: "npx",
     args: ["--yes", "@vscode/vsce"]
   };
 }

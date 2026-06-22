@@ -93,6 +93,17 @@ test("safe phase list captures integration output before continuing", () => {
     assert.equal(integrationPhase.captureOutput, true);
 });
 
+test("safe phase list starts with the static project check", () => {
+    assert.equal(testAllRunner.SAFE_TEST_PHASES[0].script, "test:check");
+});
+
+test("safe phase list validates package creation before Safe E2E", () => {
+    const scripts = testAllRunner.SAFE_TEST_PHASES.map((phase) => phase.script);
+
+    assert.ok(scripts.includes("test:package"));
+    assert.ok(scripts.indexOf("test:package") < scripts.indexOf("test:e2e"));
+});
+
 test("safe phase list excludes gated Neon E2E", () => {
     assert.equal(testAllRunner.SAFE_TEST_PHASES.some((phase) => phase.script === "test:e2e:neon"), false);
 });
