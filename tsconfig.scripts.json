@@ -24,6 +24,7 @@
         "scripts/check-codex-docs.js",
         "scripts/e2e-last-run.js",
         "scripts/increment-package-version.js",
+        "scripts/package-local-vsix.js",
         "scripts/run-e2e.js",
         "scripts/run-test-all.js"
     ]
