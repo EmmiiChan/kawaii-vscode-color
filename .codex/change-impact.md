@@ -19,7 +19,7 @@ If the answer to 2 or 3 is no, update the documentation in the same change.
 | Changed area | Required documentation update |
 | --- | --- |
 | `package.json` identity, scripts, activation events, commands, themes, settings, engine, dependencies, publisher, repository, or package metadata | Update `.codex/docs.md`, `.codex/AGENTS.md`, and `.codex/system-map.md`. Run `npm run test:docs`. |
-| `package-lock.json` root version, lockfile version, dependency tree, or package additions/removals | Update `.codex/docs.md` exact package inventory. If validation workflow changes, update `.codex/AGENTS.md`. Run `npm run test:docs`. |
+| `package-lock.json` lockfile version, dependency tree, or package additions/removals | Update `.codex/docs.md` exact package inventory. If validation workflow changes, update `.codex/AGENTS.md`. Run `npm run test:docs`. Automatic root package patch-version bumps do not require `.codex` doc updates. |
 | `src/extension.ts`, command registration, activation, configuration listener, Neon patch apply/remove, reload behavior, or workbench path behavior | Update `.codex/structure.md` and `.codex/system-map.md`. If official API usage changes, update `.codex/docs.md`. |
 | `src/settings*.ts`, webview messages, Settings Sync, JSON import/export, image persistence, globalState keys, or settings writes | Update `.codex/system-map.md`. If user-facing workflow changes, update `.codex/AGENTS.md` and README as needed. |
 | `src/settingsWebview.ts`, visible pages, controls, state shape, selectors, or UI events | Update `.codex/system-map.md`; update `.codex/structure.md` if the UI surface or page ownership changes. |
@@ -39,4 +39,3 @@ If the answer to 2 or 3 is no, update the documentation in the same change.
 - Run `npm run test:check` before claiming the repository-level lightweight gate passes.
 - For docs-only edits, `npm run test:docs` is the minimum gate.
 - Do not leave `.codex` files as stale snapshots after additions, removals, or updates.
-
