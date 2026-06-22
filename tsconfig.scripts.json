@@ -21,6 +21,7 @@
         "out-tests/**",
         "out-scripts/**",
         "scripts/build-color-theme.js",
-        "scripts/check-codex-docs.js"
+        "scripts/check-codex-docs.js",
+        "scripts/e2e-last-run.js"
     ]
 }

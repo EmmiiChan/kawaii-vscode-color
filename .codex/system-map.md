@@ -45,6 +45,7 @@ Dev dependency contract:
 - `scripts/check-codex-docs.js`
 - `scripts/check-codex-docs.ts`
 - `scripts/e2e-last-run.js`
+- `scripts/e2e-last-run.ts`
 - `scripts/run-e2e.js`
 - `scripts/run-test-all.js`
 - `src/css/editor_chrome.css`

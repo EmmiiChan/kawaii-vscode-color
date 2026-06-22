@@ -187,7 +187,7 @@ Current source of truth:
 - Setup webview HTML generation lives in `src/settingsWebview.js`.
 - Typed settings webview view-model serialization, CSP/HTML adapter contracts, page ids, style token names, and client message names live under `src/webview/settings`.
 - Workbench path detection and marked HTML patch helpers live in `src/workbenchPatch.ts`.
-- E2E last-run marker normalization lives in `scripts/e2e-last-run.js`; `test-results/e2e/kawaii-last-run.json` is the authoritative project marker and `.last-run.json` is ExTester diagnostics only.
+- E2E last-run marker normalization lives in `scripts/e2e-last-run.ts` behind the stable `scripts/e2e-last-run.js` wrapper; `test-results/e2e/kawaii-last-run.json` is the authoritative project marker and `.last-run.json` is ExTester diagnostics only.
 - Shared TypeScript migration contracts and guards live under `src/shared`; keep them free of VS Code, filesystem, DOM, and network dependencies.
 - Real VS Code E2E helpers live in `test/e2e/helpers/extester-app.js`.
 - Safe E2E PNG parsing and visual-difference assertions live in `test/e2e/helpers/png-analysis.js`.
@@ -465,7 +465,8 @@ Local source anchors:
 - `scripts/build-color-theme.ts`: TypeScript implementation of the base-plus-overrides theme build flow.
 - `scripts/check-codex-docs.js`: stable Node wrapper for the Codex documentation drift guard.
 - `scripts/check-codex-docs.ts`: TypeScript implementation of Codex documentation drift checks for package facts, themes, message contracts, state keys, schemas, renderer placeholders, and `semanticTokenColors`.
-- `scripts/e2e-last-run.js`: project-owned E2E last-run marker creation, phase updates, ExTester diagnostic reading, and Neon storage guard helpers.
+- `scripts/e2e-last-run.js`: stable Node wrapper for E2E last-run marker helpers.
+- `scripts/e2e-last-run.ts`: TypeScript implementation for project-owned E2E last-run marker creation, phase updates, ExTester diagnostic reading, and Neon storage guard helpers.
 - `scripts/run-e2e.js`: safe and gated real VS Code E2E orchestration; writes `test-results/e2e/kawaii-last-run.json` for safe and Neon modes.
 - `scripts/run-test-all.js`: safe test orchestration for `npm run test:all`, including final aggregate pass/fail/skipped summary output.
 - `test/unit`: Node unit tests without UI.
