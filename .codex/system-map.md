@@ -252,6 +252,8 @@ The renderer code must keep using VS Code workbench/theme tokens and must not de
 | Unit | `npm run test:unit` | Compiles strict TypeScript output, then runs the Node test runner for scripts, shared contracts, and dependency-light runtime helpers. |
 | DOM | `npm run test:dom` | Compiles first, then runs jsdom settings webview behavior, split webview contract, and visual-state DOM contracts. |
 | Integration | `npm run test:integration` | Compiles, then runs VS Code Extension Development Host activation and command smoke tests. |
+| Package | `npm run test:package` | Compiles script wrappers, runs the TypeScript-backed local VSIX package helper, executes VSCE prepublish compile/theme checks, and creates a local VSIX without incrementing the package version. |
 | Safe E2E | `npm run test:e2e` | Compiles, then runs disposable VS Code UI automation without applying the real Neon patch. |
 | Current VS Code E2E | `npm run test:e2e:current` | Compiles, then runs experimental safe E2E against the latest ExTester-supported VS Code version, isolated from the stable `1.111.0` safe gate. |
 | Gated Neon E2E | `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` | Requires the flag, compiles, then runs real disposable workbench patch lifecycle, screenshots, restore checks, and fit matrix. |
+| Safe all-tests gate | `npm run test:all` | Runs `test:check`, unit, DOM, integration, package, and safe E2E phases in sequence with fail-fast behavior and a final pass/fail/skipped summary; gated Neon E2E is excluded. |

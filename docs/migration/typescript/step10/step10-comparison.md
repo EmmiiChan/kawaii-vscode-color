@@ -51,6 +51,10 @@ Evidence: `step10-step-tests-after.log` and `step10-after.log`.
   - Included generated themes, image assets, package metadata, README, license, icon, and theme image.
   - Excluded migration docs, scripts, TypeScript configs, source maps, `out-scripts`, `out-tests`, test suites, and `.github`.
   - E2E packaging reported 93 files instead of the 450-file baseline package.
+- Follow-up package gate hardening:
+  - Fixed `scripts/package-local-vsix.ts` so compiled script output resolves the repository root with both `package.json` and `tsconfig.extension.json`, avoiding stale `out-scripts/package.json` as a false package root.
+  - Added `npm run test:package` to exercise the local VSIX package helper without incrementing the package version.
+  - Updated `npm run test:all` so the safe local gate now runs static checks, unit, DOM, integration, package, and safe E2E phases.
 
 ## Skipped Or Deferred
 

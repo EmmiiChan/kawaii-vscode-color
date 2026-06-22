@@ -35,7 +35,9 @@ npm run test:check
 npm run test:unit
 npm run test:dom
 npm run test:integration
+npm run test:package
 npm run test:e2e
+npm run test:all
 npm run build:theme
 ```
 
@@ -48,11 +50,12 @@ Expected result:
 - `npm run test:unit` should compile strict TypeScript output first, then pass build, version, workbench patch, shared contract, settings persistence, Settings Sync / JSON import-export chain, and mocked settings message-chain unit tests.
 - `npm run test:dom` should compile first, then pass settings webview DOM tests covering all safe webview events, app navigation, Help metadata, Color Settings inputs/debounce, image/logo state, incoming webview messages, warnings/errors, split webview contracts, and editor-provided `--vscode-*` tokens instead of a standalone UI palette.
 - `npm run test:integration` should compile, activate the extension in the Extension Development Host, and execute `kawaii_synthwave.openSettings` without running the real Neon Effect patch.
+- `npm run test:package` should compile script wrappers and create a local VSIX through `scripts/package-local-vsix.ts` without incrementing `package.json.version`.
 - `npm run test:e2e` should compile, package the extension, open disposable VS Code `1.111.0` through ExTester/WebDriver, navigate the real settings webview, avoid all real Neon patch actions, cover safe fixture-backed upload/import/export/download and Random Neko flows without native dialogs or network, write safe Settings visual screenshots plus PNG analysis under `test-results/e2e`, and update `test-results/e2e/kawaii-last-run.json`.
 - `npm run test:e2e:current` should compile and run the same safe E2E suite in `.vscode-test/extest-current` using ExTester's `max` version by default; use `KAWAII_E2E_CURRENT_CODE_VERSION=<version>` when probing a specific VS Code stable build.
 - `npm run build:theme` should regenerate the generated theme files from protected bases and overrides without unexpected diffs.
 
-`npm test` runs the unit, DOM, and VS Code integration layers in sequence. `npm run test:all` runs the unit, DOM, VS Code integration, and safe real VS Code E2E layers in sequence, then prints a final pass/fail/skipped summary for launch-terminal readability. It is the safe local gate and must not include `npm run test:e2e:neon`. There is no lint command in the current project.
+`npm test` runs the unit, DOM, and VS Code integration layers in sequence. `npm run test:package` validates local VSIX packaging without a version bump. `npm run test:all` runs static checks, unit, DOM, VS Code integration, local package, and safe real VS Code E2E layers in sequence, then prints a final pass/fail/skipped summary for launch-terminal readability. It is the safe local gate and must not include `npm run test:e2e:neon`. There is no lint command in the current project.
 
 `test-results/e2e/kawaii-last-run.json` is the project-owned last-run marker for safe, current, and gated E2E runs. Treat `test-results/e2e/.last-run.json` as optional ExTester diagnostics only, because it can remain stale after a later successful run.
 
@@ -172,6 +175,7 @@ The package loads compiled runtime JavaScript from `out/` and still ships source
 | Unit without UI | `npm run test:unit` | Theme build merge behavior, version bump behavior, workbench patch helpers, settings persistence helpers, settings store adapter, color customization service, bundle/sync/file actions including chained Settings Sync / JSON import-export restoration, effect/image persistence, typed host controllers/services, and mocked settings message chains. |
 | DOM UI | `npm run test:dom` | Compile first, then validate settings webview readiness, all safe webview events, app navigation, Help metadata, Color Settings inputs/debounce, image/logo state, incoming webview messages, warnings/errors, split webview contracts, and `--vscode-*` color-token contract. |
 | VS Code integration | `npm run test:integration` | Compile, extension manifest registration, activation, command registration, and opening settings in the Extension Development Host. |
+| Package | `npm run test:package` | Compile script wrappers, run the TypeScript-backed local VSIX package helper, and validate prepublish compile/theme packaging without a version bump. |
 | Real VS Code UI E2E | `npm run test:e2e` | Compile, then ExTester/WebDriver opens disposable VS Code, runs the Command Palette, switches into the real settings webview iframe, validates navigation, layout, safe UI flows, color picker alpha persistence, controlled fixture dialog/Random Neko flows without native dialogs or network, screenshot artifacts for visible settings pages and dynamic visual UI states, and programmatic PNG analysis for Settings visual before/after states. |
 | Current VS Code UI E2E | `npm run test:e2e:current` | Compile, then run experimental safe E2E in `.vscode-test/extest-current`; uses ExTester `max` by default and can probe a specific VS Code build via `KAWAII_E2E_CURRENT_CODE_VERSION`. |
 | Gated Neon E2E | `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` | Requires the flag, compiles, applies the real workbench patch only inside `.vscode-test`, validates UI-backed dstgroup image/logo payload replacement, validates dstgroup runtime state after full restart, captures no-tab logo and editor-page background screenshots, checks no-page logo fallback selector activity, checks editor background fit area CSS variables, switches to an alternate image and validates it after restart, captures a baseline plus screenshots for the complete editor background fit matrix, reverts to dstgroup after restart, disables the patch, and validates restored state after another full restart. |
@@ -207,7 +211,9 @@ npm run test:check
 npm run test:unit
 npm run test:dom
 npm run test:integration
+npm run test:package
 npm run test:e2e
+npm run test:all
 npm run build:theme
 ```
 

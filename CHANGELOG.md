@@ -35,3 +35,27 @@ Use only the sections that matter for a given release:
 - Add unit coverage for generated no-tab logo selectors, old/new synthetic watermark DOM shapes, data URI output, and opacity output.
 - Extend gated Neon E2E coverage to assert the active VS Code workbench still exposes a watermark target for the shared selector list.
 - Validate `images/dev-images/logo-nopage.png` visually in a disposable VS Code test environment.
+
+## [0.2.0] - 2026-06-22
+
+### Added
+
+- Add strict TypeScript build and no-emit validation for extension, script, and TypeScript test sources.
+- Add `npm run test:package` to validate local VSIX packaging without incrementing the package version.
+- Add a `Test: all` VS Code launch configuration for `npm run test:all`.
+
+### Changed
+
+- Compile the extension from TypeScript into `out/src/extension.js`, with `package.json.main` pointing at the compiled runtime entry.
+- Keep script entrypoints as stable JavaScript wrappers backed by TypeScript implementations in `out-scripts`.
+- Tighten `.vscodeignore` so release packages exclude development artifacts while keeping compiled runtime files, generated themes, image assets, README, license, icon, and Neon runtime assets.
+- Expand `npm run test:all` so the safe local gate now runs static checks, unit, DOM, integration, local package, and safe E2E phases before printing the aggregate summary.
+
+### Fixed
+
+- Fix local VSIX packaging from compiled script output by resolving the repository root with build-config marker files instead of accepting stale package metadata under `out-scripts`.
+
+### Tests
+
+- Add regression coverage for strict TypeScript package boundaries, package helper root resolution, portable VSCE command selection, and the expanded `test:all` phase list.
+- Validate the full safe gate with `npm run test:all`, including the new package phase.
