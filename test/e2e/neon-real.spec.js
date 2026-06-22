@@ -99,8 +99,8 @@ describe("Neon real gated E2E @neon-real", function () {
         const baselineSnapshot = ensureCleanWorkbenchBaseline(patchPaths);
         const baselineLogoState = await captureBaselineEmptyEditorLogoVisualState();
 
-        assert.equal(baselineSnapshot.patchEnabled, false, "Expected disposable workbench to start without Neon patch");
-        assert.equal(baselineSnapshot.scriptTagCount, 0, "Expected no Neon script tag before applying");
+        assert.equal(baselineSnapshot.patchEnabled, false, "Expected disposable workbench to start without Kawaii UI patch");
+        assert.equal(baselineSnapshot.scriptTagCount, 0, "Expected no Kawaii UI script tag before applying");
 
         writeState({
             storage: NEON_STORAGE,
@@ -118,12 +118,12 @@ describe("Neon real gated E2E @neon-real", function () {
         const appliedSnapshot = await waitForPatchSnapshot(
             patchPaths,
             (snapshot) => snapshot.patchEnabled && snapshot.templateExists,
-            "Expected Neon patch and generated template after applying effects"
+            "Expected Kawaii UI patch and generated template after applying effects"
         );
 
         assert.notEqual(appliedSnapshot.htmlHash, baselineSnapshot.htmlHash, "Expected workbench HTML to change after applying effects");
-        assert.equal(appliedSnapshot.scriptTagCount, 1, "Expected exactly one Neon script tag after applying effects");
-        assert.match(appliedSnapshot.html, /<!-- KAWAII SYNTHWAVE --><script src="neondreams\.js\?v=\d+"><\/script><!-- NEON DREAMS -->/);
+        assert.equal(appliedSnapshot.scriptTagCount, 1, "Expected exactly one Kawaii UI script tag after applying effects");
+        assert.match(appliedSnapshot.html, /<!-- KAWAII VSCODE COLORS UI --><script src="kawaii-vscode-colors-ui\.js\?v=\d+"><\/script><!-- \/KAWAII VSCODE COLORS UI -->/);
         assertAppliedTemplateUsesEditorTokens(appliedSnapshot.template);
         assertAppliedTemplateIncludesVisualEffects(appliedSnapshot.template, DSTGROUP_VISUAL_CASE);
 
@@ -139,10 +139,10 @@ describe("Neon real gated E2E @neon-real", function () {
         const appliedSnapshot = readPatchSnapshot(patchPaths);
 
         assertStateMatchesPatchPaths(state, patchPaths);
-        assert.equal(appliedSnapshot.patchEnabled, true, "Expected Neon patch to persist after full VS Code restart");
-        assert.equal(appliedSnapshot.scriptTagCount, 1, "Expected one Neon script tag after full VS Code restart");
+        assert.equal(appliedSnapshot.patchEnabled, true, "Expected Kawaii UI patch to persist after full VS Code restart");
+        assert.equal(appliedSnapshot.scriptTagCount, 1, "Expected one Kawaii UI script tag after full VS Code restart");
         assert.equal(appliedSnapshot.htmlHash, state.dstgroupHtmlHash, "Expected dstgroup HTML hash to persist across restart");
-        assert.equal(appliedSnapshot.templateHash, state.dstgroupTemplateHash, "Expected dstgroup Neon script to persist across restart");
+        assert.equal(appliedSnapshot.templateHash, state.dstgroupTemplateHash, "Expected dstgroup Kawaii UI script to persist across restart");
         assertAppliedTemplateUsesEditorTokens(appliedSnapshot.template);
         assertAppliedTemplateIncludesVisualEffects(appliedSnapshot.template, DSTGROUP_VISUAL_CASE);
 
@@ -171,11 +171,11 @@ describe("Neon real gated E2E @neon-real", function () {
             (snapshot) => snapshot.patchEnabled
                 && snapshot.templateExists
                 && snapshot.templateHash !== state.dstgroupTemplateHash,
-            "Expected alternate image settings to regenerate the Neon script"
+            "Expected alternate image settings to regenerate the Kawaii UI script"
         );
 
-        assert.equal(alternateSnapshot.scriptTagCount, 1, "Expected exactly one Neon script tag after applying alternate image");
-        assert.notEqual(alternateSnapshot.templateHash, state.dstgroupTemplateHash, "Expected alternate image to change generated Neon script content");
+        assert.equal(alternateSnapshot.scriptTagCount, 1, "Expected exactly one Kawaii UI script tag after applying alternate image");
+        assert.notEqual(alternateSnapshot.templateHash, state.dstgroupTemplateHash, "Expected alternate image to change generated Kawaii UI script content");
         assertAppliedTemplateUsesEditorTokens(alternateSnapshot.template);
         assertAppliedTemplateIncludesVisualEffects(alternateSnapshot.template, ALTERNATE_VISUAL_CASE);
 
@@ -193,10 +193,10 @@ describe("Neon real gated E2E @neon-real", function () {
         const alternateSnapshot = readPatchSnapshot(patchPaths);
 
         assertStateMatchesPatchPaths(state, patchPaths);
-        assert.equal(alternateSnapshot.patchEnabled, true, "Expected alternate Neon patch to persist after full VS Code restart");
-        assert.equal(alternateSnapshot.scriptTagCount, 1, "Expected one Neon script tag after alternate full VS Code restart");
+        assert.equal(alternateSnapshot.patchEnabled, true, "Expected alternate Kawaii UI patch to persist after full VS Code restart");
+        assert.equal(alternateSnapshot.scriptTagCount, 1, "Expected one Kawaii UI script tag after alternate full VS Code restart");
         assert.equal(alternateSnapshot.htmlHash, state.alternateHtmlHash, "Expected alternate HTML hash to persist across restart");
-        assert.equal(alternateSnapshot.templateHash, state.alternateTemplateHash, "Expected alternate Neon script to persist across restart");
+        assert.equal(alternateSnapshot.templateHash, state.alternateTemplateHash, "Expected alternate Kawaii UI script to persist across restart");
         assertAppliedTemplateUsesEditorTokens(alternateSnapshot.template);
         assertAppliedTemplateIncludesVisualEffects(alternateSnapshot.template, ALTERNATE_VISUAL_CASE);
 
@@ -238,11 +238,11 @@ describe("Neon real gated E2E @neon-real", function () {
             (snapshot) => snapshot.patchEnabled
                 && snapshot.templateExists
                 && snapshot.templateHash !== state.alternateTemplateHash,
-            "Expected dstgroup settings to regenerate the Neon script after alternate image"
+            "Expected dstgroup settings to regenerate the Kawaii UI script after alternate image"
         );
 
-        assert.equal(revertedDstgroupSnapshot.scriptTagCount, 1, "Expected exactly one Neon script tag after reverting to dstgroup");
-        assert.equal(revertedDstgroupSnapshot.templateHash, state.dstgroupTemplateHash, "Expected reverting to dstgroup to restore the original generated Neon script content");
+        assert.equal(revertedDstgroupSnapshot.scriptTagCount, 1, "Expected exactly one Kawaii UI script tag after reverting to dstgroup");
+        assert.equal(revertedDstgroupSnapshot.templateHash, state.dstgroupTemplateHash, "Expected reverting to dstgroup to restore the original generated Kawaii UI script content");
         assertAppliedTemplateUsesEditorTokens(revertedDstgroupSnapshot.template);
         assertAppliedTemplateIncludesVisualEffects(revertedDstgroupSnapshot.template, DSTGROUP_VISUAL_CASE);
 
@@ -261,11 +261,11 @@ describe("Neon real gated E2E @neon-real", function () {
         const revertedDstgroupSnapshot = readPatchSnapshot(patchPaths);
 
         assertStateMatchesPatchPaths(state, patchPaths);
-        assert.equal(revertedDstgroupSnapshot.patchEnabled, true, "Expected reverted dstgroup Neon patch to persist after full VS Code restart");
-        assert.equal(revertedDstgroupSnapshot.scriptTagCount, 1, "Expected one Neon script tag after reverted dstgroup full VS Code restart");
+        assert.equal(revertedDstgroupSnapshot.patchEnabled, true, "Expected reverted dstgroup Kawaii UI patch to persist after full VS Code restart");
+        assert.equal(revertedDstgroupSnapshot.scriptTagCount, 1, "Expected one Kawaii UI script tag after reverted dstgroup full VS Code restart");
         assert.equal(revertedDstgroupSnapshot.htmlHash, state.revertedDstgroupHtmlHash, "Expected reverted dstgroup HTML hash to persist across restart");
-        assert.equal(revertedDstgroupSnapshot.templateHash, state.revertedDstgroupTemplateHash, "Expected reverted dstgroup Neon script to persist across restart");
-        assert.equal(revertedDstgroupSnapshot.templateHash, state.dstgroupTemplateHash, "Expected reverted dstgroup Neon script to match the original dstgroup script");
+        assert.equal(revertedDstgroupSnapshot.templateHash, state.revertedDstgroupTemplateHash, "Expected reverted dstgroup Kawaii UI script to persist across restart");
+        assert.equal(revertedDstgroupSnapshot.templateHash, state.dstgroupTemplateHash, "Expected reverted dstgroup Kawaii UI script to match the original dstgroup script");
         assertAppliedTemplateUsesEditorTokens(revertedDstgroupSnapshot.template);
         assertAppliedTemplateIncludesVisualEffects(revertedDstgroupSnapshot.template, DSTGROUP_VISUAL_CASE);
 
@@ -304,7 +304,7 @@ describe("Neon real gated E2E @neon-real", function () {
         );
 
         assert.equal(restoredSnapshot.htmlHash, state.baselineHtmlHash, "Expected restored HTML hash to match the before state");
-        assert.equal(restoredSnapshot.scriptTagCount, 0, "Expected no Neon script tag after disabling");
+        assert.equal(restoredSnapshot.scriptTagCount, 0, "Expected no Kawaii UI script tag after disabling");
         updateState({
             restoredHtmlHash: restoredSnapshot.htmlHash
         });
@@ -316,8 +316,8 @@ describe("Neon real gated E2E @neon-real", function () {
         const restoredSnapshot = readPatchSnapshot(patchPaths);
 
         assertStateMatchesPatchPaths(state, patchPaths);
-        assert.equal(restoredSnapshot.patchEnabled, false, "Expected Neon patch to stay removed after full VS Code restart");
-        assert.equal(restoredSnapshot.scriptTagCount, 0, "Expected no Neon script tag after full VS Code restart");
+        assert.equal(restoredSnapshot.patchEnabled, false, "Expected Kawaii UI patch to stay removed after full VS Code restart");
+        assert.equal(restoredSnapshot.scriptTagCount, 0, "Expected no Kawaii UI script tag after full VS Code restart");
         assert.equal(restoredSnapshot.html, state.baselineHtml, "Expected restored workbench HTML to equal the before state");
         assert.equal(restoredSnapshot.htmlHash, state.baselineHtmlHash, "Expected restored HTML hash to match the before state");
 
@@ -839,7 +839,7 @@ function ensureCleanWorkbenchBaseline(paths) {
     fs.writeFileSync(paths.htmlFile, cleanHtml, "utf-8");
 
     const cleanSnapshot = readPatchSnapshot(paths);
-    assert.equal(cleanSnapshot.patchEnabled, false, "Expected pre-test cleanup to remove existing Neon patch");
+    assert.equal(cleanSnapshot.patchEnabled, false, "Expected pre-test cleanup to remove existing Kawaii UI patch");
     return cleanSnapshot;
 }
 
@@ -873,7 +873,7 @@ function readPatchSnapshot(paths) {
         html,
         htmlHash: sha256(html),
         patchEnabled: isWorkbenchPatchEnabled(html),
-        scriptTagCount: (html.match(/<!-- KAWAII SYNTHWAVE -->/g) || []).length,
+        scriptTagCount: (html.match(/<!-- KAWAII VSCODE COLORS UI -->/g) || []).length,
         template,
         templateExists,
         templateHash: templateExists ? sha256(template) : ""
@@ -891,21 +891,21 @@ function assertAppliedTemplateUsesEditorTokens(template) {
 function assertAppliedTemplateIncludesVisualEffects(template, visualCase) {
     assert.ok(
         template.includes(visualCase.expected.editorBackgroundDataUrl),
-        `Expected ${visualCase.id} editor background image data URL in generated Neon script`
+        `Expected ${visualCase.id} editor background image data URL in generated Kawaii UI script`
     );
     assert.ok(
         template.includes(visualCase.expected.emptyEditorLogoDataUrl),
-        `Expected ${visualCase.id} empty editor logo data URL in generated Neon script`
+        `Expected ${visualCase.id} empty editor logo data URL in generated Kawaii UI script`
     );
     assert.ok(
         template.includes(`--kawaii-editor-background-image: url("${visualCase.expected.editorBackgroundDataUrl}`),
-        `Expected ${visualCase.id} editor background image declaration in generated Neon script`
+        `Expected ${visualCase.id} editor background image declaration in generated Kawaii UI script`
     );
     assert.match(template, new RegExp(`--kawaii-editor-background-image-opacity:\\s*${escapeRegExp(visualCase.expected.editorBackgroundOpacity)}`));
     assertAppliedTemplateIncludesEditorBackgroundFitArea(template, visualCase);
     assert.ok(
         template.includes(`background-image: url("${visualCase.expected.emptyEditorLogoDataUrl}`),
-        `Expected ${visualCase.id} empty editor logo background declaration in generated Neon script`
+        `Expected ${visualCase.id} empty editor logo background declaration in generated Kawaii UI script`
     );
     assert.match(template, new RegExp(`opacity:\\s*${escapeRegExp(visualCase.expected.emptyEditorLogoOpacity)}`));
     assert.doesNotMatch(template, /\[(?:EDITOR_BACKGROUND_IMAGE|EDITOR_BACKGROUND_IMAGE_OPACITY|EDITOR_BACKGROUND_IMAGE_POSITION|EDITOR_BACKGROUND_IMAGE_SIZE|EDITOR_BACKGROUND_IMAGE_REPEAT|EDITOR_BACKGROUND_AREA_TOP|EDITOR_BACKGROUND_AREA_RIGHT|EDITOR_BACKGROUND_AREA_BOTTOM|EDITOR_BACKGROUND_AREA_LEFT|EDITOR_BACKGROUND_AREA_WIDTH|EDITOR_BACKGROUND_AREA_HEIGHT|EMPTY_EDITOR_LOGO_STYLES)\]/);

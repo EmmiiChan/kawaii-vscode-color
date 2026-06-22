@@ -140,7 +140,7 @@ VS Code Settings Sync must be enabled in VS Code for `Save to VSSync` / `Import 
 
 VS Code color themes do not natively support text glow, editor background images, no-tab logo replacement, or arbitrary editor CSS. Those effects are provided by the optional Neon Effect path.
 
-The Neon Effect modifies VS Code workbench files by adding a generated `neondreams.js` script reference with a refresh key. Use it with caution:
+The Neon Effect modifies VS Code workbench files by adding a generated `kawaii-vscode-colors-ui.js` script reference with a refresh key. Use it with caution:
 
 - Administrator permissions may be required on Windows.
 - VS Code may show an unsupported or corrupted installation warning.
@@ -249,7 +249,7 @@ npm run test:e2e:neon
 
 `npm run test:e2e:neon` patches only the disposable VS Code installation under `.vscode-test/extest-111-neon`. The runner refuses Neon mode unless `KAWAII_E2E_ALLOW_NEON_PATCH=1` is present and the storage path resolves inside that disposable Neon directory. It runs five separate VS Code launches to validate the same lifecycle users may need manually: before applying, after applying dstgroup images and reopening VS Code, after switching to an alternate image and reopening VS Code, after reverting to dstgroup and reopening VS Code, and after removing the patch and reopening VS Code. It verifies the workbench HTML hash returns to the original baseline and that injected runtime CSS uses editor-provided `--vscode-*` tokens rather than a standalone UI palette.
 
-The gated Neon suite imports controlled settings fixtures through internal test hooks exposed only when `KAWAII_E2E_ALLOW_NEON_PATCH=1`. Its first apply path pre-seeds a different image bundle, then uses the real Settings UI upload controls with fixture-backed dialogs before clicking `Apply Effects`, so image/logo payload replacement is validated through the UI path. It validates generated `neondreams.js`, image data URLs, editor background opacity/fit, no-tab logo opacity, active no-page fallback selector, runtime style tags, screenshots, image replacement, dstgroup logo restoration, and final HTML restoration. It also writes a visual editor-background fit matrix under `test-results/e2e` with a no-overlay baseline plus one screenshot for each supported fit area: `full`, `top`, `bottom`, `left`, `right`, `top-left`, `top-right`, `bottom-left`, and `bottom-right`.
+The gated Neon suite imports controlled settings fixtures through internal test hooks exposed only when `KAWAII_E2E_ALLOW_NEON_PATCH=1`. Its first apply path pre-seeds a different image bundle, then uses the real Settings UI upload controls with fixture-backed dialogs before clicking `Apply Effects`, so image/logo payload replacement is validated through the UI path. It validates generated `kawaii-vscode-colors-ui.js`, image data URLs, editor background opacity/fit, no-tab logo opacity, active no-page fallback selector, runtime style tags, screenshots, image replacement, dstgroup logo restoration, and final HTML restoration. It also writes a visual editor-background fit matrix under `test-results/e2e` with a no-overlay baseline plus one screenshot for each supported fit area: `full`, `top`, `bottom`, `left`, `right`, `top-left`, `top-right`, `bottom-left`, and `bottom-right`.
 
 ### Build a Local VSIX
 

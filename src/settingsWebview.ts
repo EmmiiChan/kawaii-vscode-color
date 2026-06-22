@@ -816,7 +816,7 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
       <section id="neon-effect-page" class="page hidden">
         <div class="neon-effect">
           <p class="home-label">Neon Effect</p>
-          <h2 class="home-title">Enable or disable Neon Dreams</h2>
+          <h2 class="home-title">Enable or disable Kawaii UI effects</h2>
           <p class="home-text">The Neon Effect adds glow and editor chrome styling that VS Code color themes cannot express through normal theme JSON.</p>
           <div class="neon-actions">
             <button id="enable-neon" class="button" type="button">Enable Neon Effect</button>

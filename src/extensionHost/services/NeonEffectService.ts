@@ -7,13 +7,13 @@ import type { NeonNotificationService } from "../adapters/VscodeNotificationServ
 import type { WorkbenchPatchService } from "./WorkbenchPatchService";
 
 export const NEON_EFFECT_MESSAGES = {
-  ACTIVATED: "Neon Dreams enabled. VS code must reload for this change to take effect. Code may display a warning that it is corrupted, this is normal. You can dismiss this message by choosing 'Don't show this again' on the notification.",
-  DEACTIVATED: "Neon Dreams disabled. VS code must reload for this change to take effect",
-  REACTIVATED: "Neon dreams is already enabled. Reload to refresh JS settings.",
-  NOT_RUNNING: "Neon dreams isn't running.",
-  ERROR_ACCESS_DENIED: "Neon Dreams was unable to modify the core VS code files needed to launch the extension. You may need to run VS code with admin privileges in order to enable Neon Dreams.",
-  ERROR_WORKBENCH_NOT_FOUND: "Neon Dreams could not find the workbench HTML file. This is likely due to a change in VS Code's internal structure. Please open an issue on the Kawaii VS Code Color GitHub repository to report this.",
-  ERROR_GENERIC: "Something went wrong when starting neon dreams"
+  ACTIVATED: "Kawaii VS Code Color UI effects enabled. VS code must reload for this change to take effect. Code may display a warning that it is corrupted, this is normal. You can dismiss this message by choosing 'Don't show this again' on the notification.",
+  DEACTIVATED: "Kawaii VS Code Color UI effects disabled. VS code must reload for this change to take effect",
+  REACTIVATED: "Kawaii VS Code Color UI effects are already enabled. Reload to refresh JS settings.",
+  NOT_RUNNING: "Kawaii VS Code Color UI effects are not running.",
+  ERROR_ACCESS_DENIED: "Kawaii VS Code Color was unable to modify the core VS code files needed to launch UI effects. You may need to run VS code with admin privileges in order to enable them.",
+  ERROR_WORKBENCH_NOT_FOUND: "Kawaii VS Code Color could not find the workbench HTML file. This is likely due to a change in VS Code's internal structure. Please open an issue on the Kawaii VS Code Color GitHub repository to report this.",
+  ERROR_GENERIC: "Something went wrong when starting Kawaii VS Code Color UI effects"
 } as const;
 
 const EDITOR_BACKGROUND_IMAGE_STATE_KEY = "kawaii_synthwave.editorBackgroundImage";

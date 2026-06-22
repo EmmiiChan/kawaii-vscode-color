@@ -128,7 +128,7 @@ Recommended safe approach:
 
 Important cautions:
 
-- The enable action writes `neondreams.js` into VS Code's workbench folder.
+- The enable action writes `kawaii-vscode-colors-ui.js` into VS Code's workbench folder.
 - The enable action patches the workbench HTML with a marked script tag.
 - VS Code may show an unsupported/corruption warning after the patch.
 - VS Code updates can overwrite the patch; users need to re-enable the glow after updates.
@@ -165,7 +165,7 @@ The package loads compiled runtime JavaScript from `out/` and still ships source
 - `src/settingsWebview.ts` renders the setup webview HTML as the compatibility renderer. It must use VS Code webview color tokens (`--vscode-*`) and must not define a separate hardcoded UI palette.
 - `src/webview/settings` contains typed settings webview contracts for the view model, HTML/CSP adapter, page ids, style token names, and client `postMessage` types used by the compatibility renderer.
 - `src/workbenchPatch.ts` contains pure workbench path and HTML patch helpers covered by unit tests.
-- `src/js/theme_template.js` is read as a template and written as generated `neondreams.js`.
+- `src/js/theme_template.js` is read as a template and written as generated `kawaii-vscode-colors-ui.js`.
 - `src/css/editor_chrome.css` is injected into the generated renderer script.
 - `src/shared` contains TypeScript contracts, models, and runtime guards used as typed boundaries for external inputs.
 

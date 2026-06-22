@@ -1,11 +1,14 @@
 import fs = require("fs");
 import path = require("path");
 
-export const NEON_SCRIPT_FILE_NAME = "neondreams.js";
+export const KAWAII_UI_SCRIPT_FILE_NAME = "kawaii-vscode-colors-ui.js";
 
-const WORKBENCH_PATCH_START_MARKER = "<!-- KAWAII SYNTHWAVE -->";
-const WORKBENCH_PATCH_END_MARKER = "<!-- NEON DREAMS -->";
-const WORKBENCH_PATCH_SCRIPT_TAG_PATTERN = /^.*<!-- KAWAII SYNTHWAVE --><script src="neondreams\.js(?:\?v=[^"]+)?"><\/script><!-- NEON DREAMS -->.*\r?\n?/mg;
+const WORKBENCH_PATCH_START_MARKER = "<!-- KAWAII VSCODE COLORS UI -->";
+const WORKBENCH_PATCH_END_MARKER = "<!-- /KAWAII VSCODE COLORS UI -->";
+const WORKBENCH_PATCH_SCRIPT_TAG_PATTERNS = [
+  /^.*<!-- KAWAII VSCODE COLORS UI --><script src="kawaii-vscode-colors-ui\.js(?:\?v=[^"]+)?"><\/script><!-- \/KAWAII VSCODE COLORS UI -->.*\r?\n?/mg,
+  /^.*<!-- KAWAII SYNTHWAVE --><script src="neondreams\.js(?:\?v=[^"]+)?"><\/script><!-- NEON DREAMS -->.*\r?\n?/mg
+] as const;
 const WORKBENCH_HTML_CLOSING_TAG_PATTERN = /<\/html>/i;
 
 export interface WorkbenchPatchPaths {
@@ -16,21 +19,21 @@ export interface WorkbenchPatchPaths {
 type ExistsSync = (candidatePath: string) => boolean;
 
 /**
- * Checks whether Neon Dreams is currently patched into the VS Code workbench.
+ * Checks whether the extension UI script is currently patched into the VS Code workbench.
  *
  * @param html Workbench HTML.
- * @returns True when the workbench HTML references neondreams.js.
+ * @returns True when the workbench HTML references the current or legacy extension UI script.
  */
 export function isWorkbenchPatchEnabled(html: string): boolean {
-  return String(html || "").includes(NEON_SCRIPT_FILE_NAME);
+  return containsMarkedPatchScriptTag(html);
 }
 
 /**
- * Replaces any existing Neon Dreams script tag with a cache-busted script URL.
+ * Replaces any existing extension UI script tag with a cache-busted script URL.
  *
  * @param html Workbench HTML.
  * @param versionToken Optional cache-busting token for tests.
- * @returns Workbench HTML with a fresh Neon Dreams script tag.
+ * @returns Workbench HTML with a fresh extension UI script tag.
  */
 export function applyWorkbenchPatchScriptTag(html: string, versionToken: string | number = Date.now()): string {
   const cleanHtml = removeWorkbenchPatchScriptTag(html);
@@ -44,23 +47,35 @@ export function applyWorkbenchPatchScriptTag(html: string, versionToken: string 
 }
 
 /**
- * Removes extension-owned Neon Dreams script tags from workbench HTML.
+ * Removes extension-owned UI script tags from workbench HTML.
  *
  * @param html Workbench HTML.
  * @returns Workbench HTML without the marked script tag.
  */
 export function removeWorkbenchPatchScriptTag(html: string): string {
-  return String(html || "").replace(WORKBENCH_PATCH_SCRIPT_TAG_PATTERN, "");
+  return WORKBENCH_PATCH_SCRIPT_TAG_PATTERNS.reduce(
+    (output, pattern) => output.replace(pattern, ""),
+    String(html || "")
+  );
 }
 
 /**
- * Creates the marked Neon Dreams script tag with a cache-busting query string.
+ * Creates the marked extension UI script tag with a cache-busting query string.
  *
  * @param versionToken Cache-busting token.
  * @returns Workbench script tag.
  */
 function createWorkbenchPatchScriptTag(versionToken: string | number): string {
-  return `\t${WORKBENCH_PATCH_START_MARKER}<script src="${NEON_SCRIPT_FILE_NAME}?v=${versionToken}"></script>${WORKBENCH_PATCH_END_MARKER}`;
+  return `\t${WORKBENCH_PATCH_START_MARKER}<script src="${KAWAII_UI_SCRIPT_FILE_NAME}?v=${versionToken}"></script>${WORKBENCH_PATCH_END_MARKER}`;
+}
+
+function containsMarkedPatchScriptTag(html: string): boolean {
+  const workbenchHtml = String(html || "");
+
+  return WORKBENCH_PATCH_SCRIPT_TAG_PATTERNS.some((pattern) => {
+    pattern.lastIndex = 0;
+    return pattern.test(workbenchHtml);
+  });
 }
 
 /**
@@ -82,7 +97,7 @@ export function resolveWorkbenchPatchPaths(base: string, existsSync: ExistsSync 
 
   return {
     htmlFile: path.join(workbenchDirectory, workBenchFilename),
-    templateFile: path.join(workbenchDirectory, NEON_SCRIPT_FILE_NAME)
+    templateFile: path.join(workbenchDirectory, KAWAII_UI_SCRIPT_FILE_NAME)
   };
 }
 

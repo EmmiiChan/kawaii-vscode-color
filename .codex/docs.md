@@ -97,7 +97,7 @@ Compatibility rule:
 | --- | --- | --- |
 | TypeScript CommonJS output | `src/extension.ts` compiles to `out/src/extension.js`; `src/extensionHost` compiles to `out/src/extensionHost` | [Node CommonJS modules](https://nodejs.org/api/modules.html), [TypeScript Modules](https://www.typescriptlang.org/docs/handbook/modules.html) |
 | `path.dirname` / `path.join` | Derives VS Code app directory from `vscode.env.appRoot` and builds workbench/generated script paths in services | [Node `path.dirname`](https://nodejs.org/api/path.html#pathdirnamepath), [Node `path.join`](https://nodejs.org/api/path.html#pathjoinpaths) |
-| `fs.readFileSync` / `fs.writeFileSync` / `fs.existsSync` | Adapter-backed filesystem reads/writes for CSS, JS template, workbench HTML, `neondreams.js`, and stored images | [Node `fs.readFileSync`](https://nodejs.org/api/fs.html#fsreadfilesyncpath-options), [Node `fs.writeFileSync`](https://nodejs.org/api/fs.html#fswritefilesyncfile-data-options), [Node `fs.existsSync`](https://nodejs.org/api/fs.html#fsexistssyncpath) |
+| `fs.readFileSync` / `fs.writeFileSync` / `fs.existsSync` | Adapter-backed filesystem reads/writes for CSS, JS template, workbench HTML, `kawaii-vscode-colors-ui.js`, and stored images | [Node `fs.readFileSync`](https://nodejs.org/api/fs.html#fsreadfilesyncpath-options), [Node `fs.writeFileSync`](https://nodejs.org/api/fs.html#fswritefilesyncfile-data-options), [Node `fs.existsSync`](https://nodejs.org/api/fs.html#fsexistssyncpath) |
 | `vscode.workspace.getConfiguration` | Reads `kawaii_synthwave` settings | [VS Code API reference](https://code.visualstudio.com/api/references/vscode-api) |
 | `vscode.env.appRoot` | Locates VS Code installation root | [VS Code API reference - env](https://code.visualstudio.com/api/references/vscode-api#env) |
 | `vscode.commands.registerCommand` | Registers enable/disable commands | [VS Code Commands guide](https://code.visualstudio.com/api/extension-guides/command) |
@@ -147,7 +147,7 @@ Implementation caution:
 | --- | --- | --- |
 | `src/renderer/ThemeTemplate.ts` | Browser-only typed constants and pure helpers for renderer token replacement maps, Kawaii wrapper selectors, runtime style ids, token color normalization, and token CSS replacement behavior | `test/unit/renderer-theme-template.test.js` |
 | `src/shared/contracts/rendererPlaceholders.ts` | Typed renderer placeholder names plus helper functions to find and replace known placeholders without touching unknown template text | `test/unit/renderer-theme-template.test.js`, `test/unit/shared-contracts.test.js` |
-| `src/js/theme_template.js` | Injected browser runtime template still read by the extension host and written as `neondreams.js` | Safe E2E and gated Neon E2E when renderer behavior changes |
+| `src/js/theme_template.js` | Injected browser runtime template still read by the extension host and written as `kawaii-vscode-colors-ui.js` | Safe E2E and gated Neon E2E when renderer behavior changes |
 
 | API/surface | Current usage | Docs |
 | --- | --- | --- |

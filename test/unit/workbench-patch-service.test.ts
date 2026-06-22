@@ -23,10 +23,10 @@ function requireOut<TModule>(...segments: readonly string[]): TModule {
   return require(path.join(process.cwd(), "out", "src", ...segments)) as TModule;
 }
 
-test("WorkbenchPatchService writes the Neon script and patches the workbench HTML", () => {
+test("WorkbenchPatchService writes the Kawaii UI script and patches the workbench HTML", () => {
   const base = path.normalize("C:/fake/app/out/vs/code");
   const htmlFile = path.join(base, "electron-sandbox", "workbench", "workbench.esm.html");
-  const scriptFile = path.join(base, "electron-sandbox", "workbench", "neondreams.js");
+  const scriptFile = path.join(base, "electron-sandbox", "workbench", "kawaii-vscode-colors-ui.js");
   const files = new Map<string, string>([[htmlFile, "<html><body>Workbench</body></html>\n"]]);
   const writes: MemoryWrite[] = [];
   const service = createWorkbenchPatchService({
@@ -39,14 +39,14 @@ test("WorkbenchPatchService writes the Neon script and patches the workbench HTM
   assert.equal(result.status, "activated");
   assert.deepEqual(result.paths, { htmlFile, templateFile: scriptFile });
   assert.equal(files.get(scriptFile), "compiled neon script");
-  assert.match(files.get(htmlFile) || "", /neondreams\.js\?v=step04/);
+  assert.match(files.get(htmlFile) || "", /kawaii-vscode-colors-ui\.js\?v=step04/);
   assert.equal(writes.length, 2);
 });
 
 test("WorkbenchPatchService reports reactivation without duplicating the marker", () => {
   const base = path.normalize("C:/fake/app/out/vs/code");
   const htmlFile = path.join(base, "electron-browser", "workbench", "workbench.html");
-  const scriptFile = path.join(base, "electron-browser", "workbench", "neondreams.js");
+  const scriptFile = path.join(base, "electron-browser", "workbench", "kawaii-vscode-colors-ui.js");
   const files = new Map<string, string>([[htmlFile, "<html></html>\n"]]);
   const service = createWorkbenchPatchService({
     fileSystem: createMemoryFileSystem(files),
@@ -65,9 +65,9 @@ test("WorkbenchPatchService reports reactivation without duplicating the marker"
   assert.deepEqual(result.paths, { htmlFile, templateFile: scriptFile });
   assert.equal(files.get(scriptFile), "second script");
   const patchedHtml = files.get(htmlFile) || "";
-  assert.equal((patchedHtml.match(/<!-- KAWAII SYNTHWAVE -->/g) || []).length, 1);
-  assert.doesNotMatch(patchedHtml, /neondreams\.js\?v=one/);
-  assert.match(patchedHtml, /neondreams\.js\?v=two/);
+  assert.equal((patchedHtml.match(/<!-- KAWAII VSCODE COLORS UI -->/g) || []).length, 1);
+  assert.doesNotMatch(patchedHtml, /kawaii-vscode-colors-ui\.js\?v=one/);
+  assert.match(patchedHtml, /kawaii-vscode-colors-ui\.js\?v=two/);
 });
 
 test("WorkbenchPatchService removes an active patch and reports absent patches", () => {
@@ -84,7 +84,7 @@ test("WorkbenchPatchService removes an active patch and reports absent patches",
   const removedAgain = service.removeScriptTag(base);
 
   assert.equal(removed.status, "removed");
-  assert.doesNotMatch(files.get(htmlFile) || "", /<!-- KAWAII SYNTHWAVE -->/);
+  assert.doesNotMatch(files.get(htmlFile) || "", /<!-- KAWAII VSCODE COLORS UI -->/);
   assert.equal(removedAgain.status, "not-running");
 });
 

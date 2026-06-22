@@ -240,7 +240,7 @@
    * @param {boolean} disableGlow 
    * @param {MutationObserver} obs 
    */
-  const initNeonDreams = (disableGlow, obs) => {
+  const initKawaiiVsCodeColorsUi = (disableGlow, obs) => {
     const tokensEl = document.querySelector('.vscode-tokens-styles');
 
     cleanupInactiveThemeStyles();
@@ -273,7 +273,7 @@
     themeStyleTag.innerText = updatedThemeStyles.replace(/(\r\n|\n|\r)/gm, '');
     activeTokenStylesSignature = tokenStylesSignature;
 
-    console.log('Kawaii VS Code Color: NEON DREAMS initialised!');
+    console.log('Kawaii VS Code Color: UI effects initialised!');
   };
 
   /**
@@ -289,7 +289,7 @@
         const tokensEl = document.querySelector('.vscode-tokens-styles');
         if (readyForReplacement(tokensEl)) {
           // If everything we need is ready, then initialise
-          initNeonDreams([DISABLE_GLOW], observer);
+          initKawaiiVsCodeColorsUi([DISABLE_GLOW], observer);
         }
       }
     }
@@ -307,5 +307,5 @@
   happen on a nested div */
   observer.observe(bodyNode, { attributes: true, childList: true, subtree: true });
   appendChromeStyles();
-  initNeonDreams([DISABLE_GLOW], observer);
+  initKawaiiVsCodeColorsUi([DISABLE_GLOW], observer);
 })();

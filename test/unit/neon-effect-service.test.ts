@@ -53,7 +53,7 @@ test("NeonEffectService generates the runtime script with typed configuration an
   const storageRoot = path.join(extensionRoot, ".storage");
   const workbenchBase = path.normalize("C:/VSCode/resources/app/out/vs/code");
   const htmlFile = path.join(workbenchBase, "electron-sandbox", "workbench", "workbench.esm.html");
-  const scriptFile = path.join(workbenchBase, "electron-sandbox", "workbench", "neondreams.js");
+  const scriptFile = path.join(workbenchBase, "electron-sandbox", "workbench", "kawaii-vscode-colors-ui.js");
   const editorImagePath = path.join(storageRoot, "editor-background-image.png");
   const logoPath = path.join(storageRoot, "empty-editor-logo-image.svg");
   const files = new Map<string, MemoryFileValue>([
@@ -105,10 +105,10 @@ test("NeonEffectService generates the runtime script with typed configuration an
   assert.match(script, /opacity=0\.2/);
   assert.match(script, /area=auto,0,0,auto,50%,50%/);
   assert.match(script, /data:image\/svg\+xml;base64,/);
-  assert.match(String(files.get(htmlFile) || ""), /neondreams\.js\?v=neon/);
+  assert.match(String(files.get(htmlFile) || ""), /kawaii-vscode-colors-ui\.js\?v=neon/);
   assert.deepEqual(notificationCalls, [{
     type: "reload",
-    message: "Neon Dreams enabled. VS code must reload for this change to take effect. Code may display a warning that it is corrupted, this is normal. You can dismiss this message by choosing 'Don't show this again' on the notification.",
+    message: "Kawaii VS Code Color UI effects enabled. VS code must reload for this change to take effect. Code may display a warning that it is corrupted, this is normal. You can dismiss this message by choosing 'Don't show this again' on the notification.",
     actionTitle: "Restart editor to complete"
   }]);
 });
@@ -122,9 +122,9 @@ test("NeonEffectService disables active patches and reports inactive patches", a
 
   assert.equal(harness.service.isEnabled(), false);
   assert.deepEqual(harness.notificationCalls.map((call) => call.message), [
-    "Neon Dreams enabled. VS code must reload for this change to take effect. Code may display a warning that it is corrupted, this is normal. You can dismiss this message by choosing 'Don't show this again' on the notification.",
-    "Neon Dreams disabled. VS code must reload for this change to take effect",
-    "Neon dreams isn't running."
+    "Kawaii VS Code Color UI effects enabled. VS code must reload for this change to take effect. Code may display a warning that it is corrupted, this is normal. You can dismiss this message by choosing 'Don't show this again' on the notification.",
+    "Kawaii VS Code Color UI effects disabled. VS code must reload for this change to take effect",
+    "Kawaii VS Code Color UI effects are not running."
   ]);
 });
 
@@ -164,7 +164,7 @@ test("NeonEffectService reports file access failures while disabling the patch",
 
   assert.deepEqual(notificationCalls, [{
     type: "info",
-    message: "Neon Dreams was unable to modify the core VS code files needed to launch the extension. You may need to run VS code with admin privileges in order to enable Neon Dreams."
+    message: "Kawaii VS Code Color was unable to modify the core VS code files needed to launch UI effects. You may need to run VS code with admin privileges in order to enable them."
   }]);
   assert.equal(logCalls.length, 1);
   assert.equal(logCalls[0]!.methodName, "disableNeon");
@@ -245,9 +245,9 @@ test("NeonEffectService reports missing workbench files without writing the patc
 
   assert.deepEqual(notificationCalls, [{
     type: "error",
-    message: "Neon Dreams could not find the workbench HTML file. This is likely due to a change in VS Code's internal structure. Please open an issue on the Kawaii VS Code Color GitHub repository to report this."
+    message: "Kawaii VS Code Color could not find the workbench HTML file. This is likely due to a change in VS Code's internal structure. Please open an issue on the Kawaii VS Code Color GitHub repository to report this."
   }]);
-  assert.equal([...files.keys()].some((filePath) => filePath.endsWith("neondreams.js")), false);
+  assert.equal([...files.keys()].some((filePath) => filePath.endsWith("kawaii-vscode-colors-ui.js")), false);
 });
 
 function createMinimalServiceHarness(html: string): MemoryHarness {

@@ -110,7 +110,7 @@ Build behavior:
 | `src/extension.ts` -> `out/src/extension.js` | Extension activation, command registration, Settings Sync setup, and composition of typed extension-host services. |
 | `src/extensionHost` -> `out/src/extensionHost` | VS Code adapters, Neon Effect controller, Settings command/message controllers, renderer template assembly, stored image CSS values, settings host boundaries, workbench patch apply/remove orchestration, reload prompts. |
 | `src/extensionRoot.ts` -> `out/src/extensionRoot.js` | Resolves package-root asset paths from both source and compiled `out/src` runtime directories. |
-| `src/workbenchPatch.ts` -> `out/src/workbenchPatch.js` | Pure workbench path detection and marked HTML patch helpers for `neondreams.js`. |
+| `src/workbenchPatch.ts` -> `out/src/workbenchPatch.js` | Pure workbench path detection and marked HTML patch helpers for `kawaii-vscode-colors-ui.js`, plus legacy marker cleanup for old `neondreams.js` wrappers. |
 | `src/settings.ts` | Settings webview lifecycle, message routing, Settings Sync/JSON orchestration, image workflows, color state composition, runtime read of `.codex/color_scheme_reference.md`. |
 | `src/settingsWebview.ts` | Compatibility settings webview renderer for inline HTML/CSS/JS, DOM state, UI event emission, and VS Code webview token styling. |
 | `src/webview` -> `out/src/webview` | Typed settings webview view model, CSP/HTML helper contract, page ids, VS Code token names, and client `postMessage` names used while the renderer remains inline. |
@@ -216,7 +216,7 @@ Stored image contract:
 Workbench patch marker:
 
 ```html
-<!-- KAWAII SYNTHWAVE --><script src="neondreams.js?v=<timestamp>"></script><!-- NEON DREAMS -->
+<!-- KAWAII VSCODE COLORS UI --><script src="kawaii-vscode-colors-ui.js?v=<timestamp>"></script><!-- /KAWAII VSCODE COLORS UI -->
 ```
 
 Renderer placeholders replaced by `src/extensionHost/services/NeonEffectService.ts`:
