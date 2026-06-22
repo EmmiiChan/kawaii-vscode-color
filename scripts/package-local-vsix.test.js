@@ -51,6 +51,14 @@ test("getVsceCommand prefers npm exec when npm exposes its own executable path",
   });
 });
 
+test("getVsceCommand uses a portable npx launcher when npm exec is unavailable", () => {
+  assert.equal(typeof packageTools.getVsceCommand, "function");
+
+  const command = packageTools.getVsceCommand({ env: {} });
+
+  assert.equal(command.command, "npx");
+});
+
 test("createLocalVsix creates dist and calls vsce package without running real vsce", () => {
   assert.equal(typeof packageTools.createLocalVsix, "function");
 
@@ -101,6 +109,28 @@ test("createLocalVsix creates dist and calls vsce package without running real v
   } finally {
     fs.rmSync(workspaceRoot, { recursive: true, force: true });
   }
+});
+
+test("createLocalVsix resolves the repository root when loaded from compiled scripts", () => {
+  assert.equal(typeof packageTools.createLocalVsix, "function");
+
+  const calls = [];
+  const workspaceRoot = path.resolve(__dirname, "..");
+  const manifest = JSON.parse(fs.readFileSync(path.join(workspaceRoot, "package.json"), "utf8"));
+  const expectedOutputPath = path.join(workspaceRoot, "dist", `kawaii-vscode-color-${manifest.version}.vsix`);
+
+  const result = packageTools.createLocalVsix({
+    env: {},
+    platform: "linux",
+    spawnSync(command, args, options) {
+      calls.push({ command, args, options });
+      return { status: 0 };
+    },
+    output: { write() {} }
+  });
+
+  assert.equal(result.outputPath, expectedOutputPath);
+  assert.equal(calls[0].options.cwd, workspaceRoot);
 });
 
 test("createLocalVsix returns package command failures without printing success", () => {

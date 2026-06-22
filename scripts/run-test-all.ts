@@ -58,9 +58,11 @@ interface SummaryCounts {
 const WORKER_ARG = "--test-all-worker";
 const SUMMARY_FILE_ENV = "KAWAII_TEST_ALL_SUMMARY_FILE";
 const SAFE_TEST_PHASES: readonly SafeTestPhase[] = [
+    { name: "Static Check", script: "test:check" },
     { name: "Unit", script: "test:unit" },
     { name: "DOM", script: "test:dom" },
     { name: "Integration", script: "test:integration", captureOutput: true },
+    { name: "Package", script: "test:package" },
     { name: "Safe E2E", script: "test:e2e" }
 ];
 const DEFAULT_SUMMARY_DELAY_MS = 1000;

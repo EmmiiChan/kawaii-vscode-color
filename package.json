@@ -43,6 +43,7 @@
         "test:e2e": "npm run compile && node scripts/run-e2e.js",
         "test:e2e:current": "npm run compile && node scripts/run-e2e.js current",
         "test:e2e:neon": "npm run compile:scripts && node scripts/require-e2e-neon-flag.js && npm run compile && node scripts/run-e2e.js neon",
+        "test:package": "npm run compile:scripts && node scripts/package-local-vsix.js",
         "test:all": "npm run compile:scripts && node scripts/run-test-all.js",
         "vscode:prepublish": "npm run compile && npm run build:theme",
         "package:vsix": "npm run build:local",
