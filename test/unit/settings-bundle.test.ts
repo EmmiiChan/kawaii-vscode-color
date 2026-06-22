@@ -1,9 +1,148 @@
-const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const path = require("node:path");
-const test = require("node:test");
+import assert = require("node:assert/strict");
+import fs = require("node:fs");
+import path = require("node:path");
+import test = require("node:test");
 
-const { createSettingsStore } = require("../../out/src/settingsStore");
+type SettingsStoreModule = typeof import("../../src/settingsStore");
+type SettingsBundleModule = typeof import("../../src/settingsBundle");
+type PlainRecord = Record<string, any>;
+type SettingsStore = ReturnType<SettingsStoreModule["createSettingsStore"]>;
+type SettingsBundleActions = ReturnType<SettingsBundleModule["createSettingsBundleActions"]>;
+type ChainActionName = "saveVSSync" | "importVSSync" | "exportAs" | "import";
+
+interface ThemeVariant {
+  readonly id: string;
+  readonly label: string;
+}
+
+interface WorkspaceUpdate {
+  readonly settingName: string;
+  readonly value: unknown;
+  readonly target: boolean;
+}
+
+interface WorkspaceMockOptions {
+  readonly values?: PlainRecord;
+  readonly inspections?: PlainRecord;
+}
+
+interface WorkspaceMock {
+  readonly settingsStore: SettingsStore;
+  readonly updates: WorkspaceUpdate[];
+  readonly values: PlainRecord;
+}
+
+interface TestUri {
+  readonly fsPath: string;
+  readonly scheme?: string;
+}
+
+interface TestWindow {
+  readonly informationMessages: string[];
+  readonly warningMessages: string[];
+  openDialogResult: TestUri[] | undefined;
+  saveDialogResult: TestUri | undefined;
+  showInformationMessage(message: string): Promise<void>;
+  showWarningMessage(message: string): Promise<void>;
+  showOpenDialog(): Promise<TestUri[] | undefined>;
+  showSaveDialog(): Promise<TestUri | undefined>;
+}
+
+interface TestContext {
+  readonly id: string;
+  readonly globalState: {
+    get(key: string): unknown;
+    setKeysForSync?(keys: string[]): void;
+    update(key: string, value?: unknown): Promise<void> | void;
+  };
+}
+
+interface BundleDependencies {
+  readonly activeThemeService: {
+    getActiveThemeVariant(): ThemeVariant;
+    changeThemeVariant(themeVariantId: unknown): Promise<void> | void;
+  };
+  readonly brightnessSetting: string;
+  readonly disableGlowSetting: string;
+  readonly effectsService: {
+    getEffectsExport(context: TestContext): Promise<unknown> | unknown;
+    applyEffectsExport(context: TestContext, effects: any): Promise<void> | void;
+  };
+  readonly fileSystem: {
+    readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
+    writeFile(filePath: string, content: string, encoding: BufferEncoding): Promise<void>;
+  };
+  readonly homeDirectory: () => string;
+  readonly now: () => Date;
+  readonly settingsExportFileName: string;
+  settingsStore: SettingsStore | any;
+  readonly themeVariants: readonly ThemeVariant[];
+  readonly tokenCustomizationsSetting: string;
+  readonly uri: {
+    file(filePath: string): TestUri;
+  };
+  readonly window: TestWindow;
+  readonly workbenchCustomizationsSetting: string;
+}
+
+interface BundleDependencyHarness {
+  readonly calls: any[];
+  readonly memoryFiles: Map<string, any>;
+  readonly dependencies: BundleDependencies;
+}
+
+interface BundleSnapshot {
+  readonly activeThemeVariantId: string;
+  readonly extensionConfiguration: {
+    readonly brightness: number;
+    readonly disableGlow: boolean;
+  };
+  readonly colorCustomizations: {
+    readonly workbench: {
+      readonly dark: PlainRecord;
+      readonly light: PlainRecord;
+    };
+    readonly token: {
+      readonly dark: PlainRecord;
+      readonly light: PlainRecord;
+    };
+  };
+  readonly effects: PlainRecord;
+  readonly unrelatedWorkbench: PlainRecord;
+  readonly unrelatedToken: PlainRecord;
+}
+
+interface BundleSnapshotOverrides {
+  readonly activeThemeVariantId?: string;
+  readonly brightness?: number;
+  readonly disableGlow?: boolean;
+  readonly editorBackgroundOpacity?: number;
+  readonly editorBackgroundFit?: string;
+  readonly emptyEditorLogoOpacity?: number;
+}
+
+interface BundleOverrides {
+  readonly activeThemeVariant?: ThemeVariant;
+  readonly effectsExport?: unknown;
+  readonly settingsStore?: SettingsStore | any;
+}
+
+interface StatefulBundleHarness {
+  readonly actions: SettingsBundleActions;
+  readonly applySnapshot: (snapshot: BundleSnapshot) => void;
+  readonly calls: any[];
+  readonly context: TestContext;
+  readonly dependencies: BundleDependencies;
+  readonly memoryFiles: Map<string, any>;
+  readonly settingValues: Map<string, any>;
+  readonly syncedState: Map<string, any>;
+}
+
+function requireOut<TModule>(...segments: readonly string[]): TModule {
+  return require(path.join(process.cwd(), "out", "src", ...segments)) as TModule;
+}
+
+const { createSettingsStore } = requireOut<SettingsStoreModule>("settingsStore");
 const {
   applyColorCustomizationsExportToStore,
   applyExtensionConfigurationExportToStore,
@@ -14,7 +153,7 @@ const {
   getExtensionConfigurationExportFromStore,
   normalizeBrightnessSetting,
   normalizeSettingsBundle
-} = require("../../out/src/settingsBundle");
+} = requireOut<SettingsBundleModule>("settingsBundle");
 
 const BRIGHTNESS_SETTING = "kawaii_synthwave.brightness";
 const DISABLE_GLOW_SETTING = "kawaii_synthwave.disableGlow";
@@ -22,35 +161,35 @@ const WORKBENCH_SETTING = "workbench.colorCustomizations";
 const TOKEN_SETTING = "editor.tokenColorCustomizations";
 const SYNC_SETTINGS_STATE_KEY = "kawaii_synthwave.syncedSettingsBundle";
 const EXPORT_FILE_NAME = "kawaii-vscode-color-settings.json";
-const FIXTURES_DIR = path.resolve(__dirname, "..", "fixtures", "settings");
-const darkVariant = { id: "dark", label: "Kawaii VS Code Color" };
-const lightVariant = { id: "light", label: "Kawaii VS Code Color Light" };
-const themeVariants = [darkVariant, lightVariant];
+const FIXTURES_DIR = path.join(process.cwd(), "test", "fixtures", "settings");
+const darkVariant: ThemeVariant = { id: "dark", label: "Kawaii VS Code Color" };
+const lightVariant: ThemeVariant = { id: "light", label: "Kawaii VS Code Color Light" };
+const themeVariants: readonly ThemeVariant[] = [darkVariant, lightVariant];
 
-function readSettingsFixture(fileName) {
-  return JSON.parse(fs.readFileSync(path.join(FIXTURES_DIR, fileName), "utf8"));
+function readSettingsFixture(fileName: string): PlainRecord {
+  return JSON.parse(fs.readFileSync(path.join(FIXTURES_DIR, fileName), "utf8")) as PlainRecord;
 }
 
-function clone(value) {
+function clone<T>(value: T): T {
   if (value === undefined) {
-    return undefined;
+    return undefined as T;
   }
 
-  return JSON.parse(JSON.stringify(value));
+  return JSON.parse(JSON.stringify(value)) as T;
 }
 
-function createWorkspaceMock(options = {}) {
-  const updates = [];
+function createWorkspaceMock(options: WorkspaceMockOptions = {}): WorkspaceMock {
+  const updates: WorkspaceUpdate[] = [];
   const values = clone(options.values || {});
   const inspections = clone(options.inspections || {});
   const configuration = {
-    get(settingName) {
+    get(settingName: string): unknown {
       return values[settingName];
     },
-    inspect(settingName) {
+    inspect(settingName: string): PlainRecord | undefined {
       return inspections[settingName];
     },
-    update(settingName, value, target) {
+    update(settingName: string, value: unknown, target: boolean): Promise<void> {
       updates.push({ settingName, value: clone(value), target });
       values[settingName] = clone(value);
       return Promise.resolve();
@@ -68,9 +207,9 @@ function createWorkspaceMock(options = {}) {
   };
 }
 
-function createBundleDependencies(overrides = {}) {
-  const calls = [];
-  const memoryFiles = new Map();
+function createBundleDependencies(overrides: BundleOverrides = {}): BundleDependencyHarness {
+  const calls: any[] = [];
+  const memoryFiles = new Map<string, any>();
   const { settingsStore } = createWorkspaceMock();
 
   return {
@@ -81,7 +220,7 @@ function createBundleDependencies(overrides = {}) {
         getActiveThemeVariant() {
           return overrides.activeThemeVariant || lightVariant;
         },
-        changeThemeVariant(themeVariantId) {
+        changeThemeVariant(themeVariantId: unknown) {
           calls.push(`theme:${themeVariantId}`);
           return Promise.resolve();
         }
@@ -89,21 +228,21 @@ function createBundleDependencies(overrides = {}) {
       brightnessSetting: BRIGHTNESS_SETTING,
       disableGlowSetting: DISABLE_GLOW_SETTING,
       effectsService: {
-        getEffectsExport(context) {
+        getEffectsExport(context: TestContext) {
           calls.push(`effects-export:${context.id}`);
           return Promise.resolve(overrides.effectsExport || { editorBackground: { opacity: 0.12 } });
         },
-        applyEffectsExport(context, effects) {
+        applyEffectsExport(context: TestContext, effects: any) {
           calls.push(`effects-apply:${context.id}:${effects && effects.marker}`);
           return Promise.resolve();
         }
       },
       fileSystem: {
-        readFile(filePath, encoding) {
+        readFile(filePath: string, encoding: BufferEncoding) {
           calls.push(`read:${filePath}:${encoding}`);
-          return Promise.resolve(memoryFiles.get(filePath));
+          return Promise.resolve(memoryFiles.get(filePath) as string);
         },
-        writeFile(filePath, content, encoding) {
+        writeFile(filePath: string, content: string, encoding: BufferEncoding) {
           calls.push(`write:${filePath}:${encoding}`);
           memoryFiles.set(filePath, content);
           return Promise.resolve();
@@ -120,7 +259,7 @@ function createBundleDependencies(overrides = {}) {
       themeVariants,
       tokenCustomizationsSetting: TOKEN_SETTING,
       uri: {
-        file(filePath) {
+        file(filePath: string) {
           return { fsPath: filePath, scheme: "file" };
         }
       },
@@ -129,11 +268,11 @@ function createBundleDependencies(overrides = {}) {
         warningMessages: [],
         openDialogResult: undefined,
         saveDialogResult: undefined,
-        showInformationMessage(message) {
+        showInformationMessage(message: string) {
           this.informationMessages.push(message);
           return Promise.resolve();
         },
-        showWarningMessage(message) {
+        showWarningMessage(message: string) {
           this.warningMessages.push(message);
           return Promise.resolve();
         },
@@ -149,15 +288,15 @@ function createBundleDependencies(overrides = {}) {
   };
 }
 
-function createStatefulBundleHarness(initialSnapshot) {
-  const calls = [];
-  const memoryFiles = new Map();
-  const syncedState = new Map();
-  const settingValues = new Map();
+function createStatefulBundleHarness(initialSnapshot: BundleSnapshot): StatefulBundleHarness {
+  const calls: any[] = [];
+  const memoryFiles = new Map<string, any>();
+  const syncedState = new Map<string, any>();
+  const settingValues = new Map<string, any>();
   let activeThemeVariantId = initialSnapshot.activeThemeVariantId;
   let effectsState = clone(initialSnapshot.effects);
 
-  function setSettingValue(settingName, value) {
+  function setSettingValue(settingName: string, value: unknown): void {
     if (value === undefined) {
       settingValues.delete(settingName);
       return;
@@ -166,7 +305,7 @@ function createStatefulBundleHarness(initialSnapshot) {
     settingValues.set(settingName, clone(value));
   }
 
-  function applySnapshot(snapshot) {
+  function applySnapshot(snapshot: BundleSnapshot): void {
     activeThemeVariantId = snapshot.activeThemeVariantId;
     effectsState = clone(snapshot.effects);
     setSettingValue(BRIGHTNESS_SETTING, snapshot.extensionConfiguration.brightness);
@@ -178,16 +317,16 @@ function createStatefulBundleHarness(initialSnapshot) {
   const settingsStore = createSettingsStore({
     getConfiguration() {
       return {
-        get(settingName) {
+        get(settingName: string) {
           return clone(settingValues.get(settingName));
         },
-        inspect(settingName) {
+        inspect(settingName: string) {
           return {
             globalValue: clone(settingValues.get(settingName)),
             workspaceValue: undefined
           };
         },
-        update(settingName, value) {
+        update(settingName: string, value: unknown) {
           setSettingValue(settingName, value);
           return Promise.resolve();
         }
@@ -195,36 +334,36 @@ function createStatefulBundleHarness(initialSnapshot) {
     }
   });
 
-  const dependencies = {
+  const dependencies: BundleDependencies = {
     activeThemeService: {
       getActiveThemeVariant() {
         return themeVariants.find((variant) => variant.id === activeThemeVariantId) || darkVariant;
       },
-      changeThemeVariant(themeVariantId) {
+      changeThemeVariant(themeVariantId: unknown) {
         calls.push(`theme:${themeVariantId}`);
-        activeThemeVariantId = themeVariantId;
+        activeThemeVariantId = String(themeVariantId);
         return Promise.resolve();
       }
     },
     brightnessSetting: BRIGHTNESS_SETTING,
     disableGlowSetting: DISABLE_GLOW_SETTING,
     effectsService: {
-      getEffectsExport(context) {
+      getEffectsExport(context: TestContext) {
         calls.push(`effects-export:${context.id}`);
         return Promise.resolve(clone(effectsState));
       },
-      applyEffectsExport(context, effects) {
+      applyEffectsExport(context: TestContext, effects: any) {
         calls.push(`effects-apply:${context.id}:${effects && effects.marker}`);
         effectsState = clone(effects);
         return Promise.resolve();
       }
     },
     fileSystem: {
-      readFile(filePath, encoding) {
+      readFile(filePath: string, encoding: BufferEncoding) {
         calls.push(`read:${filePath}:${encoding}`);
-        return Promise.resolve(memoryFiles.get(filePath));
+        return Promise.resolve(memoryFiles.get(filePath) as string);
       },
-      writeFile(filePath, content, encoding) {
+      writeFile(filePath: string, content: string, encoding: BufferEncoding) {
         calls.push(`write:${filePath}:${encoding}`);
         memoryFiles.set(filePath, content);
         return Promise.resolve();
@@ -241,7 +380,7 @@ function createStatefulBundleHarness(initialSnapshot) {
     themeVariants,
     tokenCustomizationsSetting: TOKEN_SETTING,
     uri: {
-      file(filePath) {
+      file(filePath: string) {
         return { fsPath: filePath, scheme: "file" };
       }
     },
@@ -250,11 +389,11 @@ function createStatefulBundleHarness(initialSnapshot) {
       warningMessages: [],
       openDialogResult: undefined,
       saveDialogResult: undefined,
-      showInformationMessage(message) {
+      showInformationMessage(message: string) {
         this.informationMessages.push(message);
         return Promise.resolve();
       },
-      showWarningMessage(message) {
+      showWarningMessage(message: string) {
         this.warningMessages.push(message);
         return Promise.resolve();
       },
@@ -267,16 +406,16 @@ function createStatefulBundleHarness(initialSnapshot) {
     },
     workbenchCustomizationsSetting: WORKBENCH_SETTING
   };
-  const context = {
+  const context: TestContext = {
     id: "ctx",
     globalState: {
-      get(key) {
+      get(key: string) {
         return syncedState.get(key);
       },
-      setKeysForSync(keys) {
+      setKeysForSync(keys: string[]) {
         calls.push(`sync-keys:${keys.join(",")}`);
       },
-      update(key, value) {
+      update(key: string, value?: unknown) {
         if (value === undefined) {
           syncedState.delete(key);
         } else {
@@ -302,8 +441,8 @@ function createStatefulBundleHarness(initialSnapshot) {
   };
 }
 
-function createThemeSettingsObject(blocks, unrelatedBlock) {
-  const settings = {};
+function createThemeSettingsObject(blocks: Record<string, PlainRecord>, unrelatedBlock?: PlainRecord): PlainRecord {
+  const settings: PlainRecord = {};
 
   settings["[Kawaii VS Code Color]"] = clone(blocks.dark || {});
   settings["[Kawaii VS Code Color Light]"] = clone(blocks.light || {});
@@ -315,7 +454,7 @@ function createThemeSettingsObject(blocks, unrelatedBlock) {
   return settings;
 }
 
-function createBundleSnapshot(marker, overrides = {}) {
+function createBundleSnapshot(marker: string, overrides: BundleSnapshotOverrides = {}): BundleSnapshot {
   return {
     activeThemeVariantId: overrides.activeThemeVariantId || "dark",
     extensionConfiguration: {
@@ -387,13 +526,13 @@ function createBundleSnapshot(marker, overrides = {}) {
   };
 }
 
-async function assertCurrentBundleMatches(harness, expectedSnapshot) {
+async function assertCurrentBundleMatches(harness: StatefulBundleHarness, expectedSnapshot: BundleSnapshot): Promise<void> {
   const bundle = await harness.actions.createSettingsBundle(harness.context);
 
   assertBundleMatchesSnapshot(bundle, expectedSnapshot);
 }
 
-function assertBundleMatchesSnapshot(bundle, expectedSnapshot) {
+function assertBundleMatchesSnapshot(bundle: any, expectedSnapshot: BundleSnapshot): void {
   assert.equal(bundle.schema, "kawaii-vscode-color-settings");
   assert.equal(bundle.schemaVersion, 1);
   assert.equal(bundle.activeThemeVariantId, expectedSnapshot.activeThemeVariantId);
@@ -402,7 +541,7 @@ function assertBundleMatchesSnapshot(bundle, expectedSnapshot) {
   assert.deepEqual(bundle.effects, expectedSnapshot.effects);
 }
 
-function assertUnrelatedThemeBlocksMatch(harness, expectedSnapshot) {
+function assertUnrelatedThemeBlocksMatch(harness: StatefulBundleHarness, expectedSnapshot: BundleSnapshot): void {
   assert.deepEqual(
     harness.settingValues.get(WORKBENCH_SETTING)["[Unrelated Theme]"],
     expectedSnapshot.unrelatedWorkbench
@@ -413,7 +552,7 @@ function assertUnrelatedThemeBlocksMatch(harness, expectedSnapshot) {
   );
 }
 
-function createActionSequences(actionNames, length) {
+function createActionSequences(actionNames: readonly ChainActionName[], length: number): ChainActionName[][] {
   if (length === 0) {
     return [[]];
   }
@@ -556,7 +695,7 @@ test("color customization export and import handle dark and light blocks while p
 test("createSettingsBundle exports active theme, configuration, colors, and effects", async () => {
   const { dependencies, calls } = createBundleDependencies();
 
-  const bundle = await createSettingsBundle({ id: "ctx" }, dependencies);
+  const bundle = await createSettingsBundle({ id: "ctx" }, dependencies) as any;
 
   assert.equal(bundle.schema, "kawaii-vscode-color-settings");
   assert.equal(bundle.schemaVersion, 1);
@@ -597,7 +736,7 @@ test("createSettingsBundle exports dark/light colors and image-backed effects", 
     settingsStore
   });
 
-  const bundle = await createSettingsBundle({ id: "ctx" }, dependencies);
+  const bundle = await createSettingsBundle({ id: "ctx" }, dependencies) as any;
 
   assert.equal(bundle.activeThemeVariantId, "light");
   assert.deepEqual(bundle.extensionConfiguration, fixtureBundle.extensionConfiguration);
@@ -608,12 +747,12 @@ test("createSettingsBundle exports dark/light colors and image-backed effects", 
 });
 
 test("applySettingsBundle applies config, colors, effects, then active theme", async () => {
-  const order = [];
+  const order: string[] = [];
   const settingsStore = {
     getTargetSettingsObject() {
       return {};
     },
-    updateGlobalSetting(settingName) {
+    updateGlobalSetting(settingName: string) {
       order.push(`setting:${settingName}`);
       return Promise.resolve();
     }
@@ -625,7 +764,7 @@ test("applySettingsBundle applies config, colors, effects, then active theme", a
     order.push("effects");
     return Promise.resolve();
   };
-  dependencies.activeThemeService.changeThemeVariant = function changeThemeVariant(themeVariantId) {
+  dependencies.activeThemeService.changeThemeVariant = function changeThemeVariant(themeVariantId: unknown) {
     order.push(`theme:${themeVariantId}`);
     return Promise.resolve();
   };
@@ -665,12 +804,12 @@ test("applySettingsBundle restores fixture config, dark/light colors, effects, a
       }
     }
   });
-  const calls = [];
+  const calls: any[] = [];
   const { dependencies } = createBundleDependencies({
     settingsStore
   });
 
-  dependencies.effectsService.applyEffectsExport = function applyEffectsExport(context, effects) {
+  dependencies.effectsService.applyEffectsExport = function applyEffectsExport(context: TestContext, effects: any) {
     calls.push({
       contextId: context.id,
       editorOpacity: effects.editorBackground.opacity,
@@ -681,7 +820,7 @@ test("applySettingsBundle restores fixture config, dark/light colors, effects, a
     });
     return Promise.resolve();
   };
-  dependencies.activeThemeService.changeThemeVariant = function changeThemeVariant(themeVariantId) {
+  dependencies.activeThemeService.changeThemeVariant = function changeThemeVariant(themeVariantId: unknown) {
     calls.push(`theme:${themeVariantId}`);
     return Promise.resolve();
   };
@@ -690,12 +829,12 @@ test("applySettingsBundle restores fixture config, dark/light colors, effects, a
 
   assert.deepEqual(updates[0], { settingName: BRIGHTNESS_SETTING, value: 0.72, target: true });
   assert.deepEqual(updates[1], { settingName: DISABLE_GLOW_SETTING, value: true, target: true });
-  assert.deepEqual(updates[2].value, {
+  assert.deepEqual(updates[2]?.value, {
     "[Unrelated Theme]": { "editor.background": "#000000" },
     "[Kawaii VS Code Color]": fixtureBundle.colorCustomizations.workbench.dark,
     "[Kawaii VS Code Color Light]": fixtureBundle.colorCustomizations.workbench.light
   });
-  assert.deepEqual(updates[3].value, {
+  assert.deepEqual(updates[3]?.value, {
     "[Unrelated Theme]": { textMateRules: [{ scope: "comment" }] },
     "[Kawaii VS Code Color]": fixtureBundle.colorCustomizations.token.dark,
     "[Kawaii VS Code Color Light]": fixtureBundle.colorCustomizations.token.light
@@ -716,18 +855,18 @@ test("applySettingsBundle restores fixture config, dark/light colors, effects, a
 test("settings bundle actions save/import settings sync state", async () => {
   const { dependencies } = createBundleDependencies();
   const actions = createSettingsBundleActions(dependencies);
-  const syncedKeys = [];
-  const state = new Map();
-  const context = {
+  const syncedKeys: string[][] = [];
+  const state = new Map<string, any>();
+  const context: TestContext = {
     id: "ctx",
     globalState: {
-      get(key) {
+      get(key: string) {
         return state.get(key);
       },
-      setKeysForSync(keys) {
+      setKeysForSync(keys: string[]) {
         syncedKeys.push(keys);
       },
-      update(key, value) {
+      update(key: string, value?: unknown) {
         state.set(key, value);
         return Promise.resolve();
       }
@@ -753,7 +892,7 @@ test("settings bundle actions save/import settings sync state", async () => {
 test("settings bundle file actions handle cancellations and read/write JSON files", async () => {
   const { dependencies, memoryFiles } = createBundleDependencies();
   const actions = createSettingsBundleActions(dependencies);
-  const context = {
+  const context: TestContext = {
     id: "ctx",
     globalState: {
       get() {},
@@ -873,7 +1012,7 @@ test("settings sync and file actions match the state model for every four-step c
     editorBackgroundFit: "right",
     emptyEditorLogoOpacity: 0.69
   });
-  const actionNames = ["saveVSSync", "importVSSync", "exportAs", "import"];
+  const actionNames: readonly ChainActionName[] = ["saveVSSync", "importVSSync", "exportAs", "import"];
   const sequences = createActionSequences(actionNames, 4);
 
   assert.equal(sequences.length, 256);
@@ -932,7 +1071,7 @@ test("settings sync and file actions match the state model for every four-step c
 test("settings bundle file actions reject invalid JSON and unsupported schema versions", async () => {
   const { dependencies, memoryFiles } = createBundleDependencies();
   const actions = createSettingsBundleActions(dependencies);
-  const context = {
+  const context: TestContext = {
     id: "ctx",
     globalState: {
       get() {},
