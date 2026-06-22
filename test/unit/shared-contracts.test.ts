@@ -1,13 +1,18 @@
-const test = require("node:test");
-const assert = require("node:assert/strict");
+import assert = require("node:assert/strict");
+import path = require("node:path");
+import test = require("node:test");
 
-const color = require("../../out/src/shared/models/color");
-const effects = require("../../out/src/shared/models/effects");
-const theme = require("../../out/src/shared/models/theme");
-const webviewMessages = require("../../out/src/shared/contracts/webviewMessages");
-const settingsBundleSchema = require("../../out/src/shared/contracts/settingsBundleSchema");
-const rendererPlaceholders = require("../../out/src/shared/contracts/rendererPlaceholders");
-const result = require("../../out/src/shared/validation/result");
+const color = requireOut<typeof import("../../src/shared/models/color")>("shared", "models", "color");
+const effects = requireOut<typeof import("../../src/shared/models/effects")>("shared", "models", "effects");
+const theme = requireOut<typeof import("../../src/shared/models/theme")>("shared", "models", "theme");
+const webviewMessages = requireOut<typeof import("../../src/shared/contracts/webviewMessages")>("shared", "contracts", "webviewMessages");
+const settingsBundleSchema = requireOut<typeof import("../../src/shared/contracts/settingsBundleSchema")>("shared", "contracts", "settingsBundleSchema");
+const rendererPlaceholders = requireOut<typeof import("../../src/shared/contracts/rendererPlaceholders")>("shared", "contracts", "rendererPlaceholders");
+const result = requireOut<typeof import("../../src/shared/validation/result")>("shared", "validation", "result");
+
+function requireOut<TModule>(...segments: readonly string[]): TModule {
+  return require(path.join(process.cwd(), "out", "src", ...segments)) as TModule;
+}
 
 test("shared color guards accept VS Code hex colors and reject invalid values", () => {
   assert.equal(color.isHexColor("#fff"), true);
