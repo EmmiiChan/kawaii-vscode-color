@@ -16,6 +16,7 @@ This file is the migration-oriented contract map for the extension. Keep it fact
 | Activation events | `onStartupFinished`, `onCommand:kawaii_synthwave.openSettings` |
 | Public command | `kawaii_synthwave.openSettings` -> `Kawaii VS Code Color: Settings` |
 | Documentation guard | `npm run test:docs` -> `npm run compile:scripts` -> `node scripts/check-codex-docs.js` wrapper -> `out-scripts/scripts/check-codex-docs.js` |
+| Test artifact cleanup | `npm run clean:test-artifacts` -> `npm run compile:scripts` -> `node scripts/clean-test-artifacts.js`; `npm run build:clean` runs cleanup before `npm run build:local` |
 | Lockfile | `lockfileVersion: 3`; root package patch version is automatic and not duplicated in `.codex` docs |
 
 Dev dependency contract:
@@ -44,6 +45,8 @@ Dev dependency contract:
 - `scripts/build-color-theme.ts`
 - `scripts/check-codex-docs.js`
 - `scripts/check-codex-docs.ts`
+- `scripts/clean-test-artifacts.js`
+- `scripts/clean-test-artifacts.ts`
 - `scripts/e2e-last-run.js`
 - `scripts/e2e-last-run.ts`
 - `scripts/increment-package-version.js`
@@ -253,6 +256,7 @@ The renderer code must keep using VS Code workbench/theme tokens and must not de
 | DOM | `npm run test:dom` | Compiles first, then runs jsdom settings webview behavior, split webview contract, and visual-state DOM contracts. |
 | Integration | `npm run test:integration` | Compiles, then runs VS Code Extension Development Host activation and command smoke tests. |
 | Package | `npm run test:package` | Compiles script wrappers, runs the TypeScript-backed local VSIX package helper, executes VSCE prepublish compile/theme checks, and creates a local VSIX without incrementing the package version. |
+| Test artifact cleanup | `npm run clean:test-artifacts` | Compiles script wrappers, then removes `.vscode-test`, `test-results`, `playwright-report`, and `out-tests` if they exist inside the workspace. |
 | Safe E2E | `npm run test:e2e` | Compiles, then runs disposable VS Code UI automation without applying the real Neon patch. |
 | Current VS Code E2E | `npm run test:e2e:current` | Compiles, then runs experimental safe E2E against the latest ExTester-supported VS Code version, isolated from the stable `1.111.0` safe gate. |
 | Gated Neon E2E | `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` | Requires the flag, compiles, then runs real disposable workbench patch lifecycle, screenshots, restore checks, and fit matrix. |

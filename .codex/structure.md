@@ -188,6 +188,7 @@ Current source of truth:
 - Typed settings webview view-model serialization, CSP/HTML adapter contracts, page ids, style token names, and client message names live under `src/webview/settings`.
 - Workbench path detection and marked HTML patch helpers live in `src/workbenchPatch.ts`.
 - E2E orchestration lives in `scripts/run-e2e.ts` behind the stable `scripts/run-e2e.js` wrapper. E2E last-run marker normalization lives in `scripts/e2e-last-run.ts` behind the stable `scripts/e2e-last-run.js` wrapper; `test-results/e2e/kawaii-last-run.json` is the authoritative project marker and `.last-run.json` is ExTester diagnostics only.
+- Test artifact cleanup lives in `scripts/clean-test-artifacts.ts` behind the stable `scripts/clean-test-artifacts.js` wrapper and removes `.vscode-test`, `test-results`, `playwright-report`, and `out-tests`.
 - Shared TypeScript migration contracts and guards live under `src/shared`; keep them free of VS Code, filesystem, DOM, and network dependencies.
 - Real VS Code E2E helpers live in `test/e2e/helpers/extester-app.js`.
 - Safe E2E PNG parsing and visual-difference assertions live in `test/e2e/helpers/png-analysis.js`.
@@ -465,6 +466,8 @@ Local source anchors:
 - `scripts/build-color-theme.ts`: TypeScript implementation of the base-plus-overrides theme build flow.
 - `scripts/check-codex-docs.js`: stable Node wrapper for the Codex documentation drift guard.
 - `scripts/check-codex-docs.ts`: TypeScript implementation of Codex documentation drift checks for package facts, themes, message contracts, state keys, schemas, renderer placeholders, and `semanticTokenColors`.
+- `scripts/clean-test-artifacts.js`: stable Node wrapper for local generated test artifact cleanup.
+- `scripts/clean-test-artifacts.ts`: TypeScript implementation that removes `.vscode-test`, `test-results`, `playwright-report`, and `out-tests` only when resolved inside the workspace.
 - `scripts/e2e-last-run.js`: stable Node wrapper for E2E last-run marker helpers.
 - `scripts/e2e-last-run.ts`: TypeScript implementation for project-owned E2E last-run marker creation, phase updates, ExTester diagnostic reading, and Neon storage guard helpers.
 - `scripts/increment-package-version.js`: stable Node wrapper for package patch version increments.

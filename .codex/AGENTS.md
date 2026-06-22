@@ -12,7 +12,7 @@ Current tooling state:
 
 | Area | Current state |
 | --- | --- |
-| Build step | `npm run build:theme` merges protected base themes and editable overrides into the generated themes loaded by VS Code. `npm run build:local` compiles script wrappers, bumps the patch version, then builds the themes and local VSIX through the TypeScript-backed package script. |
+| Build step | `npm run build:theme` merges protected base themes and editable overrides into the generated themes loaded by VS Code. `npm run build:local` compiles script wrappers, bumps the patch version, then builds the themes and local VSIX through the TypeScript-backed package script. `npm run build:clean` removes generated test artifacts before running the local VSIX build. |
 | Automated tests | The lightweight gate starts with TypeScript no-emit checks, the Codex docs drift guard, and Node syntax checks, then the regular layers cover Node unit tests, `jsdom` DOM UI tests, VS Code Extension Development Host integration tests, and ExTester/WebDriver real VS Code UI E2E tests. A separate gated Neon E2E patches only a disposable `.vscode-test` install. |
 | TypeScript | Strict TypeScript mode is active with `allowJs` disabled. `package.json.main` points to compiled `./out/src/extension.js`; the runtime entry, Settings webview source, extracted Neon and Settings host controllers/services/adapters, shared contracts, pure settings/workbench helpers, settings webview contracts, and renderer helper contracts listed below are TypeScript. |
 | npm dependencies | No runtime dependencies. Dev-only tooling/test dependencies are `typescript@^6.0.3`, `@types/node@^26.0.0`, `@types/vscode@^1.33.0`, `jsdom@29.1.1`, `@vscode/test-cli@0.0.12`, `@vscode/test-electron@3.0.0`, `vscode-extension-tester@8.23.0`, and `mocha@11.7.6`. |
@@ -66,6 +66,7 @@ TypeScript migration note:
 - `tsconfig.tests.emit.json` and `npm run compile:tests` emit TypeScript tests into `out-tests` without compiling JavaScript test suites.
 - Real E2E orchestration lives in `scripts/run-e2e.ts` behind the stable `scripts/run-e2e.js` wrapper; E2E commands compile scripts before invoking the wrapper.
 - Safe all-tests orchestration lives in `scripts/run-test-all.ts` behind the stable `scripts/run-test-all.js` wrapper; `npm run test:all` compiles scripts before invoking the wrapper.
+- Test artifact cleanup lives in `scripts/clean-test-artifacts.ts` behind the stable `scripts/clean-test-artifacts.js` wrapper; `npm run clean:test-artifacts` removes `.vscode-test`, `test-results`, `playwright-report`, and `out-tests`.
 - `vscode:prepublish`, `build:local`, integration tests, E2E scripts, gated Neon guard scripts, package version scripts, and local VSIX package scripts compile before loading or packaging the extension.
 
 Codex documentation rule:
@@ -191,7 +192,7 @@ Preferred command:
 npm run build:local
 ```
 
-This command compiles script wrappers, increments `package.json.version` by one patch version before packaging, synchronizes `package-lock.json` root version fields, and writes the local VSIX through `scripts/package-local-vsix.ts`.
+This command compiles script wrappers, increments `package.json.version` by one patch version before packaging, synchronizes `package-lock.json` root version fields, and writes the local VSIX through `scripts/package-local-vsix.ts`. Use `npm run build:clean` when you want to remove generated test artifacts first and then create the local VSIX.
 
 Equivalent one-off commands:
 
@@ -260,6 +261,14 @@ Before a publish package, verify:
 - `.codex/docs.md` is updated if tooling, package versions, or official references changed.
 
 ## Cleanup and Recovery Notes
+
+If local test artifacts become large, run:
+
+```powershell
+npm run clean:test-artifacts
+```
+
+This removes `.vscode-test`, `test-results`, `playwright-report`, and `out-tests`. These are generated local test artifacts and are recreated by integration, E2E, or compile-test workflows when needed.
 
 If a live Neon Effect test leaves VS Code patched:
 

@@ -84,6 +84,7 @@ function createFacts() {
     criticalFiles: [
       "src/settings.ts",
       "src/settingsWebview.ts",
+      "scripts/clean-test-artifacts.js",
       "scripts/check-codex-docs.js"
     ],
     webviewMessageTypes: [
@@ -157,6 +158,7 @@ function createBaseDocs() {
       "vs",
       "src/settings.ts",
       "src/settingsWebview.ts",
+      "scripts/clean-test-artifacts.js",
       "scripts/check-codex-docs.js",
       "onStartupFinished",
       "onCommand:kawaii_synthwave.openSettings",
@@ -179,6 +181,7 @@ function createBaseDocs() {
     systemMap: [
       "src/settings.ts",
       "src/settingsWebview.ts",
+      "scripts/clean-test-artifacts.js",
       "scripts/check-codex-docs.js",
       "Kawaii VS Code Color",
       "Kawaii VS Code Color Light",

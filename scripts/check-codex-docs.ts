@@ -132,6 +132,8 @@ const CRITICAL_FILES = [
   "scripts/build-color-theme.ts",
   "scripts/check-codex-docs.js",
   "scripts/check-codex-docs.ts",
+  "scripts/clean-test-artifacts.js",
+  "scripts/clean-test-artifacts.ts",
   "scripts/e2e-last-run.js",
   "scripts/e2e-last-run.ts",
   "scripts/increment-package-version.js",
