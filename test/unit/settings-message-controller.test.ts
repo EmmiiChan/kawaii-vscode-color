@@ -1,29 +1,80 @@
-const assert = require("node:assert/strict");
-const test = require("node:test");
+import assert = require("node:assert/strict");
+import path = require("node:path");
+import test = require("node:test");
 
 const {
   createSettingsMessageController
-} = require("../../out/src/extensionHost/controllers/SettingsMessageController");
+} = requireOut<typeof import("../../src/extensionHost/controllers/SettingsMessageController")>(
+  "extensionHost",
+  "controllers",
+  "SettingsMessageController"
+);
 const {
   createSettingsCommandController
-} = require("../../out/src/extensionHost/controllers/SettingsCommandController");
+} = requireOut<typeof import("../../src/extensionHost/controllers/SettingsCommandController")>(
+  "extensionHost",
+  "controllers",
+  "SettingsCommandController"
+);
 const {
   createSettingsStateService
-} = require("../../out/src/extensionHost/services/SettingsStateService");
+} = requireOut<typeof import("../../src/extensionHost/services/SettingsStateService")>(
+  "extensionHost",
+  "services",
+  "SettingsStateService"
+);
 const {
   createSettingsBundleService
-} = require("../../out/src/extensionHost/services/SettingsBundleService");
+} = requireOut<typeof import("../../src/extensionHost/services/SettingsBundleService")>(
+  "extensionHost",
+  "services",
+  "SettingsBundleService"
+);
 const {
   createSettingsEffectsService
-} = require("../../out/src/extensionHost/services/SettingsEffectsService");
+} = requireOut<typeof import("../../src/extensionHost/services/SettingsEffectsService")>(
+  "extensionHost",
+  "services",
+  "SettingsEffectsService"
+);
+
+type Call = unknown[];
+type Calls = Call[];
+type TestMessage = any;
+
+interface TestContext {
+  readonly id: string;
+}
+
+interface TestWebview {
+  readonly id: string;
+}
+
+function requireOut<TModule>(...segments: readonly string[]): TModule {
+  return require(path.join(process.cwd(), "out", "src", ...segments)) as TModule;
+}
+
+function record(calls: Calls, ...entry: Call): void {
+  calls.push(entry);
+}
+
+function getContextId(context: unknown): string {
+  return (context as TestContext).id;
+}
+
+function getWebviewId(webview: unknown): string {
+  return (webview as TestWebview).id;
+}
 
 test("SettingsMessageController dispatches host messages and preserves legacy payload names", async () => {
-  const calls = [];
+  const calls: Calls = [];
   const controller = createSettingsMessageController({
     handlers: createHandlers(calls),
     isNeonE2ETestHookEnabled: () => false,
     isSettingsE2ETestHookEnabled: () => false,
-    reportError: async (error) => calls.push(["error", error.message]),
+    reportError: async (error) => {
+      record(calls, "error", error.message);
+    },
     logError: () => {}
   });
 
@@ -58,13 +109,21 @@ test("SettingsMessageController dispatches host messages and preserves legacy pa
 });
 
 test("SettingsMessageController keeps test-only message gates at the boundary", async () => {
-  const calls = [];
+  const calls: Calls = [];
   const controller = createSettingsMessageController({
     handlers: createHandlers(calls),
     isNeonE2ETestHookEnabled: () => false,
     isSettingsE2ETestHookEnabled: () => false,
-    reportError: async (error) => calls.push(["error", error.message]),
-    logError: (methodName, error, context) => calls.push(["log", methodName, error.message, context.message.type])
+    reportError: async (error) => {
+      record(calls, "error", error.message);
+    },
+    logError: (methodName, error, context) => record(
+      calls,
+      "log",
+      methodName,
+      error instanceof Error ? error.message : String(error),
+      (context as { message: { type: string } }).message.type
+    )
   });
 
   await controller.handleMessage({ type: "e2e-apply-settings-bundle", bundle: { schema: "test" } });
@@ -95,21 +154,23 @@ test("SettingsMessageController keeps test-only message gates at the boundary", 
 });
 
 test("SettingsMessageController posts effects warnings only for successful imports", async () => {
-  const calls = [];
+  const calls: Calls = [];
   const handlers = createHandlers(calls);
   handlers.importSettingsFromVsSync = async () => {
-    calls.push(["importVsSync"]);
+    record(calls, "importVsSync");
     return false;
   };
   handlers.importSettingsBundle = async () => {
-    calls.push(["importFile"]);
+    record(calls, "importFile");
     return true;
   };
   const controller = createSettingsMessageController({
     handlers,
     isNeonE2ETestHookEnabled: () => true,
     isSettingsE2ETestHookEnabled: () => true,
-    reportError: async (error) => calls.push(["error", error.message]),
+    reportError: async (error) => {
+      record(calls, "error", error.message);
+    },
     logError: () => {}
   });
 
@@ -126,11 +187,11 @@ test("SettingsMessageController posts effects warnings only for successful impor
 });
 
 test("SettingsCommandController delegates settings command actions without owning VS Code internals", async () => {
-  const calls = [];
+  const calls: Calls = [];
   const controller = createSettingsCommandController({
-    configureSettingsSync: (context) => calls.push(["sync", context.id]),
+    configureSettingsSync: (context) => record(calls, "sync", getContextId(context)),
     openSettings: async (context, actions) => {
-      calls.push(["open", context.id, actions.isNeonEnabled()]);
+      record(calls, "open", getContextId(context), actions.isNeonEnabled());
     }
   });
 
@@ -148,49 +209,71 @@ test("SettingsCommandController delegates settings command actions without ownin
 });
 
 test("settings host services delegate state, bundle, and effects boundaries", async () => {
-  const calls = [];
+  const calls: Calls = [];
   const stateService = createSettingsStateService({
-    createState: (context, webview) => ({ contextId: context.id, webviewId: webview.id })
+    createState: (context, webview) => ({ contextId: getContextId(context), webviewId: getWebviewId(webview) })
   });
   const bundleService = createSettingsBundleService({
-    applySettingsBundle: async (context, bundle) => calls.push(["applyBundle", context.id, bundle.schema]),
-    configureSettingsSync: (context) => calls.push(["sync", context.id]),
-    exportSettingsBundle: async (context) => calls.push(["export", context.id]),
+    applySettingsBundle: async (context, bundle) => {
+      record(calls, "applyBundle", getContextId(context), (bundle as { schema: string }).schema);
+    },
+    configureSettingsSync: (context) => record(calls, "sync", getContextId(context)),
+    exportSettingsBundle: async (context) => {
+      record(calls, "export", getContextId(context));
+    },
     importSettingsBundle: async (context) => {
-      calls.push(["import", context.id]);
+      record(calls, "import", getContextId(context));
       return true;
     },
     importSettingsFromVsSync: async (context) => {
-      calls.push(["importSync", context.id]);
+      record(calls, "importSync", getContextId(context));
       return false;
     },
-    saveSettingsToVsSync: async (context) => calls.push(["saveSync", context.id])
+    saveSettingsToVsSync: async (context) => {
+      record(calls, "saveSync", getContextId(context));
+    }
   });
   const effectsService = createSettingsEffectsService({
-    applyAllEffects: async () => calls.push(["applyEffects"]),
-    downloadEditorBackgroundImage: async (context) => calls.push(["downloadEditor", context.id]),
-    downloadEmptyEditorLogoImage: async (context) => calls.push(["downloadLogo", context.id]),
+    applyAllEffects: async () => {
+      record(calls, "applyEffects");
+    },
+    downloadEditorBackgroundImage: async (context) => {
+      record(calls, "downloadEditor", getContextId(context));
+    },
+    downloadEmptyEditorLogoImage: async (context) => {
+      record(calls, "downloadLogo", getContextId(context));
+    },
     removeEditorBackgroundImage: async (context) => {
-      calls.push(["removeEditor", context.id]);
+      record(calls, "removeEditor", getContextId(context));
       return true;
     },
     removeEmptyEditorLogoImage: async (context) => {
-      calls.push(["removeLogo", context.id]);
+      record(calls, "removeLogo", getContextId(context));
       return false;
     },
     selectEditorBackgroundImage: async (context) => {
-      calls.push(["selectEditor", context.id]);
+      record(calls, "selectEditor", getContextId(context));
       return true;
     },
     selectEmptyEditorLogoImage: async (context) => {
-      calls.push(["selectLogo", context.id]);
+      record(calls, "selectLogo", getContextId(context));
       return false;
     },
-    selectRandomNekoEditorBackgroundImage: async (context) => calls.push(["randomEditor", context.id]),
-    selectRandomNekoEmptyEditorLogoImage: async (context) => calls.push(["randomLogo", context.id]),
-    updateEditorBackgroundFit: async (context, fit) => calls.push(["fit", context.id, fit]),
-    updateEditorBackgroundOpacity: async (context, opacity) => calls.push(["editorOpacity", context.id, opacity]),
-    updateEmptyEditorLogoOpacity: async (context, opacity) => calls.push(["logoOpacity", context.id, opacity])
+    selectRandomNekoEditorBackgroundImage: async (context) => {
+      record(calls, "randomEditor", getContextId(context));
+    },
+    selectRandomNekoEmptyEditorLogoImage: async (context) => {
+      record(calls, "randomLogo", getContextId(context));
+    },
+    updateEditorBackgroundFit: async (context, fit) => {
+      record(calls, "fit", getContextId(context), fit);
+    },
+    updateEditorBackgroundOpacity: async (context, opacity) => {
+      record(calls, "editorOpacity", getContextId(context), opacity);
+    },
+    updateEmptyEditorLogoOpacity: async (context, opacity) => {
+      record(calls, "logoOpacity", getContextId(context), opacity);
+    }
   });
 
   assert.deepEqual(stateService.createSettingsState({ id: "ctx" }, { id: "webview" }), {
@@ -226,105 +309,106 @@ test("settings host services delegate state, bundle, and effects boundaries", as
   ]);
 });
 
-function createHandlers(calls) {
+function createHandlers(calls: Calls) {
   return {
     async applyAllEffects() {
-      calls.push(["applyAllEffects"]);
+      record(calls, "applyAllEffects");
     },
-    async applyNeonCustomizations(message) {
-      calls.push([
+    async applyNeonCustomizations(message: TestMessage) {
+      record(
+        calls,
         "applyNeonCustomizations",
         message.editorBackgroundOpacity,
         message.editorBackgroundFit,
         message.emptyEditorLogoOpacity
-      ]);
+      );
     },
-    async applySettingsBundle(bundle) {
-      calls.push(["applyBundle", bundle]);
+    async applySettingsBundle(bundle: unknown) {
+      record(calls, "applyBundle", bundle);
     },
-    async changeThemeVariant(themeVariantId) {
-      calls.push(["changeTheme", themeVariantId]);
+    async changeThemeVariant(themeVariantId: unknown) {
+      record(calls, "changeTheme", themeVariantId);
     },
     async disableNeon() {
-      calls.push(["disableNeon"]);
+      record(calls, "disableNeon");
     },
     async downloadEditorBackgroundImage() {
-      calls.push(["downloadEditor"]);
+      record(calls, "downloadEditor");
     },
     async downloadEmptyEditorLogoImage() {
-      calls.push(["downloadLogo"]);
+      record(calls, "downloadLogo");
     },
     async enableNeon() {
-      calls.push(["enableNeon"]);
+      record(calls, "enableNeon");
     },
     async exportSettingsBundle() {
-      calls.push(["exportFile"]);
+      record(calls, "exportFile");
     },
     async importSettingsBundle() {
-      calls.push(["importFile"]);
+      record(calls, "importFile");
       return false;
     },
     async importSettingsFromVsSync() {
-      calls.push(["importVsSync"]);
+      record(calls, "importVsSync");
       return true;
     },
-    async openDocumentationLink(url) {
-      calls.push(["openLink", url]);
+    async openDocumentationLink(url: string) {
+      record(calls, "openLink", url);
     },
-    postEffectsPendingWarning(message) {
-      calls.push(["effectsPending", message]);
+    postEffectsPendingWarning(message: string) {
+      record(calls, "effectsPending", message);
     },
-    postNeonEffectStatus(message) {
-      calls.push(["neonStatus", message]);
+    postNeonEffectStatus(message: string) {
+      record(calls, "neonStatus", message);
     },
     async postSettingsState() {
-      calls.push(["state"]);
+      record(calls, "state");
     },
     async removeEditorBackgroundImage() {
-      calls.push(["removeEditor"]);
+      record(calls, "removeEditor");
       return false;
     },
     async removeEmptyEditorLogoImage() {
-      calls.push(["removeLogo"]);
+      record(calls, "removeLogo");
       return false;
     },
-    async resetAllColorCustomizations(themeVariantId) {
-      calls.push(["resetAll", themeVariantId]);
+    async resetAllColorCustomizations(themeVariantId: unknown) {
+      record(calls, "resetAll", themeVariantId);
     },
-    async resetColorCustomization(section, id, themeVariantId) {
-      calls.push(["resetColor", section, id, themeVariantId]);
+    async resetColorCustomization(section: string, id: unknown, themeVariantId: unknown) {
+      record(calls, "resetColor", section, id, themeVariantId);
     },
     async saveSettingsToVsSync() {
-      calls.push(["saveSync"]);
+      record(calls, "saveSync");
     },
     async selectEditorBackgroundImage() {
-      calls.push(["selectEditor"]);
+      record(calls, "selectEditor");
       return false;
     },
     async selectEmptyEditorLogoImage() {
-      calls.push(["selectLogo"]);
+      record(calls, "selectLogo");
       return false;
     },
     async selectRandomNekoEditorBackgroundImage() {
-      calls.push(["randomEditor"]);
+      record(calls, "randomEditor");
     },
     async selectRandomNekoEmptyEditorLogoImage() {
-      calls.push(["randomLogo"]);
+      record(calls, "randomLogo");
     },
-    setE2ETestFixtures(fixtures) {
-      calls.push(["fixtures", fixtures]);
+    setE2ETestFixtures(fixtures: unknown) {
+      record(calls, "fixtures", fixtures);
     },
-    async updateColorCustomization(section, id, value, themeVariantId) {
-      calls.push(["updateColor", section, id, value, themeVariantId]);
+    async updateColorCustomization(section: string, id: unknown, value: unknown, themeVariantId: unknown) {
+      record(calls, "updateColor", section, id, value, themeVariantId);
     },
-    async updateEditorBackgroundFit(fit) {
-      calls.push(["fit", fit]);
+    async updateEditorBackgroundFit(fit: unknown) {
+      record(calls, "fit", fit);
     },
-    async updateEditorBackgroundOpacity(opacity) {
-      calls.push(["editorOpacity", opacity]);
+    async updateEditorBackgroundOpacity(opacity: unknown) {
+      record(calls, "editorOpacity", opacity);
     },
-    async updateEmptyEditorLogoOpacity(opacity) {
-      calls.push(["logoOpacity", opacity]);
+    async updateEmptyEditorLogoOpacity(opacity: unknown) {
+      record(calls, "logoOpacity", opacity);
     }
   };
 }
