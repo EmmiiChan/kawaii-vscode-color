@@ -1,7 +1,8 @@
-const assert = require("node:assert/strict");
-const test = require("node:test");
+import assert = require("node:assert/strict");
+import path = require("node:path");
+import test = require("node:test");
 
-const { createSettingsColorService } = require("../../out/src/settingsColorService");
+const { createSettingsColorService } = requireOut<typeof import("../../src/settingsColorService")>("settingsColorService");
 
 const WORKBENCH_SETTING = "workbench.colorCustomizations";
 const TOKEN_SETTING = "editor.tokenColorCustomizations";
@@ -10,20 +11,40 @@ const darkVariant = { id: "dark", label: "Kawaii VS Code Color" };
 const lightVariant = { id: "light", label: "Kawaii VS Code Color Light" };
 const themeVariants = { dark: darkVariant, light: lightVariant };
 
-function clone(value) {
-  if (value === undefined) {
-    return undefined;
-  }
+type PlainRecord = Record<string, any>;
 
-  return JSON.parse(JSON.stringify(value));
+interface MemoryStoreOptions {
+  readonly canUpdateWorkspaceSettings?: boolean;
+  readonly generatedTheme?: PlainRecord;
+  readonly globalSettings?: PlainRecord;
+  readonly tokenRules?: PlainRecord[];
+  readonly workspaceSettings?: PlainRecord;
 }
 
-function createMemoryStore(options = {}) {
+interface MemoryUpdate {
+  readonly settingName: string;
+  readonly value: unknown;
+  readonly target: boolean;
+}
+
+function requireOut<TModule>(...segments: readonly string[]): TModule {
+  return require(path.join(process.cwd(), "out", "src", ...segments)) as TModule;
+}
+
+function clone<T>(value: T): T {
+  if (value === undefined) {
+    return value;
+  }
+
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function createMemoryStore(options: MemoryStoreOptions = {}) {
   const globalSettings = clone(options.globalSettings || {});
   const workspaceSettings = clone(options.workspaceSettings || {});
-  const updates = [];
+  const updates: MemoryUpdate[] = [];
 
-  function writeSetting(settingName, value, isGlobalTarget) {
+  function writeSetting(settingName: string, value: unknown, isGlobalTarget: boolean): Promise<void> {
     const persistedValue = value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length === 0
       ? undefined
       : value;
@@ -44,30 +65,33 @@ function createMemoryStore(options = {}) {
     globalSettings,
     workspaceSettings,
     store: {
-      canUpdateWorkspaceSettings() {
+      canUpdateWorkspaceSettings(): boolean {
         return Boolean(options.canUpdateWorkspaceSettings);
       },
-      getSettingsObject(settingName) {
+      getSettingsObject(settingName: string): PlainRecord {
         return clone(globalSettings[settingName] || {});
       },
-      getTargetSettingsObject(settingName, isGlobalTarget) {
+      getTargetSettingsObject(settingName: string, isGlobalTarget: boolean): PlainRecord {
         const targetSettings = isGlobalTarget ? globalSettings : workspaceSettings;
         return clone(targetSettings[settingName] || {});
       },
-      updateGlobalSetting(settingName, value) {
+      getConfigurationSettingValue(settingName: string): unknown {
+        return clone(globalSettings[settingName]);
+      },
+      updateGlobalSetting(settingName: string, value: unknown): Promise<void> {
         return writeSetting(settingName, value, true);
       },
-      updateSetting(settingName, value, isGlobalTarget) {
+      updateSetting(settingName: string, value: unknown, isGlobalTarget: boolean): Promise<void> {
         return writeSetting(settingName, value, isGlobalTarget);
       }
     }
   };
 }
 
-function createService(store, overrides = {}) {
+function createService(store: ReturnType<typeof createMemoryStore>["store"], overrides: MemoryStoreOptions = {}) {
   return createSettingsColorService({
     colorThemeSetting: COLOR_THEME_SETTING,
-    getGeneratedTokenRule(tokenIndex) {
+    getGeneratedTokenRule(tokenIndex: number) {
       const tokenRules = overrides.tokenRules || [
         { scope: "comment", settings: { foreground: "#848bbd" } },
         { scope: ["source.js", "keyword"], settings: { foreground: "#fede5d" } }
@@ -75,8 +99,8 @@ function createService(store, overrides = {}) {
 
       return tokenRules[tokenIndex];
     },
-    getThemeVariantById(themeVariantId) {
-      const variant = themeVariants[themeVariantId];
+    getThemeVariantById(themeVariantId: unknown) {
+      const variant = themeVariants[String(themeVariantId) as keyof typeof themeVariants];
 
       if (!variant) {
         throw new Error(`Unsupported Kawaii VS Code Color theme variant: ${String(themeVariantId)}`);
