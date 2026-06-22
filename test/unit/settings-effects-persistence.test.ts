@@ -1,7 +1,7 @@
-const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const path = require("node:path");
-const test = require("node:test");
+import assert = require("node:assert/strict");
+import fs = require("node:fs");
+import path = require("node:path");
+import test = require("node:test");
 
 const {
   applyEffectsExport,
@@ -23,21 +23,41 @@ const {
   resolveStoredEmptyEditorLogoImagePath,
   restoreStoredImageExport,
   storeImageState
-} = require("../../out/src/settingsEffectsPersistence");
+} = requireOut<typeof import("../../src/settingsEffectsPersistence")>("settingsEffectsPersistence");
 
-const FIXTURES_DIR = path.resolve(__dirname, "..", "fixtures", "settings");
+const FIXTURES_DIR = path.join(process.cwd(), "test", "fixtures", "settings");
 
-function createContext() {
-  const state = new Map();
+interface TestContext {
+  readonly globalState: {
+    get(key: string): unknown;
+    update(key: string, value: unknown): Promise<void>;
+  };
+}
+
+interface ImageDataCall {
+  readonly extension: string;
+  readonly imageBuffer: Buffer;
+}
+
+interface StoredImageMetadataCall {
+  readonly fileName: string;
+}
+
+function requireOut<TModule>(...segments: readonly string[]): TModule {
+  return require(path.join(process.cwd(), "out", "src", ...segments)) as TModule;
+}
+
+function createContext(): { context: TestContext; state: Map<string, unknown> } {
+  const state = new Map<string, unknown>();
 
   return {
     state,
     context: {
       globalState: {
-        get(key) {
+        get(key: string): unknown {
           return state.get(key);
         },
-        update(key, value) {
+        update(key: string, value: unknown): Promise<void> {
           if (value === undefined) {
             state.delete(key);
           } else {
@@ -108,6 +128,7 @@ test("normalizes exported image data and rejects unsupported or oversized import
     originalName: "../unsafe.txt"
   });
 
+  assert.ok(normalized);
   assert.equal(normalized.extension, "webp");
   assert.equal(normalized.originalName, "imported-kawaii-vscode-color-image.webp");
   assert.equal(normalized.mimeType, "image/webp");
@@ -187,7 +208,7 @@ test("exports stored image bytes when metadata and file are available", async ()
     readFile() {
       return Promise.resolve(imageBuffer);
     },
-    resolvePath(storageFileName) {
+    resolvePath(storageFileName: string) {
       return `C:/tmp/${storageFileName}`;
     }
   });
@@ -201,10 +222,22 @@ test("exports stored image bytes when metadata and file are available", async ()
     dataBase64: imageBuffer.toString("base64")
   });
 
-  assert.equal(await createStoredImageExport(undefined, { exists() {} }), undefined);
-  assert.equal(await createStoredImageExport({ fileName: "editor-background-image.png" }, {
+  assert.equal(await createStoredImageExport(undefined, {
+    exists() { return false; },
+    readFile() { return Promise.resolve(Buffer.alloc(0)); },
+    resolvePath() { return "missing"; }
+  }), undefined);
+  assert.equal(await createStoredImageExport({
+    fileName: "editor-background-image.png",
+    originalName: "wallpaper.png",
+    mimeType: "image/png",
+    size: 0
+  }, {
     exists() {
       return false;
+    },
+    readFile() {
+      return Promise.resolve(Buffer.alloc(0));
     },
     resolvePath() {
       return "missing";
@@ -227,10 +260,10 @@ test("exports PNG fixture images as stable bundle image payloads", async () => {
     mimeType: "image/png",
     size: editorBackgroundBuffer.length
   }, {
-    exists(filePath) {
+    exists(filePath: string) {
       return fs.existsSync(filePath);
     },
-    readFile(filePath) {
+    readFile(filePath: string) {
       return fs.promises.readFile(filePath);
     },
     resolvePath() {
@@ -244,10 +277,10 @@ test("exports PNG fixture images as stable bundle image payloads", async () => {
     mimeType: "image/png",
     size: emptyEditorLogoBuffer.length
   }, {
-    exists(filePath) {
+    exists(filePath: string) {
       return fs.existsSync(filePath);
     },
-    readFile(filePath) {
+    readFile(filePath: string) {
       return fs.promises.readFile(filePath);
     },
     resolvePath() {
@@ -255,6 +288,8 @@ test("exports PNG fixture images as stable bundle image payloads", async () => {
     }
   });
 
+  assert.ok(exportedEditorBackground);
+  assert.ok(exportedEmptyEditorLogo);
   assert.equal(exportedEditorBackground.extension, "png");
   assert.equal(exportedEditorBackground.dataBase64, editorBackgroundBuffer.toString("base64"));
   assert.equal(exportedEmptyEditorLogo.extension, "png");
@@ -262,7 +297,7 @@ test("exports PNG fixture images as stable bundle image payloads", async () => {
 });
 
 test("restores exported image by removing missing data or storing valid data", async () => {
-  const calls = [];
+  const calls: string[] = [];
 
   await restoreStoredImageExport({}, {
     removeImage() {
@@ -284,7 +319,7 @@ test("restores exported image by removing missing data or storing valid data", a
       calls.push("remove-valid");
       return Promise.resolve();
     },
-    storeImage(imageData) {
+    storeImage(imageData: ImageDataCall) {
       calls.push(`store:${imageData.extension}:${imageData.imageBuffer.toString("utf8")}`);
       return Promise.resolve();
     }
@@ -295,8 +330,8 @@ test("restores exported image by removing missing data or storing valid data", a
 
 test("stores image bytes, deletes previous files, and updates metadata", async () => {
   const { context, state } = createContext();
-  const deleted = [];
-  const writes = [];
+  const deleted: Array<{ metadata: unknown; preservedFileName: string }> = [];
+  const writes: string[] = [];
 
   await storeImageState({
     context,
@@ -308,18 +343,23 @@ test("stores image bytes, deletes previous files, and updates metadata", async (
       mimeType: "image/png"
     },
     fileName: "editor-background-image.png",
-    previousMetadata: { fileName: "editor-background-image.jpg" },
+    previousMetadata: {
+      fileName: "editor-background-image.jpg",
+      originalName: "old.jpg",
+      mimeType: "image/jpeg",
+      size: 3
+    },
     targetPath: "C:/tmp/editor-background-image.png",
     ensureStorageDirectory() {
       writes.push("mkdir");
       return Promise.resolve();
     },
-    deletePreviousFile(metadata, preservedFileName) {
+    deletePreviousFile(metadata: unknown, preservedFileName: string) {
       deleted.push({ metadata, preservedFileName });
       return Promise.resolve();
     },
     fileSystem: {
-      writeFile(filePath, imageBuffer) {
+      writeFile(filePath: string, imageBuffer: Buffer) {
         writes.push(`${filePath}:${imageBuffer.toString("utf8")}`);
         return Promise.resolve();
       }
@@ -331,7 +371,15 @@ test("stores image bytes, deletes previous files, and updates metadata", async (
   });
 
   assert.deepEqual(deleted, [
-    { metadata: { fileName: "editor-background-image.jpg" }, preservedFileName: "editor-background-image.png" }
+    {
+      metadata: {
+        fileName: "editor-background-image.jpg",
+        originalName: "old.jpg",
+        mimeType: "image/jpeg",
+        size: 3
+      },
+      preservedFileName: "editor-background-image.png"
+    }
   ]);
   assert.deepEqual(writes, ["mkdir", "C:/tmp/editor-background-image.png:new"]);
   assert.deepEqual(state.get("image"), {
@@ -345,7 +393,26 @@ test("stores image bytes, deletes previous files, and updates metadata", async (
   await assert.rejects(
     storeImageState({
       context,
-      imageData: { imageBuffer: Buffer.alloc(2 * 1024 * 1024 + 1) },
+      imageData: {
+        imageBuffer: Buffer.alloc(2 * 1024 * 1024 + 1),
+        extension: "png",
+        originalName: "too-large.png",
+        mimeType: "image/png"
+      },
+      stateKey: "image",
+      fileName: "editor-background-image.png",
+      targetPath: "C:/tmp/editor-background-image.png",
+      ensureStorageDirectory() {
+        return Promise.resolve();
+      },
+      deletePreviousFile() {
+        return Promise.resolve();
+      },
+      fileSystem: {
+        writeFile() {
+          return Promise.resolve();
+        }
+      },
       maxSizeErrorMessage: "Image too large."
     }),
     /Image too large\./
@@ -354,14 +421,24 @@ test("stores image bytes, deletes previous files, and updates metadata", async (
 
 test("removes stored image state and applies effects exports in order", async () => {
   const { context, state } = createContext();
-  const calls = [];
-  state.set("image", { fileName: "editor-background-image.png" });
+  const calls: string[] = [];
+  state.set("image", {
+    fileName: "editor-background-image.png",
+    originalName: "image.png",
+    mimeType: "image/png",
+    size: 3
+  });
 
   await removeStoredImageState({
     context,
     stateKey: "image",
-    metadata: { fileName: "editor-background-image.png" },
-    deleteFile(metadata) {
+    metadata: {
+      fileName: "editor-background-image.png",
+      originalName: "image.png",
+      mimeType: "image/png",
+      size: 3
+    },
+    deleteFile(metadata: StoredImageMetadataCall) {
       calls.push(`delete:${metadata.fileName}`);
       return Promise.resolve();
     }
@@ -374,23 +451,23 @@ test("removes stored image state and applies effects exports in order", async ()
     editorBackground: { opacity: 0.2, fit: "left", image: { marker: "bg" } },
     emptyEditorLogo: { opacity: 0.7, image: { marker: "logo" } }
   }, {
-    updateEditorBackgroundOpacity(value) {
+    updateEditorBackgroundOpacity(value: number) {
       calls.push(`bg-opacity:${value}`);
       return Promise.resolve();
     },
-    updateEditorBackgroundFit(value) {
+    updateEditorBackgroundFit(value: string) {
       calls.push(`bg-fit:${value}`);
       return Promise.resolve();
     },
-    restoreEditorBackgroundImage(value) {
+    restoreEditorBackgroundImage(value: { marker: string }) {
       calls.push(`bg-image:${value.marker}`);
       return Promise.resolve();
     },
-    updateEmptyEditorLogoOpacity(value) {
+    updateEmptyEditorLogoOpacity(value: number) {
       calls.push(`logo-opacity:${value}`);
       return Promise.resolve();
     },
-    restoreEmptyEditorLogoImage(value) {
+    restoreEmptyEditorLogoImage(value: { marker: string }) {
       calls.push(`logo-image:${value.marker}`);
       return Promise.resolve();
     }
