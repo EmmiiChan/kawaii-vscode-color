@@ -129,6 +129,7 @@ const CRITICAL_FILES = [
   "package.json",
   "package-lock.json",
   "scripts/build-color-theme.js",
+  "scripts/build-color-theme.ts",
   "scripts/check-codex-docs.js",
   "scripts/check-codex-docs.ts",
   "scripts/e2e-last-run.js",

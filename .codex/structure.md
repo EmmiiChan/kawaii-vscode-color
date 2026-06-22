@@ -461,7 +461,8 @@ Local source anchors:
 - `themes/kawaii_synthwave-color-theme-light-overrides.json`: editable Kawaii light color and token overrides.
 - `themes/kawaii_synthwave-generated-color-theme.json`: generated VS Code public color theme definition.
 - `themes/kawaii_synthwave-generated-color-theme-light.json`: generated VS Code public light color theme definition.
-- `scripts/build-color-theme.js`: base-plus-overrides theme build flow.
+- `scripts/build-color-theme.js`: stable Node wrapper for the base-plus-overrides theme build flow.
+- `scripts/build-color-theme.ts`: TypeScript implementation of the base-plus-overrides theme build flow.
 - `scripts/check-codex-docs.js`: stable Node wrapper for the Codex documentation drift guard.
 - `scripts/check-codex-docs.ts`: TypeScript implementation of Codex documentation drift checks for package facts, themes, message contracts, state keys, schemas, renderer placeholders, and `semanticTokenColors`.
 - `scripts/e2e-last-run.js`: project-owned E2E last-run marker creation, phase updates, ExTester diagnostic reading, and Neon storage guard helpers.

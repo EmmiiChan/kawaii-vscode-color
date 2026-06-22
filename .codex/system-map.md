@@ -41,6 +41,7 @@ Dev dependency contract:
 - `package.json`
 - `package-lock.json`
 - `scripts/build-color-theme.js`
+- `scripts/build-color-theme.ts`
 - `scripts/check-codex-docs.js`
 - `scripts/check-codex-docs.ts`
 - `scripts/e2e-last-run.js`
@@ -84,7 +85,7 @@ Dev dependency contract:
 
 Build behavior:
 
-- `scripts/build-color-theme.js` reads base and override JSON/JSONC sources for both variants.
+- `scripts/build-color-theme.ts` reads base and override JSON/JSONC sources for both variants; `scripts/build-color-theme.js` is the stable wrapper entrypoint.
 - `colors` and `semanticTokenColors` merge by object key.
 - `tokenColors` replace matching base rules by `name` or `scope`; unmatched override rules append.
 - Generated theme files are strict JSON written by `npm run build:theme`.

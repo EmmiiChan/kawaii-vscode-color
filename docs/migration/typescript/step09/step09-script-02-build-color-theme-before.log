@@ -1,0 +1,31 @@
+COMMAND: npm run build:theme
+
+> kawaii-vscode-color@0.1.31 build:theme
+> node ./scripts/build-color-theme.js
+
+Generated themes\kawaii_synthwave-generated-color-theme.json
+Base: themes\kawaii_synthwave-color-theme.json
+Overrides: themes\kawaii_synthwave-color-theme-overrides.json
+Override colors: 144
+Override token rules: 4
+Generated themes\kawaii_synthwave-generated-color-theme-light.json
+Base: themes\kawaii_synthwave-color-theme-light.json
+Overrides: themes\kawaii_synthwave-color-theme-light-overrides.json
+Override colors: 190
+Override token rules: 4
+BUILD_THEME_EXIT_CODE: 0
+COMMAND: node --test test/unit/build-color-theme.test.js
+✔ buildGeneratedTheme replaces color overrides by key (1.0488ms)
+✔ buildGeneratedTheme replaces token rules by matching name or scope and appends new rules (0.211ms)
+✔ buildGeneratedTheme does not mutate input theme objects (0.2036ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 81.9815
+SCRIPT_TEST_EXIT_CODE: 0
+COMMAND: node --check scripts/build-color-theme.js
+SCRIPT_CHECK_EXIT_CODE: 0
