@@ -1,10 +1,23 @@
-const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const path = require("node:path");
-const test = require("node:test");
+import assert = require("node:assert/strict");
+import fs = require("node:fs");
+import path = require("node:path");
+import test = require("node:test");
 
-const rendererPlaceholders = require("../../out/src/shared/contracts/rendererPlaceholders");
-const themeTemplate = require("../../out/src/renderer/ThemeTemplate");
+const rendererPlaceholders = require(path.join(
+  process.cwd(),
+  "out",
+  "src",
+  "shared",
+  "contracts",
+  "rendererPlaceholders"
+)) as typeof import("../../src/shared/contracts/rendererPlaceholders");
+const themeTemplate = require(path.join(
+  process.cwd(),
+  "out",
+  "src",
+  "renderer",
+  "ThemeTemplate"
+)) as typeof import("../../src/renderer/ThemeTemplate");
 
 test("renderer token helpers preserve VS Code token color matching contracts", () => {
   assert.equal(themeTemplate.normalizeRendererTokenColor("FE4450"), "fe4450");
@@ -39,7 +52,7 @@ test("renderer template module keeps browser boundary identifiers and no Node im
     theme: "kawaii_synthwave-theme-styles"
   });
   assert.ok(
-    themeTemplate.KAWAII_THEME_WRAPPER_SELECTORS.some((selector) =>
+    themeTemplate.KAWAII_THEME_WRAPPER_SELECTORS.some((selector: string) =>
       selector.includes("kawaii-vscode-color-generated-color-theme-json")
     )
   );

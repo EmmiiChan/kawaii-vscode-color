@@ -404,6 +404,7 @@ Useful checks for this repository:
 - `npm pkg get name version publisher dependencies devDependencies engines`
 - `npm run test:docs`
 - `npm run type-check`
+- `npm run compile:tests`
 - `npm run test:check`
 - `npm run test:unit`
 - `npm run test:dom`
@@ -418,7 +419,7 @@ Useful checks for this repository:
 - Manual inspection of `package.json` contribution points.
 - Manual theme validation in VS Code with `Developer: Inspect Editor Tokens and Scopes`.
 
-TypeScript compatibility configs now exist for migration validation, and there is still no lint script. Tests are split across unit, DOM, and VS Code integration layers, and the only behavior-changing build step remains the theme merge script.
+TypeScript compatibility configs now exist for migration validation, and `tsconfig.tests.emit.json` emits converted TypeScript tests into `out-tests`. There is still no lint script. Tests are split across unit, DOM, and VS Code integration layers, and the only behavior-changing build step remains the theme merge script.
 
 ## Packaging and Release Boundaries
 

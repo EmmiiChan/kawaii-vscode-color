@@ -59,7 +59,8 @@ const CRITICAL_FILES = [
   "test/dom",
   "test/e2e",
   "test/integration",
-  "test/unit"
+  "test/unit",
+  "tsconfig.tests.emit.json"
 ];
 
 function validateCodexDocs(workspaceRoot = process.cwd()) {

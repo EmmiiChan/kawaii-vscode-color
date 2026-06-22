@@ -67,6 +67,7 @@ Dev dependency contract:
 - `test/e2e`
 - `test/integration`
 - `test/unit`
+- `tsconfig.tests.emit.json`
 - `tsconfig.base.json`
 - `tsconfig.extension.json`
 - `tsconfig.json`
@@ -235,6 +236,7 @@ The renderer code must keep using VS Code workbench/theme tokens and must not de
 | --- | --- | --- |
 | Codex docs guard | `npm run test:docs` | Verifies this map and `.codex` guides still match critical repo facts. |
 | TypeScript compatibility check | `npm run type-check` | Runs TypeScript no-emit checks for current mixed JS/TS migration configs. |
+| TypeScript test emit | `npm run compile:tests` | Emits converted `.ts` tests to `out-tests` without compiling legacy JavaScript tests. |
 | Syntax check | `npm run test:check` | Runs `test:docs`, compiles, then Node syntax checks for selected scripts, compiled runtime output, and E2E files. |
 | Unit | `npm run test:unit` | Compiles TypeScript-compatible migration output, then runs the Node test runner for scripts, shared contracts, and dependency-light runtime helpers. |
 | DOM | `npm run test:dom` | Compiles first, then runs jsdom settings webview behavior, split webview contract, and visual-state DOM contracts. |

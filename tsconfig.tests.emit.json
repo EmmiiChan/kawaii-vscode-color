@@ -1,0 +1,16 @@
+{
+    "extends": "./tsconfig.tests.json",
+    "compilerOptions": {
+        "allowJs": false,
+        "checkJs": false
+    },
+    "include": [
+        "scripts/**/*.ts",
+        "test/**/*.ts"
+    ],
+    "exclude": [
+        "node_modules/**",
+        "test-results/**",
+        "playwright-report/**"
+    ]
+}

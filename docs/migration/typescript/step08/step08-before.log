@@ -1,0 +1,385 @@
+Step 08 baseline validation
+Started: 2026-06-22 08:44:44 +01:00
+
+> git status --short --branch
+## typescript-migration-step08-test-ts-runner
+ M .codex/change-impact.md
+Exit code: 0
+
+> npm run type-check
+
+> kawaii-vscode-color@0.1.31 type-check
+> tsc -p tsconfig.extension.json --noEmit --pretty false && tsc -p tsconfig.scripts.json --noEmit --pretty false && tsc -p tsconfig.tests.json --noEmit --pretty false
+
+Exit code: 0
+
+> npm run test:unit
+
+> kawaii-vscode-color@0.1.31 test:unit
+> npm run compile && node --test "scripts/**/*.test.js" "test/unit/**/*.test.js"
+
+
+> kawaii-vscode-color@0.1.31 compile
+> tsc -p tsconfig.extension.json && tsc -p tsconfig.scripts.json
+
+✔ validateCodexDocFacts accepts documentation that contains all critical facts (1.3721ms)
+✔ validateCodexDocFacts ignores automatic patch version drift (0.2047ms)
+✔ validateCodexDocFacts reports missing webview message contracts (0.2953ms)
+✔ validateCodexDocFacts reports missing renderer placeholders (0.264ms)
+✔ createE2ELastRunRecord normalizes safe run metadata and artifact paths (2.4741ms)
+✔ createE2ELastRunRecord keeps current VS Code E2E metadata isolated (1.1919ms)
+✔ updateE2ELastRunPhase and finalizeE2ELastRunRecord preserve failure details (0.6972ms)
+✔ writeE2ELastRunRecord writes the project-owned marker without depending on ExTester marker freshness (2.8441ms)
+✔ readExTesterLastRun treats missing or stale ExTester marker as optional diagnostics (2.6792ms)
+✔ readExTesterLastRun ignores failed tests from a marker older than the current run (1.9087ms)
+✔ validateE2ERunOptions requires gated Neon runs to stay inside disposable storage (0.7407ms)
+✔ increments the package patch version and synchronizes package-lock (6.8008ms)
+✔ rejects unsupported package versions (0.574ms)
+✔ require-e2e-neon-flag rejects Neon E2E without explicit acknowledgement (78.4038ms)
+✔ require-e2e-neon-flag allows Neon E2E with explicit acknowledgement (72.6696ms)
+✔ formatSummary prints a final overview for passed, failed, and skipped phases (2.1337ms)
+✔ createSkippedResults marks remaining phases after a fail-fast stop (0.996ms)
+✔ getNpmExecutable uses npm.exe on Windows so child process runs without a shell (0.1857ms)
+✔ formatSummary includes spawn errors for failed phases (0.2146ms)
+✔ runAllSafeTests returns a promise so the CLI can wait before exiting (1.1317ms)
+✔ getSummaryDelayMs defaults to a short pause before final output (0.1847ms)
+✔ safe phase list captures integration output before continuing (0.1741ms)
+✔ safe phase list excludes gated Neon E2E (0.1518ms)
+✔ runAllSafeTestPlan fails fast and keeps summary when Safe E2E exits non-zero (2.199ms)
+✔ buildGeneratedTheme replaces color overrides by key (1.6056ms)
+✔ buildGeneratedTheme replaces token rules by matching name or scope and appends new rules (0.4777ms)
+✔ buildGeneratedTheme does not mutate input theme objects (0.299ms)
+✔ package main points to the compiled extension entry (1.2111ms)
+✔ resolveExtensionRoot maps source and compiled directories to the package root (0.3631ms)
+✔ resolveExtensionAssetPath resolves source assets from compiled output (0.2772ms)
+✔ createEmptyEditorLogoStyles includes old and wrapper watermark selectors (0.7218ms)
+✔ empty editor logo selectors match old and wrapper VS Code watermark markup (82.0511ms)
+✔ empty editor logo version fallbacks remain individually active (12.4383ms)
+✔ createEmptyEditorLogoStyles applies data URI and opacity (0.1437ms)
+✔ extension maps every editor background fit option to its CSS area (1.4479ms)
+✔ NeonEffectController exposes settings actions that delegate to the service (2.2854ms)
+✔ NeonEffectController regenerates Neon only when switching between Kawaii themes while active (0.4855ms)
+✔ NeonEffectService generates the runtime script with typed configuration and stored images (4.8878ms)
+✔ NeonEffectService disables active patches and reports inactive patches (1.3198ms)
+✔ NeonEffectService reports file access failures while disabling the patch (0.595ms)
+✔ NeonEffectService logs unexpected isEnabled failures and returns false (0.3261ms)
+✔ NeonEffectService normalizes supported editor background fit values (0.236ms)
+✔ NeonEffectService reports missing workbench files without writing the patch (0.6716ms)
+✔ random neko fetcher normalizes a mocked API image without using external network (1.2784ms)
+✔ random neko payload validation rejects missing image data (0.6885ms)
+✔ random neko URL and extension helpers use safe fallbacks (0.3836ms)
+✔ random neko fetcher propagates controlled request failures (0.3144ms)
+✔ renderer token helpers preserve VS Code token color matching contracts (1.5291ms)
+✔ renderer token replacement keeps dark and light glow maps explicit (0.4407ms)
+✔ renderer template module keeps browser boundary identifiers and no Node imports (1.3185ms)
+✔ renderer placeholder helpers replace only known placeholders (0.3779ms)
+✔ normalizeBrightnessSetting clamps, rounds, and defaults invalid values (2.0073ms)
+✔ normalizeSettingsBundle validates schema and supported versions (0.6714ms)
+✔ normalizeSettingsBundle accepts current fixtures and rejects invalid fixture inputs (0.892ms)
+✔ extension configuration export prefers explicit global values and falls back to effective values (1.1079ms)
+✔ extension configuration import writes normalized values (0.4969ms)
+✔ color customization export and import handle dark and light blocks while preserving unrelated customizations (0.606ms)
+✔ createSettingsBundle exports active theme, configuration, colors, and effects (1.3793ms)
+✔ createSettingsBundle exports dark/light colors and image-backed effects (0.8721ms)
+✔ applySettingsBundle applies config, colors, effects, then active theme (0.5353ms)
+✔ applySettingsBundle restores fixture config, dark/light colors, effects, and active theme (0.9433ms)
+✔ settings bundle actions save/import settings sync state (0.5624ms)
+✔ settings bundle file actions handle cancellations and read/write JSON files (1.9848ms)
+✔ settings sync and file actions restore complete snapshots across chained operations (2.4598ms)
+✔ settings sync and file actions match the state model for every four-step chain (185.6278ms)
+✔ settings bundle file actions reject invalid JSON and unsupported schema versions (0.7957ms)
+✔ updateColorCustomization writes a validated workbench color to the global theme block (2.2474ms)
+✔ updateColorCustomization accepts supported hex formats and rejects invalid values without writing (1.0198ms)
+✔ updateColorCustomization keeps dark and light customizations isolated (0.4091ms)
+✔ updateColorCustomization rejects unknown workbench colors without writing settings (0.3208ms)
+✔ updateColorCustomization writes token colors by replacing matching scopes or appending missing scopes (0.581ms)
+✔ updateColorCustomization rejects unknown token indexes and unsupported sections without writing settings (0.3892ms)
+✔ resetColorCustomization removes workbench colors from global and workspace targets (0.4992ms)
+✔ resetColorCustomization removes token rules and keeps unknown token indexes as no-ops (0.3433ms)
+✔ resetAllColorCustomizations removes workbench and token blocks from global and workspace targets (0.5258ms)
+✔ changeThemeVariant writes the selected color theme label globally (0.3869ms)
+✔ normalizes editor background and empty logo opacity plus fit values (1.7111ms)
+✔ validates safe stored file names and resolves paths under storage (0.724ms)
+✔ normalizes supported image extensions, MIME types, and file sizes (1.1236ms)
+✔ normalizes exported image data and rejects unsupported or oversized imports (6.4416ms)
+✔ normalizes metadata and builds stored image state (0.5864ms)
+✔ exports stored image bytes when metadata and file are available (0.3764ms)
+✔ exports PNG fixture images as stable bundle image payloads (8.1967ms)
+✔ restores exported image by removing missing data or storing valid data (0.555ms)
+✔ stores image bytes, deletes previous files, and updates metadata (2.3549ms)
+✔ removes stored image state and applies effects exports in order (0.5999ms)
+✔ SettingsMessageController dispatches host messages and preserves legacy payload names (2.6291ms)
+✔ SettingsMessageController keeps test-only message gates at the boundary (1.2842ms)
+✔ SettingsMessageController posts effects warnings only for successful imports (0.3952ms)
+✔ SettingsCommandController delegates settings command actions without owning VS Code internals (0.8386ms)
+✔ settings host services delegate state, bundle, and effects boundaries (1.0326ms)
+✔ settings webview messages reach persistence services without touching real VS Code state (45.9216ms)
+✔ settings E2E bundle hook is rejected by default and applies fixture only with Neon flag (13.7015ms)
+✔ settings E2E fixtures drive dialogs and random image flows without native UI or network (26.1699ms)
+✔ settings webview sync and file messages restore saved state after chained edits (13.8302ms)
+✔ normalizeHexColor accepts VS Code hex formats and preserves trimmed values (1.174ms)
+✔ normalizeHexColor rejects invalid color values with existing messages (0.5293ms)
+✔ getThemeCustomizationKey returns theme-specific VS Code customization keys (0.1611ms)
+✔ clonePlainObject and ensurePlainObject return safe plain objects (0.9636ms)
+✔ writeThemeCustomizationBlock writes non-empty blocks and deletes empty blocks (1.458ms)
+✔ getTextMateRules filters invalid textMateRules entries (0.3446ms)
+✔ scope helpers compare strings and arrays using stable stringification (0.2879ms)
+✔ workbench block update and reset preserve unrelated theme blocks (0.3227ms)
+✔ token block update replaces matching scope and appends missing scope (0.4062ms)
+✔ token reset removes matching rules and deletes empty textMateRules (0.3273ms)
+✔ theme customization export and removal handle supported variants only (0.3942ms)
+✔ getSettingsObject reads and clones configuration objects (1.8427ms)
+✔ getSettingsObject returns empty object for invalid values (0.2321ms)
+✔ getTargetSettingsObject reads global and workspace inspection values (0.2296ms)
+✔ getTargetSettingsObject safely returns empty object when inspection is missing (0.172ms)
+✔ updateSetting writes undefined for empty objects (0.9717ms)
+✔ updateSetting writes global and workspace targets (0.2098ms)
+✔ updateSetting preserves scalar values instead of treating them as empty settings (0.1677ms)
+✔ canUpdateWorkspaceSettings detects workspace targets (0.1887ms)
+✔ shared color guards accept VS Code hex colors and reject invalid values (2.1307ms)
+✔ shared opacity normalization clamps incoming numeric values (0.2297ms)
+✔ shared theme guards identify supported Kawaii theme variants (0.1769ms)
+✔ webview message guard accepts known messages and rejects unknown payloads (0.2795ms)
+✔ settings bundle schema constants preserve current and legacy schema names (0.1948ms)
+✔ renderer placeholder contract includes required Neon placeholders (0.1536ms)
+✔ shared result helpers create explicit success and failure values (0.9717ms)
+✔ WorkbenchPatchService writes the Neon script and patches the workbench HTML (3.6719ms)
+✔ WorkbenchPatchService reports reactivation without duplicating the marker (0.5869ms)
+✔ WorkbenchPatchService removes an active patch and reports absent patches (0.9928ms)
+✔ WorkbenchPatchService returns workbench-not-found when no supported HTML file exists (0.2505ms)
+✔ applyWorkbenchPatchScriptTag inserts a cache-busted script before the closing html tag (0.806ms)
+✔ applyWorkbenchPatchScriptTag replaces existing extension marker instead of duplicating it (0.1554ms)
+✔ removeWorkbenchPatchScriptTag removes only the marked extension script (0.0994ms)
+✔ resolveWorkbenchPaths prefers electron-browser workbench.html (0.8344ms)
+✔ resolveWorkbenchPatchPaths resolves electron-sandbox workbench.esm.html (0.5294ms)
+ℹ tests 130
+ℹ suites 0
+ℹ pass 130
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 908.9067
+Exit code: 0
+
+> npm run test:dom
+
+> kawaii-vscode-color@0.1.31 test:dom
+> npm run compile && node --test "test/dom/**/*.test.js"
+
+
+> kawaii-vscode-color@0.1.31 compile
+> tsc -p tsconfig.extension.json && tsc -p tsconfig.scripts.json
+
+✔ settings webview split modules preserve state serialization and CSP contracts (1.7749ms)
+✔ settings webview split modules expose stable page, style, and client message contracts (0.1949ms)
+✔ settings webview HTML adapter can delegate legacy document rendering with typed helpers (0.2129ms)
+✔ settings webview filters color rows and shows empty state (203.4293ms)
+✔ settings webview switches workbench and syntax sections (69.4689ms)
+✔ settings webview validates hex input before posting color updates (1357.536ms)
+✔ settings webview posts color picker updates and preserves alpha (295.688ms)
+✔ settings webview posts reset color, refresh, and reset all (25.5605ms)
+✔ settings webview posts theme variant changes (24.791ms)
+✔ settings webview clears pending color updates before sync (291.3226ms)
+✔ settings webview renders neon effect page without running real patch (201.5964ms)
+✔ settings webview posts home apply effects without running real patch (51.6099ms)
+✔ settings webview posts color settings apply effects with dark image customizations (87.9736ms)
+✔ settings webview posts color settings apply effects with light missing-image state (49.8806ms)
+✔ settings webview apply effects cancels pending image timers (285.6588ms)
+✔ settings webview posts editor background image actions (244.9673ms)
+✔ settings webview posts editor background opacity and fit updates (329.8844ms)
+✔ settings webview posts empty editor logo actions (33.9129ms)
+✔ settings webview posts empty editor logo opacity updates (294.1029ms)
+✔ settings webview applies state messages and clears loading indicators (31.3743ms)
+✔ settings webview posts ready and can request Neon Effect actions (211.2398ms)
+✔ settings webview exposes app-specific navigation and help links (57.6294ms)
+✔ settings webview toggles each app page and keeps one active nav item (91.1169ms)
+✔ settings webview renders home and help metadata links (39.4968ms)
+✔ settings webview shows effects pending warnings (200.5913ms)
+✔ settings webview handles neon status messages (58.872ms)
+✔ settings webview handles error messages and clears loading (47.2325ms)
+✔ settings webview styles consume editor-provided vscode tokens instead of a standalone palette (0.6165ms)
+✔ settings webview exposes E2E postMessage hook only when explicitly enabled (81.143ms)
+✔ settings webview posts sync and file action messages (224.2594ms)
+ℹ tests 30
+ℹ suites 0
+ℹ pass 30
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3101.069
+Exit code: 0
+
+> npm run test:integration
+
+> kawaii-vscode-color@0.1.31 test:integration
+> npm run compile && vscode-test
+
+
+> kawaii-vscode-color@0.1.31 compile
+> tsc -p tsconfig.extension.json && tsc -p tsconfig.scripts.json
+
+- Resolving version...
+√ Validated version: 1.125.1
+√ Found existing install in C:\w\p\item-pixel\vscode\kawaii-vscode-color\.vscode-test\vscode-win32-x64-archive-1.125.1
+
+Warning: 'cached-data' is not in the list of known options, but still passed to Electron/Chromium.
+[main 2026-06-22T07:45:07.537Z] StorageMainService: creating application shared storage
+[main 2026-06-22T07:45:07.647Z] [shared storage] Creating shared storage database at ':memory:' (wasCreated: true)
+[main 2026-06-22T07:45:07.648Z] [shared storage] Initializing fallback application storage (path: in-memory)
+[main 2026-06-22T07:45:07.658Z] Error: Error mutex already exists
+    at _s.installMutex (file:///C:/w/p/item-pixel/vscode/kawaii-vscode-color/.vscode-test/vscode-win32-x64-archive-1.125.1/fcf604774b/resources/app/out/main.js:561:26010)
+[main 2026-06-22T07:45:07.685Z] [shared storage] Fallback application storage initialized with 3 items
+[main 2026-06-22T07:45:07.686Z] update#setState disabled
+[main 2026-06-22T07:45:07.686Z] update#ctor - updates are disabled by the environment
+Canceled Failed to load custom agents
+Started local extension host with pid 111900.
+Loading development extension at c:\w\p\item-pixel\vscode\kawaii-vscode-color
+[AccountPolicyGate] apply: state=inactive, reason=undefined, isRestricted=false
+Settings Sync: Account status changed from uninitialized to unavailable
+[111552:0622/084510.299:ERROR:electron\shell\browser\api\electron_api_app.cc:1419] Failed to commit changes to custom Jump List.
+[main 2026-06-22T07:45:10.300Z] updateWindowsJumpList#setJumpList unexpected result: error
+
+  Kawaii VS Code Color extension
+    √ loads manifest contributions and registers the settings command
+    √ opens the settings command without throwing
+  2 passing (98ms)
+[main 2026-06-22T07:45:10.389Z] Extension host with pid 111900 exited with code: 0, signal: unknown.
+Exit code:   0
+Exit code: 0
+
+> npm run test:e2e
+
+> kawaii-vscode-color@0.1.31 test:e2e
+> npm run compile && node scripts/run-e2e.js
+
+
+> kawaii-vscode-color@0.1.31 compile
+> tsc -p tsconfig.extension.json && tsc -p tsconfig.scripts.json
+
+Running E2E phase: safe
+[33m
+
+WARNING: You are using the outdated VS Code version '1.111.0'. The latest stable version is '1.125.1'.
+
+[0m
+Downloading VS Code: 1.111.0 / stable
+[0622/084515.137:ERROR:third_party\crashpad\crashpad\util\win\registration_protocol_win.cc:108] CreateFile: Acesso negado. (0x5)
+VS Code exists in local cache, skipping download
+ChromeDriver 142.0.7444.175 exists in local cache, skipping download
+Executing prepublish script 'npm run vscode:prepublish'...
+
+> kawaii-vscode-color@0.1.31 vscode:prepublish
+> npm run compile && npm run build:theme
+
+
+> kawaii-vscode-color@0.1.31 compile
+> tsc -p tsconfig.extension.json && tsc -p tsconfig.scripts.json
+
+
+> kawaii-vscode-color@0.1.31 build:theme
+> node ./scripts/build-color-theme.js
+
+Generated themes\kawaii_synthwave-generated-color-theme.json
+Base: themes\kawaii_synthwave-color-theme.json
+Overrides: themes\kawaii_synthwave-color-theme-overrides.json
+Override colors: 144
+Override token rules: 4
+Generated themes\kawaii_synthwave-generated-color-theme-light.json
+Base: themes\kawaii_synthwave-color-theme-light.json
+Overrides: themes\kawaii_synthwave-color-theme-light-overrides.json
+Override colors: 190
+Override token rules: 4
+ INFO  Files included in the VSIX:
+kawaii-vscode-color-0.1.31.vsix
+├─ [Content_Types].xml
+├─ extension.vsixmanifest
+└─ extension/
+   ├─ .vscode-test.js [0.35 KB]
+   ├─ LICENSE.txt [34.36 KB]
+   ├─ README_LEGACY.md [6.2 KB]
+   ├─ README_PRE_FORK.md [7.13 KB]
+   ├─ changelog.md [1.92 KB]
+   ├─ icon.png [1.78 MB]
+   ├─ kawaii_synthwave-noglow.css [5.63 KB]
+   ├─ kawaii_synthwave.css [6.29 KB]
+   ├─ package.json [7.82 KB]
+   ├─ readme.md [18.26 KB]
+   ├─ theme.jpg [187.95 KB]
+   ├─ tsconfig.base.json [0.63 KB]
+   ├─ tsconfig.extension.json [0.51 KB]
+   ├─ tsconfig.json [0.25 KB]
+   ├─ tsconfig.scripts.json [0.46 KB]
+   ├─ tsconfig.tests.json [0.6 KB]
+   ├─ .github/ (1 file) [0.83 KB]
+   ├─ docs/ (57 files) [322.33 KB]
+   ├─ images/ (35 files) [14.24 MB]
+   ├─ out/ (85 files) [404.1 KB]
+   ├─ out-scripts/ (27 files) [153.81 KB]
+   ├─ scripts/ (13 files) [76.49 KB]
+   ├─ src/ (43 files) [300.11 KB]
+   └─ themes/ (6 files) [93.57 KB]
+
+=> Run vsce ls --tree to see all included files.
+
+ DONE  Packaged: C:\w\p\item-pixel\vscode\kawaii-vscode-color\kawaii-vscode-color-0.1.31.vsix (285 files, 16.2 MB)
+[0622/084529.838:ERROR:third_party\crashpad\crashpad\util\win\registration_protocol_win.cc:108] CreateFile: Acesso negado. (0x5)
+[0622/084530.042:ERROR:third_party\crashpad\crashpad\util\win\registration_protocol_win.cc:108] CreateFile: Acesso negado. (0x5)
+Installing extensions...
+[Error: EPERM: operation not permitted, mkdir 'c:\Users\dst3891\AppData\Roaming\Code\logs\20260622T084530'] {
+  errno: -4048,
+  code: 'EPERM',
+  syscall: 'mkdir',
+  path: 'c:\\Users\\dst3891\\AppData\\Roaming\\Code\\logs\\20260622T084530'
+}
+Extension 'kawaii-vscode-color-0.1.31.vsix' was successfully installed.
+Loading mocha configuration from test/e2e/.mocharc.js
+
+
+Detected user defined code settings
+Writing code settings to C:\w\p\item-pixel\vscode\kawaii-vscode-color\.vscode-test\extest-111\settings\User\settings.json
+Launching browser...
+[0622/084532.570:ERROR:third_party\crashpad\crashpad\util\win\registration_protocol_win.cc:108] CreateFile: Acesso negado. (0x5)
+[0622/084532.818:ERROR:third_party\crashpad\crashpad\util\win\registration_protocol_win.cc:108] CreateFile: Acesso negado. (0x5)
+Browser ready in 2893 ms
+Launching tests...
+  Settings safe flows E2E
+    √ filters color settings (3942ms)
+    √ switches workbench and syntax tabs (3358ms)
+    √ switches theme variant selector in isolated profile (3058ms)
+    √ updates editor.background color in the isolated profile and refreshes the UI (2173ms)
+    √ updates editor.background through the color picker and preserves existing alpha (1892ms)
+    √ uses controlled E2E fixtures for dialogs and Random Neko without native UI or network (4168ms)
+    √ shows safe action controls without invoking native dialogs (3465ms)
+
+  Settings visual state image validation E2E
+    √ captures and validates image preview, warning, and missing-image states (5486ms)
+    √ captures and validates random loading, effects warning, neon status, and error states (4775ms)
+    √ captures and validates color empty, invalid input, opacity, and fit selector states (4940ms)
+
+  Settings webview E2E
+    √ opens settings from the Command Palette (1197ms)
+    √ navigates through every settings page (2773ms)
+    √ shows project help metadata (1350ms)
+    √ renders themed UI without obvious layout collapse (1372ms)
+    √ does not run real Neon patch in safe suite (1228ms)
+
+  VS Code E2E launcher
+    √ opens VS Code with the development extension command available (1999ms)
+
+Shutting down the browser
+
+  16 passing (51s)
+
+Exit code: 0
+
+> npm run test:docs
+
+> kawaii-vscode-color@0.1.31 test:docs
+> node scripts/check-codex-docs.js
+
+Codex documentation is aligned with project facts.
+Exit code: 0
+
+Finished: 2026-06-22 08:46:22 +01:00
