@@ -1,6 +1,6 @@
 # Codex Project Operations Guide
 
-Last reviewed: 2026-06-17
+Last reviewed: 2026-06-22
 
 This file tells Codex how to test, run, package, locally install, and prepare this VS Code theme extension for publishing. For architecture, read `.codex/structure.md`. For official documentation links, read `.codex/docs.md`.
 
@@ -14,7 +14,7 @@ Current tooling state:
 | --- | --- |
 | Build step | `npm run build:theme` merges protected base themes and editable overrides into the generated themes loaded by VS Code. `npm run build:local` bumps the patch version, then builds the themes and local VSIX. |
 | Automated tests | The lightweight gate starts with the Codex docs drift guard and Node syntax check, then the regular layers cover Node unit tests, `jsdom` DOM UI tests, VS Code Extension Development Host integration tests, and ExTester/WebDriver real VS Code UI E2E tests. A separate gated Neon E2E patches only a disposable `.vscode-test` install. |
-| TypeScript | Tooling is active for migration. `package.json.main` points to compiled `./out/src/extension.js`; the runtime entry, extracted Neon host controller/services/adapters, shared contracts, and pure settings/workbench helpers listed below are TypeScript. |
+| TypeScript | Tooling is active for migration. `package.json.main` points to compiled `./out/src/extension.js`; the runtime entry, extracted Neon and Settings host controllers/services/adapters, shared contracts, pure settings/workbench helpers, and settings webview contracts listed below are TypeScript. |
 | npm dependencies | No runtime dependencies. Dev-only tooling/test dependencies are `typescript@^6.0.3`, `@types/node@^26.0.0`, `@types/vscode@^1.33.0`, `jsdom@29.1.1`, `@vscode/test-cli@0.0.12`, `@vscode/test-electron@3.0.0`, `vscode-extension-tester@8.23.0`, and `mocha@11.7.6`. |
 | Packaging tool | Not installed permanently in this repo. Use `@vscode/vsce` through the existing npm scripts when packaging. |
 | Runtime entry | `package.json.main` points to `./out/src/extension.js`; run `npm run compile` before extension-host, E2E, or package validation. |
@@ -46,7 +46,7 @@ Expected result:
 - `npm run type-check` should run the TypeScript compatibility configs in no-emit mode for current JS migration source, scripts, and tests.
 - `npm run test:check` should run `test:docs`, compile `out/`, then exit without syntax errors in selected scripts, compiled runtime output, and E2E files.
 - `npm run test:unit` should compile the TypeScript-compatible migration output first, then pass build, version, workbench patch, shared contract, settings persistence, Settings Sync / JSON import-export chain, and mocked settings message-chain unit tests.
-- `npm run test:dom` should pass settings webview DOM tests covering all safe webview events, app navigation, Help metadata, Color Settings inputs/debounce, image/logo state, incoming webview messages, warnings/errors, and editor-provided `--vscode-*` tokens instead of a standalone UI palette.
+- `npm run test:dom` should compile first, then pass settings webview DOM tests covering all safe webview events, app navigation, Help metadata, Color Settings inputs/debounce, image/logo state, incoming webview messages, warnings/errors, split webview contracts, and editor-provided `--vscode-*` tokens instead of a standalone UI palette.
 - `npm run test:integration` should compile, activate the extension in the Extension Development Host, and execute `kawaii_synthwave.openSettings` without running the real Neon Effect patch.
 - `npm run test:e2e` should compile, package the extension, open disposable VS Code `1.111.0` through ExTester/WebDriver, navigate the real settings webview, avoid all real Neon patch actions, cover safe fixture-backed upload/import/export/download and Random Neko flows without native dialogs or network, write safe Settings visual screenshots plus PNG analysis under `test-results/e2e`, and update `test-results/e2e/kawaii-last-run.json`.
 - `npm run test:e2e:current` should compile and run the same safe E2E suite in `.vscode-test/extest-current` using ExTester's `max` version by default; use `KAWAII_E2E_CURRENT_CODE_VERSION=<version>` when probing a specific VS Code stable build.
@@ -154,7 +154,8 @@ The package loads compiled runtime JavaScript from `out/` and still ships source
 - `src/settingsBundle.ts` owns settings bundle creation/application, Settings Sync, and JSON import/export actions.
 - `src/settingsEffectsPersistence.ts` owns deterministic effect/image persistence helpers.
 - `src/randomNekoImage.ts` owns Random Neko payload parsing, URL resolution, guarded HTTPS fetching, and testable image response normalization.
-- `src/settingsWebview.js` renders the setup webview HTML. It must use VS Code webview color tokens (`--vscode-*`) and must not define a separate hardcoded UI palette.
+- `src/settingsWebview.js` renders the setup webview HTML as the compatibility renderer. It must use VS Code webview color tokens (`--vscode-*`) and must not define a separate hardcoded UI palette.
+- `src/webview/settings` contains typed settings webview contracts for the view model, HTML/CSP adapter, page ids, style token names, and client `postMessage` types used by the compatibility renderer.
 - `src/workbenchPatch.ts` contains pure workbench path and HTML patch helpers covered by unit tests.
 - `src/js/theme_template.js` is read as a template and written as generated `neondreams.js`.
 - `src/css/editor_chrome.css` is injected into the generated renderer script.
@@ -165,7 +166,7 @@ The package loads compiled runtime JavaScript from `out/` and still ships source
 | Layer | Command | Main coverage |
 | --- | --- | --- |
 | Unit without UI | `npm run test:unit` | Theme build merge behavior, version bump behavior, workbench patch helpers, settings persistence helpers, settings store adapter, color customization service, bundle/sync/file actions including chained Settings Sync / JSON import-export restoration, effect/image persistence, typed host controllers/services, and mocked settings message chains. |
-| DOM UI | `npm run test:dom` | Settings webview readiness, all safe webview events, app navigation, Help metadata, Color Settings inputs/debounce, image/logo state, incoming webview messages, warnings/errors, and `--vscode-*` color-token contract. |
+| DOM UI | `npm run test:dom` | Compile first, then validate settings webview readiness, all safe webview events, app navigation, Help metadata, Color Settings inputs/debounce, image/logo state, incoming webview messages, warnings/errors, split webview contracts, and `--vscode-*` color-token contract. |
 | VS Code integration | `npm run test:integration` | Compile, extension manifest registration, activation, command registration, and opening settings in the Extension Development Host. |
 | Real VS Code UI E2E | `npm run test:e2e` | Compile, then ExTester/WebDriver opens disposable VS Code, runs the Command Palette, switches into the real settings webview iframe, validates navigation, layout, safe UI flows, color picker alpha persistence, controlled fixture dialog/Random Neko flows without native dialogs or network, screenshot artifacts for visible settings pages and dynamic visual UI states, and programmatic PNG analysis for Settings visual before/after states. |
 | Current VS Code UI E2E | `npm run test:e2e:current` | Compile, then run experimental safe E2E in `.vscode-test/extest-current`; uses ExTester `max` by default and can probe a specific VS Code build via `KAWAII_E2E_CURRENT_CODE_VERSION`. |

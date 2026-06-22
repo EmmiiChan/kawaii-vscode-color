@@ -1,6 +1,6 @@
 # Codex Structure and Workflow Guide
 
-Last reviewed: 2026-06-17
+Last reviewed: 2026-06-22
 
 Use this guide to understand how this VS Code theme extension is shaped, how files relate to each other, and where future changes belong. For official API links and version-specific references, read `.codex/docs.md` first.
 
@@ -154,6 +154,7 @@ Keep changes inside the existing responsibility boundaries.
 | Root manifest/package files | Extension identity, commands, settings, theme contribution, marketplace metadata, package lock | Runtime implementation details that should live under `src` |
 | `src` | Extension host code and source assets used to generate the runtime injection | Marketplace screenshots, published theme JSON, Codex docs |
 | `src/shared` | TypeScript migration contracts, models, branded primitive types, and runtime guards | VS Code API calls, filesystem writes, DOM rendering, network access |
+| `src/webview` | Typed settings webview contracts, view model helpers, page ids, style token names, and browser client message names | Extension host workflows, filesystem writes, VS Code API calls |
 | `src/js` | Source templates for generated renderer scripts | Extension host command handlers or Node filesystem code |
 | `src/css` | CSS that the generated renderer script injects into the workbench | VS Code theme color definitions and TextMate token colors |
 | `themes` | Protected base theme, editable Kawaii overrides, and generated VS Code theme output | Runtime patching code |
@@ -183,6 +184,7 @@ Current source of truth:
 - Settings bundle creation/application, Settings Sync state, and JSON import/export actions live in `src/settingsBundle.ts`.
 - Deterministic effect/image persistence helpers live in `src/settingsEffectsPersistence.ts`.
 - Setup webview HTML generation lives in `src/settingsWebview.js`.
+- Typed settings webview view-model serialization, CSP/HTML adapter contracts, page ids, style token names, and client message names live under `src/webview/settings`.
 - Workbench path detection and marked HTML patch helpers live in `src/workbenchPatch.ts`.
 - E2E last-run marker normalization lives in `scripts/e2e-last-run.js`; `test-results/e2e/kawaii-last-run.json` is the authoritative project marker and `.last-run.json` is ExTester diagnostics only.
 - Shared TypeScript migration contracts and guards live under `src/shared`; keep them free of VS Code, filesystem, DOM, and network dependencies.
@@ -220,7 +222,7 @@ Recommended extraction boundaries if the runtime grows:
 | Generated JS assembly | `src/neon/...` or a focused helper | Keep placeholders documented and validated |
 | Notification messages | A constants/helper module | Preserve user-facing clarity and avoid duplicated strings |
 | Token replacement rules | Renderer template or a focused renderer data file | Keep in sync with theme token foreground colors |
-| Settings UI and persistence | `src/settings.js`, `src/settingsPersistence.ts`, `src/settingsStore.ts`, `src/settingsColorService.ts`, `src/settingsBundle.ts`, `src/settingsEffectsPersistence.ts` | Keep Home and Color Settings in the same setup webview; keep user overrides in VS Code settings, not generated theme files; keep deterministic persistence logic unit-testable without a VS Code Extension Host |
+| Settings UI and persistence | `src/settings.js`, `src/settingsWebview.js`, `src/webview/settings`, `src/settingsPersistence.ts`, `src/settingsStore.ts`, `src/settingsColorService.ts`, `src/settingsBundle.ts`, `src/settingsEffectsPersistence.ts` | Keep Home and Color Settings in the same setup webview; keep user overrides in VS Code settings, not generated theme files; keep deterministic persistence logic unit-testable without a VS Code Extension Host |
 
 Avoid these unless the project is deliberately refactored:
 
@@ -445,6 +447,7 @@ Local source anchors:
 - `src/settingsBundle.ts`: settings bundle, Settings Sync, and JSON import/export orchestration.
 - `src/settingsEffectsPersistence.ts`: effect/image persistence normalization, safe paths, metadata/state, export/restore/store/remove helpers.
 - `src/settingsWebview.js`: setup webview HTML, Home, Settings, Color Settings, Neon Effect, Image Customization, Sync/Files, and Help pages.
+- `src/webview`: typed settings webview contracts for view model serialization, CSP/HTML adapter behavior, page ids, style token names, and client message names.
 - `src/workbenchPatch.ts`: testable workbench path detection and HTML patch helpers.
 - `src/js/theme_template.js`: renderer bootstrap, theme detection, token replacement, style injection.
 - `src/css/editor_chrome.css`: injected workbench chrome styles.

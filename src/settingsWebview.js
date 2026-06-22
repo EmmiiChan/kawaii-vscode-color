@@ -1,3 +1,11 @@
+const {
+  createSettingsViewModel,
+  serializeSettingsViewModel
+} = require("./webview/settings/SettingsViewModel");
+const {
+  createSettingsWebviewContentSecurityPolicy
+} = require("./webview/settings/SettingsWebviewHtml");
+
 /**
  * Returns the full webview HTML document.
  *
@@ -6,13 +14,15 @@
  * @returns {string} HTML document.
  */
 function createSettingsWebviewHtml(webview, initialState, nonce = createNonce()) {
-  const serializedState = JSON.stringify(initialState).replace(/</g, "\\u003c");
+  const viewModel = createSettingsViewModel(initialState);
+  const serializedState = serializeSettingsViewModel(viewModel);
+  const contentSecurityPolicy = createSettingsWebviewContentSecurityPolicy(webview.cspSource || "vscode-resource:", nonce);
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource || "vscode-resource:"} data:; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';">
+  <meta http-equiv="Content-Security-Policy" content="${contentSecurityPolicy}">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kawaii VS Code Color Settings</title>
   <style>

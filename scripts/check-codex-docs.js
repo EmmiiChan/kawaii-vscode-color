@@ -53,6 +53,7 @@ const CRITICAL_FILES = [
   "src/settingsPersistence.ts",
   "src/settingsStore.ts",
   "src/settingsWebview.js",
+  "src/webview",
   "src/workbenchPatch.ts",
   "test/dom",
   "test/e2e",

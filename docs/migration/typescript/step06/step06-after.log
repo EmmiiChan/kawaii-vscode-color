@@ -1,0 +1,225 @@
+Step 06 final validation
+Started: 2026-06-22 08:24:45 +01:00
+
+> git status --short --branch
+## typescript-migration-step06-webview-split
+ M .codex/AGENTS.md
+ M .codex/change-impact.md
+ M .codex/docs.md
+ M .codex/structure.md
+ M .codex/system-map.md
+ M package.json
+ M scripts/check-codex-docs.js
+ M src/settingsWebview.js
+ M test/dom/settings-webview-helper.js
+ M test/dom/settings-webview.status.test.js
+?? src/webview/
+?? test/dom/settings-webview-split.test.js
+Exit code: 0
+
+> npm run type-check
+
+> kawaii-vscode-color@0.1.31 type-check
+> tsc -p tsconfig.extension.json --noEmit --pretty false && tsc -p tsconfig.scripts.json --noEmit --pretty false && tsc -p tsconfig.tests.json --noEmit --pretty false
+
+Exit code: 0
+
+> npm run test:dom
+
+> kawaii-vscode-color@0.1.31 test:dom
+> npm run compile && node --test "test/dom/**/*.test.js"
+
+
+> kawaii-vscode-color@0.1.31 compile
+> tsc -p tsconfig.extension.json && tsc -p tsconfig.scripts.json
+
+✔ settings webview split modules preserve state serialization and CSP contracts (1.5573ms)
+✔ settings webview split modules expose stable page, style, and client message contracts (0.3269ms)
+✔ settings webview HTML adapter can delegate legacy document rendering with typed helpers (0.3531ms)
+✔ settings webview filters color rows and shows empty state (284.8317ms)
+✔ settings webview switches workbench and syntax sections (66.6114ms)
+✔ settings webview validates hex input before posting color updates (1347.5504ms)
+✔ settings webview posts color picker updates and preserves alpha (294.3418ms)
+✔ settings webview posts reset color, refresh, and reset all (24.9288ms)
+✔ settings webview posts theme variant changes (22.9045ms)
+✔ settings webview clears pending color updates before sync (292.7291ms)
+✔ settings webview renders neon effect page without running real patch (279.7899ms)
+✔ settings webview posts home apply effects without running real patch (55.466ms)
+✔ settings webview posts color settings apply effects with dark image customizations (48.4772ms)
+✔ settings webview posts color settings apply effects with light missing-image state (54.3733ms)
+✔ settings webview apply effects cancels pending image timers (292.9162ms)
+✔ settings webview posts editor background image actions (298.8323ms)
+✔ settings webview posts editor background opacity and fit updates (309.5518ms)
+✔ settings webview posts empty editor logo actions (34.5961ms)
+✔ settings webview posts empty editor logo opacity updates (278.7234ms)
+✔ settings webview applies state messages and clears loading indicators (33.8092ms)
+✔ settings webview posts ready and can request Neon Effect actions (269.1833ms)
+✔ settings webview exposes app-specific navigation and help links (63.9007ms)
+✔ settings webview toggles each app page and keeps one active nav item (79.769ms)
+✔ settings webview renders home and help metadata links (33.166ms)
+✔ settings webview shows effects pending warnings (264.1385ms)
+✔ settings webview handles neon status messages (60.7905ms)
+✔ settings webview handles error messages and clears loading (54.9009ms)
+✔ settings webview styles consume editor-provided vscode tokens instead of a standalone palette (5.8099ms)
+✔ settings webview exposes E2E postMessage hook only when explicitly enabled (59.1547ms)
+✔ settings webview posts sync and file action messages (266.4129ms)
+ℹ tests 30
+ℹ suites 0
+ℹ pass 30
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3120.5091
+Exit code: 0
+
+> npm run test:e2e
+
+> kawaii-vscode-color@0.1.31 test:e2e
+> npm run compile && node scripts/run-e2e.js
+
+
+> kawaii-vscode-color@0.1.31 compile
+> tsc -p tsconfig.extension.json && tsc -p tsconfig.scripts.json
+
+Running E2E phase: safe
+[33m
+
+WARNING: You are using the outdated VS Code version '1.111.0'. The latest stable version is '1.125.1'.
+
+[0m
+Downloading VS Code: 1.111.0 / stable
+[0622/082505.679:ERROR:third_party\crashpad\crashpad\util\win\registration_protocol_win.cc:108] CreateFile: Acesso negado. (0x5)
+VS Code exists in local cache, skipping download
+ChromeDriver 142.0.7444.175 exists in local cache, skipping download
+Executing prepublish script 'npm run vscode:prepublish'...
+
+> kawaii-vscode-color@0.1.31 vscode:prepublish
+> npm run compile && npm run build:theme
+
+
+> kawaii-vscode-color@0.1.31 compile
+> tsc -p tsconfig.extension.json && tsc -p tsconfig.scripts.json
+
+
+> kawaii-vscode-color@0.1.31 build:theme
+> node ./scripts/build-color-theme.js
+
+Generated themes\kawaii_synthwave-generated-color-theme.json
+Base: themes\kawaii_synthwave-color-theme.json
+Overrides: themes\kawaii_synthwave-color-theme-overrides.json
+Override colors: 144
+Override token rules: 4
+Generated themes\kawaii_synthwave-generated-color-theme-light.json
+Base: themes\kawaii_synthwave-color-theme-light.json
+Overrides: themes\kawaii_synthwave-color-theme-light-overrides.json
+Override colors: 190
+Override token rules: 4
+ INFO  Files included in the VSIX:
+kawaii-vscode-color-0.1.31.vsix
+├─ [Content_Types].xml
+├─ extension.vsixmanifest
+└─ extension/
+   ├─ .vscode-test.js [0.35 KB]
+   ├─ LICENSE.txt [34.36 KB]
+   ├─ README_LEGACY.md [6.2 KB]
+   ├─ README_PRE_FORK.md [7.13 KB]
+   ├─ changelog.md [1.92 KB]
+   ├─ icon.png [1.78 MB]
+   ├─ kawaii_synthwave-noglow.css [5.63 KB]
+   ├─ kawaii_synthwave.css [6.29 KB]
+   ├─ package.json [7.71 KB]
+   ├─ readme.md [18.26 KB]
+   ├─ theme.jpg [187.95 KB]
+   ├─ tsconfig.base.json [0.63 KB]
+   ├─ tsconfig.extension.json [0.51 KB]
+   ├─ tsconfig.json [0.25 KB]
+   ├─ tsconfig.scripts.json [0.46 KB]
+   ├─ tsconfig.tests.json [0.6 KB]
+   ├─ .github/ (1 file) [0.83 KB]
+   ├─ docs/ (50 files) [249.42 KB]
+   ├─ images/ (35 files) [14.24 MB]
+   ├─ out/ (83 files) [393.04 KB]
+   ├─ out-scripts/ (27 files) [153.68 KB]
+   ├─ scripts/ (13 files) [76.46 KB]
+   ├─ src/ (42 files) [292.71 KB]
+   └─ themes/ (6 files) [93.57 KB]
+
+=> Run vsce ls --tree to see all included files.
+
+ DONE  Packaged: C:\w\p\item-pixel\vscode\kawaii-vscode-color\kawaii-vscode-color-0.1.31.vsix (275 files, 16.17 MB)
+[0622/082522.243:ERROR:third_party\crashpad\crashpad\util\win\registration_protocol_win.cc:108] CreateFile: Acesso negado. (0x5)
+[0622/082522.480:ERROR:third_party\crashpad\crashpad\util\win\registration_protocol_win.cc:108] CreateFile: Acesso negado. (0x5)
+Installing extensions...
+[Error: EPERM: operation not permitted, mkdir 'c:\Users\dst3891\AppData\Roaming\Code\logs\20260622T082522'] {
+  errno: -4048,
+  code: 'EPERM',
+  syscall: 'mkdir',
+  path: 'c:\\Users\\dst3891\\AppData\\Roaming\\Code\\logs\\20260622T082522'
+}
+Extension 'kawaii-vscode-color-0.1.31.vsix' was successfully installed.
+Loading mocha configuration from test/e2e/.mocharc.js
+
+
+Detected user defined code settings
+Writing code settings to C:\w\p\item-pixel\vscode\kawaii-vscode-color\.vscode-test\extest-111\settings\User\settings.json
+Launching browser...
+[0622/082525.384:ERROR:third_party\crashpad\crashpad\util\win\registration_protocol_win.cc:108] CreateFile: Acesso negado. (0x5)
+[0622/082525.574:ERROR:third_party\crashpad\crashpad\util\win\registration_protocol_win.cc:108] CreateFile: Acesso negado. (0x5)
+Browser ready in 3243 ms
+Launching tests...
+  Settings safe flows E2E
+    √ filters color settings (3853ms)
+    √ switches workbench and syntax tabs (3650ms)
+    √ switches theme variant selector in isolated profile (3464ms)
+    √ updates editor.background color in the isolated profile and refreshes the UI (2211ms)
+    √ updates editor.background through the color picker and preserves existing alpha (2023ms)
+    √ uses controlled E2E fixtures for dialogs and Random Neko without native UI or network (4045ms)
+    √ shows safe action controls without invoking native dialogs (3515ms)
+
+  Settings visual state image validation E2E
+    √ captures and validates image preview, warning, and missing-image states (5538ms)
+    √ captures and validates random loading, effects warning, neon status, and error states (4815ms)
+    √ captures and validates color empty, invalid input, opacity, and fit selector states (5063ms)
+
+  Settings webview E2E
+    √ opens settings from the Command Palette (1215ms)
+    √ navigates through every settings page (2867ms)
+    √ shows project help metadata (1341ms)
+    √ renders themed UI without obvious layout collapse (1665ms)
+    √ does not run real Neon patch in safe suite (1179ms)
+
+  VS Code E2E launcher
+    √ opens VS Code with the development extension command available (2521ms)
+
+Shutting down the browser
+
+  16 passing (53s)
+
+Exit code: 0
+
+> npm run test:docs
+
+> kawaii-vscode-color@0.1.31 test:docs
+> node scripts/check-codex-docs.js
+
+Codex documentation is aligned with project facts.
+Exit code: 0
+
+> npm run test:check
+
+> kawaii-vscode-color@0.1.31 test:check
+> npm run test:docs && npm run compile && node --check scripts/build-color-theme.js && node --check scripts/check-codex-docs.js && node --check scripts/check-codex-docs.test.js && node --check scripts/e2e-last-run.js && node --check scripts/e2e-last-run.test.js && node --check scripts/increment-package-version.js && node --check scripts/require-e2e-neon-flag.js && node --check scripts/run-e2e.js && node --check scripts/run-test-all.js && node --check out/src/emptyEditorLogoStyles.js && node --check out/src/extension.js && node --check out/src/extensionHost/adapters/NodeFileSystem.js && node --check out/src/extensionHost/adapters/VscodeExtensionStorage.js && node --check out/src/extensionHost/adapters/VscodeNotificationService.js && node --check out/src/extensionHost/controllers/NeonEffectController.js && node --check out/src/extensionHost/controllers/SettingsCommandController.js && node --check out/src/extensionHost/controllers/SettingsMessageController.js && node --check out/src/extensionHost/services/NeonEffectService.js && node --check out/src/extensionHost/services/SettingsBundleService.js && node --check out/src/extensionHost/services/SettingsEffectsService.js && node --check out/src/extensionHost/services/SettingsStateService.js && node --check out/src/extensionHost/services/WorkbenchPatchService.js && node --check out/src/extensionRoot.js && node --check out/src/randomNekoImage.js && node --check out/src/settings.js && node --check out/src/settingsBundle.js && node --check out/src/settingsColorService.js && node --check out/src/settingsEffectsPersistence.js && node --check out/src/settingsPersistence.js && node --check out/src/settingsStore.js && node --check out/src/settingsWebview.js && node --check out/src/webview/settings/SettingsClientController.js && node --check out/src/webview/settings/SettingsView.js && node --check out/src/webview/settings/SettingsViewModel.js && node --check out/src/webview/settings/SettingsWebviewHtml.js && node --check out/src/webview/settings/SettingsWebviewStyles.js && node --check out/src/workbenchPatch.js && node --check src/js/theme_template.js && node --check test/dom/settings-webview-split.test.js && node --check test/unit/compiled-runtime-entry.test.js && node --check test/unit/extension-editor-background-fit.test.js && node --check test/unit/neon-effect-controller.test.js && node --check test/unit/neon-effect-service.test.js && node --check test/unit/random-neko-image.test.js && node --check test/unit/settings-message-controller.test.js && node --check test/unit/workbench-patch-service.test.js && node --check test/e2e/.mocharc.js && node --check test/e2e/.mocharc.neon.js && node --check test/e2e/.mocharc.neon-apply.js && node --check test/e2e/.mocharc.neon-applied.js && node --check test/e2e/.mocharc.neon-alternate.js && node --check test/e2e/.mocharc.neon-reverted.js && node --check test/e2e/.mocharc.neon-restored.js && node --check test/e2e/helpers/extester-app.js && node --check test/e2e/helpers/png-analysis.js && node --check test/e2e/vscode-launcher.spec.js && node --check test/e2e/settings-webview.spec.js && node --check test/e2e/settings-safe-flows.spec.js && node --check test/e2e/settings-visual-states.spec.js && node --check test/e2e/neon-real.spec.js
+
+
+> kawaii-vscode-color@0.1.31 test:docs
+> node scripts/check-codex-docs.js
+
+Codex documentation is aligned with project facts.
+
+> kawaii-vscode-color@0.1.31 compile
+> tsc -p tsconfig.extension.json && tsc -p tsconfig.scripts.json
+
+Exit code: 0
+
+Finished: 2026-06-22 08:26:24 +01:00

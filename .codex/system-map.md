@@ -1,6 +1,6 @@
 # Kawaii VS Code Color System Map
 
-Last reviewed: 2026-06-19
+Last reviewed: 2026-06-22
 
 This file is the migration-oriented contract map for the extension. Keep it factual and close to source. `npm run test:docs` verifies the critical facts in this file against the repository.
 
@@ -60,6 +60,7 @@ Dev dependency contract:
 - `src/settingsStore.ts`
 - `src/settingsWebview.js`
 - `src/shared`
+- `src/webview`
 - `src/workbenchPatch.ts`
 - `test/dom`
 - `test/e2e`
@@ -95,7 +96,8 @@ Build behavior:
 | `src/extensionRoot.ts` -> `out/src/extensionRoot.js` | Resolves package-root asset paths from both source and compiled `out/src` runtime directories. |
 | `src/workbenchPatch.ts` -> `out/src/workbenchPatch.js` | Pure workbench path detection and marked HTML patch helpers for `neondreams.js`. |
 | `src/settings.js` | Settings webview lifecycle, message routing, Settings Sync/JSON orchestration, image workflows, color state composition, runtime read of `.codex/color_scheme_reference.md`. |
-| `src/settingsWebview.js` | Complete settings webview HTML/CSS/JS, DOM state, UI event emission, and VS Code webview token styling. |
+| `src/settingsWebview.js` | Compatibility settings webview renderer for inline HTML/CSS/JS, DOM state, UI event emission, and VS Code webview token styling. |
+| `src/webview` -> `out/src/webview` | Typed settings webview view model, CSP/HTML helper contract, page ids, VS Code token names, and client `postMessage` names used while the renderer remains inline. |
 | `src/settingsPersistence.ts` -> `out/src/settingsPersistence.js` | Pure mutation helpers for theme-scoped workbench and TextMate customization blocks. |
 | `src/settingsStore.ts` -> `out/src/settingsStore.js` | VS Code configuration get/inspect/update adapter. |
 | `src/settingsColorService.ts` -> `out/src/settingsColorService.js` | Generated-theme-aware color update/reset and theme switching. |
@@ -233,7 +235,7 @@ The renderer code must keep using VS Code workbench/theme tokens and must not de
 | TypeScript compatibility check | `npm run type-check` | Runs TypeScript no-emit checks for current mixed JS/TS migration configs. |
 | Syntax check | `npm run test:check` | Runs `test:docs`, compiles, then Node syntax checks for selected scripts, compiled runtime output, and E2E files. |
 | Unit | `npm run test:unit` | Compiles TypeScript-compatible migration output, then runs the Node test runner for scripts, shared contracts, and dependency-light runtime helpers. |
-| DOM | `npm run test:dom` | jsdom settings webview behavior and visual-state DOM contracts. |
+| DOM | `npm run test:dom` | Compiles first, then runs jsdom settings webview behavior, split webview contract, and visual-state DOM contracts. |
 | Integration | `npm run test:integration` | Compiles, then runs VS Code Extension Development Host activation and command smoke tests. |
 | Safe E2E | `npm run test:e2e` | Compiles, then runs disposable VS Code UI automation without applying the real Neon patch. |
 | Current VS Code E2E | `npm run test:e2e:current` | Compiles, then runs experimental safe E2E against the latest ExTester-supported VS Code version, isolated from the stable `1.111.0` safe gate. |
