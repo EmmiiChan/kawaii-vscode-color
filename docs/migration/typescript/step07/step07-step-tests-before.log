@@ -1,0 +1,49 @@
+Step 07 step tests before implementation
+Started: 2026-06-22 08:35:25 +01:00
+> npm run compile
+> node --test test/unit/renderer-theme-template.test.js
+
+> kawaii-vscode-color@0.1.31 compile
+> tsc -p tsconfig.extension.json && tsc -p tsconfig.scripts.json
+
+node:internal/modules/cjs/loader:1479
+  throw err;
+  ^
+
+Error: Cannot find module '../../out/src/renderer/ThemeTemplate'
+Require stack:
+- C:\w\p\item-pixel\vscode\kawaii-vscode-color\test\unit\renderer-theme-template.test.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1476:15)
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1049:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1073:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1094:12)
+    at Module._load (node:internal/modules/cjs/loader:1262:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.require (node:internal/modules/cjs/loader:1576:12)
+    at require (node:internal/modules/helpers:153:16)
+    at Object.<anonymous> (C:\w\p\item-pixel\vscode\kawaii-vscode-color\test\unit\renderer-theme-template.test.js:7:23)
+    at Module._compile (node:internal/modules/cjs/loader:1830:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\w\\p\\item-pixel\\vscode\\kawaii-vscode-color\\test\\unit\\renderer-theme-template.test.js'
+  ]
+}
+
+Node.js v24.15.0
+✖ test\unit\renderer-theme-template.test.js (56.5321ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 62.6577
+
+✖ failing tests:
+
+test at test\unit\renderer-theme-template.test.js:1:1
+✖ test\unit\renderer-theme-template.test.js (56.5321ms)
+  'test failed'
+Exit codes: 0, 1
+Finished: 2026-06-22 08:35:28 +01:00

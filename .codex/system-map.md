@@ -52,6 +52,7 @@ Dev dependency contract:
 - `src/extensionRoot.ts`
 - `src/js/theme_template.js`
 - `src/randomNekoImage.ts`
+- `src/renderer`
 - `src/settings.js`
 - `src/settingsBundle.ts`
 - `src/settingsColorService.ts`
@@ -105,6 +106,7 @@ Build behavior:
 | `src/settingsEffectsPersistence.ts` -> `out/src/settingsEffectsPersistence.js` | Image metadata normalization, safe filenames, stored image export/restore, opacity and fit normalization. |
 | `src/emptyEditorLogoStyles.ts` -> `out/src/emptyEditorLogoStyles.js` | CSS selector list and generated CSS for no-tab logo replacement. |
 | `src/randomNekoImage.ts` -> `out/src/randomNekoImage.js` | Testable Random Neko API payload parsing, URL resolution, guarded HTTPS fetch, and image response normalization. |
+| `src/renderer` -> `out/src/renderer` | Browser-only typed renderer token replacement maps, Kawaii theme wrapper selectors, runtime style ids, token color normalization, and token replacement helpers for the injected workbench script boundary. |
 | `src/js/theme_template.js` | Renderer-side token CSS detection, theme matching, glow transformation, style-tag management. |
 | `src/css/editor_chrome.css` | CSS injected into the VS Code workbench renderer after placeholder replacement. |
 | `src/shared` | TypeScript migration contracts, models, branded primitives, and runtime guards for external inputs. |
@@ -225,7 +227,7 @@ Runtime style tags:
 - `#kawaii_synthwave-chrome-styles`
 - `#kawaii_synthwave-theme-styles`
 
-The renderer code must keep using VS Code workbench/theme tokens and must not define an independent UI palette for the settings webview or injected workbench surfaces.
+The renderer code must keep using VS Code workbench/theme tokens and must not define an independent UI palette for the settings webview or injected workbench surfaces. Typed renderer helpers live in `src/renderer/ThemeTemplate.ts`; the injected runtime template remains `src/js/theme_template.js` until the browser script is fully migrated.
 
 ## Test Matrix
 

@@ -46,6 +46,7 @@ const CRITICAL_FILES = [
   "src/extensionRoot.ts",
   "src/js/theme_template.js",
   "src/randomNekoImage.ts",
+  "src/renderer",
   "src/settings.js",
   "src/settingsBundle.ts",
   "src/settingsColorService.ts",

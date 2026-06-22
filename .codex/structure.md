@@ -154,6 +154,7 @@ Keep changes inside the existing responsibility boundaries.
 | Root manifest/package files | Extension identity, commands, settings, theme contribution, marketplace metadata, package lock | Runtime implementation details that should live under `src` |
 | `src` | Extension host code and source assets used to generate the runtime injection | Marketplace screenshots, published theme JSON, Codex docs |
 | `src/shared` | TypeScript migration contracts, models, branded primitive types, and runtime guards | VS Code API calls, filesystem writes, DOM rendering, network access |
+| `src/renderer` | Browser-only TypeScript helpers for injected workbench renderer token maps, selectors, style ids, and token replacement contracts | Node filesystem, VS Code extension API, extension-host callbacks |
 | `src/webview` | Typed settings webview contracts, view model helpers, page ids, style token names, and browser client message names | Extension host workflows, filesystem writes, VS Code API calls |
 | `src/js` | Source templates for generated renderer scripts | Extension host command handlers or Node filesystem code |
 | `src/css` | CSS that the generated renderer script injects into the workbench | VS Code theme color definitions and TextMate token colors |
@@ -172,7 +173,7 @@ Current source of truth:
 
 - Workbench chrome injection lives in `src/css/editor_chrome.css`.
 - No-tab logo selector/style generation lives in `src/emptyEditorLogoStyles.ts`.
-- Renderer behavior lives in the JS template under `src/js`.
+- Renderer behavior lives in the JS template under `src/js`; typed browser-only renderer helper contracts live under `src/renderer`.
 - Settings webview orchestration, message routing, VS Code notifications/dialogs, native picker/download workflows, color-reference parsing, and state composition live in `src/settings.js`.
 - Runtime activation and command registration live in `src/extension.ts`.
 - Extension-host Neon and Settings controllers plus service, filesystem, storage, and notification boundaries live under `src/extensionHost`.
@@ -221,7 +222,7 @@ Recommended extraction boundaries if the runtime grows:
 | Workbench HTML patching | `src/workbench/...` | Centralize script marker insertion/removal |
 | Generated JS assembly | `src/neon/...` or a focused helper | Keep placeholders documented and validated |
 | Notification messages | A constants/helper module | Preserve user-facing clarity and avoid duplicated strings |
-| Token replacement rules | Renderer template or a focused renderer data file | Keep in sync with theme token foreground colors |
+| Token replacement rules | `src/js/theme_template.js` plus typed mirrors in `src/renderer/ThemeTemplate.ts` until the injected browser runtime is fully migrated | Keep in sync with theme token foreground colors |
 | Settings UI and persistence | `src/settings.js`, `src/settingsWebview.js`, `src/webview/settings`, `src/settingsPersistence.ts`, `src/settingsStore.ts`, `src/settingsColorService.ts`, `src/settingsBundle.ts`, `src/settingsEffectsPersistence.ts` | Keep Home and Color Settings in the same setup webview; keep user overrides in VS Code settings, not generated theme files; keep deterministic persistence logic unit-testable without a VS Code Extension Host |
 
 Avoid these unless the project is deliberately refactored:
@@ -440,6 +441,7 @@ Local source anchors:
 - `src/extensionRoot.ts`: package-root and asset path resolution for source and compiled runtime directories.
 - `src/emptyEditorLogoStyles.ts`: no-tab logo selector contract and generated logo replacement CSS.
 - `src/randomNekoImage.ts`: Random Neko payload parsing, URL resolution, guarded HTTPS fetching, and image normalization.
+- `src/renderer`: browser-only typed renderer token replacement maps, selector constants, style ids, token color helpers, and renderer placeholder boundary tests.
 - `src/settings.js`: settings webview orchestration, message handling, VS Code notifications/dialogs, native picker/download workflows, and state composition.
 - `src/settingsPersistence.ts`: pure color customization block mutation, scope comparison, and hex validation.
 - `src/settingsStore.ts`: VS Code configuration adapter for global/workspace settings reads and writes.

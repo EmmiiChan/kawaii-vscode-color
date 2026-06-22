@@ -14,7 +14,7 @@ Current tooling state:
 | --- | --- |
 | Build step | `npm run build:theme` merges protected base themes and editable overrides into the generated themes loaded by VS Code. `npm run build:local` bumps the patch version, then builds the themes and local VSIX. |
 | Automated tests | The lightweight gate starts with the Codex docs drift guard and Node syntax check, then the regular layers cover Node unit tests, `jsdom` DOM UI tests, VS Code Extension Development Host integration tests, and ExTester/WebDriver real VS Code UI E2E tests. A separate gated Neon E2E patches only a disposable `.vscode-test` install. |
-| TypeScript | Tooling is active for migration. `package.json.main` points to compiled `./out/src/extension.js`; the runtime entry, extracted Neon and Settings host controllers/services/adapters, shared contracts, pure settings/workbench helpers, and settings webview contracts listed below are TypeScript. |
+| TypeScript | Tooling is active for migration. `package.json.main` points to compiled `./out/src/extension.js`; the runtime entry, extracted Neon and Settings host controllers/services/adapters, shared contracts, pure settings/workbench helpers, settings webview contracts, and renderer helper contracts listed below are TypeScript. |
 | npm dependencies | No runtime dependencies. Dev-only tooling/test dependencies are `typescript@^6.0.3`, `@types/node@^26.0.0`, `@types/vscode@^1.33.0`, `jsdom@29.1.1`, `@vscode/test-cli@0.0.12`, `@vscode/test-electron@3.0.0`, `vscode-extension-tester@8.23.0`, and `mocha@11.7.6`. |
 | Packaging tool | Not installed permanently in this repo. Use `@vscode/vsce` through the existing npm scripts when packaging. |
 | Runtime entry | `package.json.main` points to `./out/src/extension.js`; run `npm run compile` before extension-host, E2E, or package validation. |
@@ -154,6 +154,7 @@ The package loads compiled runtime JavaScript from `out/` and still ships source
 - `src/settingsBundle.ts` owns settings bundle creation/application, Settings Sync, and JSON import/export actions.
 - `src/settingsEffectsPersistence.ts` owns deterministic effect/image persistence helpers.
 - `src/randomNekoImage.ts` owns Random Neko payload parsing, URL resolution, guarded HTTPS fetching, and testable image response normalization.
+- `src/renderer/ThemeTemplate.ts` owns typed browser-only renderer token replacement maps, selector constants, style ids, token color matching helpers, and placeholder-adjacent tests for the injected workbench script.
 - `src/settingsWebview.js` renders the setup webview HTML as the compatibility renderer. It must use VS Code webview color tokens (`--vscode-*`) and must not define a separate hardcoded UI palette.
 - `src/webview/settings` contains typed settings webview contracts for the view model, HTML/CSP adapter, page ids, style token names, and client `postMessage` types used by the compatibility renderer.
 - `src/workbenchPatch.ts` contains pure workbench path and HTML patch helpers covered by unit tests.

@@ -18,6 +18,29 @@ export const RENDERER_PLACEHOLDERS = [
 
 export type RendererPlaceholder = typeof RENDERER_PLACEHOLDERS[number];
 
+export type RendererPlaceholderValues = Readonly<Partial<Record<RendererPlaceholder, string>>>;
+
 export function isRendererPlaceholder(value: unknown): value is RendererPlaceholder {
     return typeof value === "string" && RENDERER_PLACEHOLDERS.includes(value as RendererPlaceholder);
+}
+
+export function createRendererPlaceholderToken(placeholder: RendererPlaceholder): string {
+    return `[${placeholder}]`;
+}
+
+export function findRendererPlaceholders(template: string): RendererPlaceholder[] {
+    return RENDERER_PLACEHOLDERS.filter((placeholder) =>
+        template.includes(createRendererPlaceholderToken(placeholder))
+    );
+}
+
+export function replaceRendererPlaceholders(template: string, values: RendererPlaceholderValues): string {
+    return RENDERER_PLACEHOLDERS.reduce((content, placeholder) => {
+        if (!Object.prototype.hasOwnProperty.call(values, placeholder)) {
+            return content;
+        }
+
+        const replacement = values[placeholder] ?? "";
+        return content.split(createRendererPlaceholderToken(placeholder)).join(replacement);
+    }, template);
 }

@@ -1,5 +1,6 @@
 import path = require("path");
 import { createEmptyEditorLogoStyles } from "../../emptyEditorLogoStyles";
+import { replaceRendererPlaceholders } from "../../shared/contracts/rendererPlaceholders";
 import type { ExtensionFileSystem } from "../adapters/NodeFileSystem";
 import type { ExtensionStorage } from "../adapters/VscodeExtensionStorage";
 import type { NeonNotificationService } from "../adapters/VscodeNotificationService";
@@ -151,10 +152,11 @@ class DefaultNeonEffectService implements NeonEffectService {
       const jsTemplate = this.dependencies.fileSystem.readTextFile(
         path.join(this.dependencies.extensionRoot, "src", "js", "theme_template.js")
       );
-      const finalTheme = jsTemplate
-        .replace(/\[DISABLE_GLOW\]/g, String(normalizedConfiguration.disableGlow))
-        .replace(/\[CHROME_STYLES\]/g, chromeStyles)
-        .replace(/\[NEON_BRIGHTNESS\]/g, normalizedConfiguration.neonBrightness);
+      const finalTheme = replaceRendererPlaceholders(jsTemplate, {
+        CHROME_STYLES: chromeStyles,
+        DISABLE_GLOW: String(normalizedConfiguration.disableGlow),
+        NEON_BRIGHTNESS: normalizedConfiguration.neonBrightness
+      });
       const result = this.dependencies.workbenchPatchService.applyScriptTag(basePath, finalTheme);
 
       if (result.status === "workbench-not-found") {
@@ -183,19 +185,20 @@ class DefaultNeonEffectService implements NeonEffectService {
     const editorBackgroundCssValues = getEditorBackgroundCssValues(this.dependencies.storage, this.dependencies.fileSystem, this.dependencies.logger);
     const emptyEditorLogoStyles = getEmptyEditorLogoStyles(this.dependencies.storage, this.dependencies.fileSystem, this.dependencies.logger);
 
-    return chromeStyles
-      .replace(/\[EDITOR_BACKGROUND_IMAGE\]/g, editorBackgroundCssValues.image)
-      .replace(/\[EDITOR_BACKGROUND_IMAGE_OPACITY\]/g, editorBackgroundCssValues.opacity)
-      .replace(/\[EDITOR_BACKGROUND_IMAGE_POSITION\]/g, editorBackgroundCssValues.position)
-      .replace(/\[EDITOR_BACKGROUND_IMAGE_SIZE\]/g, editorBackgroundCssValues.size)
-      .replace(/\[EDITOR_BACKGROUND_IMAGE_REPEAT\]/g, editorBackgroundCssValues.repeat)
-      .replace(/\[EDITOR_BACKGROUND_AREA_TOP\]/g, editorBackgroundCssValues.areaTop)
-      .replace(/\[EDITOR_BACKGROUND_AREA_RIGHT\]/g, editorBackgroundCssValues.areaRight)
-      .replace(/\[EDITOR_BACKGROUND_AREA_BOTTOM\]/g, editorBackgroundCssValues.areaBottom)
-      .replace(/\[EDITOR_BACKGROUND_AREA_LEFT\]/g, editorBackgroundCssValues.areaLeft)
-      .replace(/\[EDITOR_BACKGROUND_AREA_WIDTH\]/g, editorBackgroundCssValues.areaWidth)
-      .replace(/\[EDITOR_BACKGROUND_AREA_HEIGHT\]/g, editorBackgroundCssValues.areaHeight)
-      .replace(/\[EMPTY_EDITOR_LOGO_STYLES\]/g, emptyEditorLogoStyles);
+    return replaceRendererPlaceholders(chromeStyles, {
+      EDITOR_BACKGROUND_AREA_BOTTOM: editorBackgroundCssValues.areaBottom,
+      EDITOR_BACKGROUND_AREA_HEIGHT: editorBackgroundCssValues.areaHeight,
+      EDITOR_BACKGROUND_AREA_LEFT: editorBackgroundCssValues.areaLeft,
+      EDITOR_BACKGROUND_AREA_RIGHT: editorBackgroundCssValues.areaRight,
+      EDITOR_BACKGROUND_AREA_TOP: editorBackgroundCssValues.areaTop,
+      EDITOR_BACKGROUND_AREA_WIDTH: editorBackgroundCssValues.areaWidth,
+      EDITOR_BACKGROUND_IMAGE: editorBackgroundCssValues.image,
+      EDITOR_BACKGROUND_IMAGE_OPACITY: editorBackgroundCssValues.opacity,
+      EDITOR_BACKGROUND_IMAGE_POSITION: editorBackgroundCssValues.position,
+      EDITOR_BACKGROUND_IMAGE_REPEAT: editorBackgroundCssValues.repeat,
+      EDITOR_BACKGROUND_IMAGE_SIZE: editorBackgroundCssValues.size,
+      EMPTY_EDITOR_LOGO_STYLES: emptyEditorLogoStyles
+    });
   }
 
   async disable(): Promise<void> {

@@ -2,7 +2,7 @@
 
 Last reviewed: 2026-06-22
 
-Purpose: give Codex a stable, source-backed link index for the Kawaii VS Code Color VS Code theme extension. Use this file before changing `package.json`, `scripts/build-color-theme.js`, `scripts/check-codex-docs.js`, `scripts/e2e-last-run.js`, `scripts/run-e2e.js`, `scripts/run-test-all.js`, `src/extension.ts`, `src/extensionHost`, `src/extensionRoot.ts`, `src/randomNekoImage.ts`, `src/settings.js`, `src/settingsPersistence.ts`, `src/settingsStore.ts`, `src/settingsColorService.ts`, `src/settingsBundle.ts`, `src/settingsEffectsPersistence.ts`, `src/settingsWebview.js`, `src/webview`, `src/workbenchPatch.ts`, `src/js/theme_template.js`, `src/css/editor_chrome.css`, `themes/kawaii_synthwave-color-theme-overrides.json`, `themes/kawaii_synthwave-color-theme-light-overrides.json`, packaging metadata, test tooling, or marketplace docs.
+Purpose: give Codex a stable, source-backed link index for the Kawaii VS Code Color VS Code theme extension. Use this file before changing `package.json`, `scripts/build-color-theme.js`, `scripts/check-codex-docs.js`, `scripts/e2e-last-run.js`, `scripts/run-e2e.js`, `scripts/run-test-all.js`, `src/extension.ts`, `src/extensionHost`, `src/extensionRoot.ts`, `src/randomNekoImage.ts`, `src/renderer`, `src/settings.js`, `src/settingsPersistence.ts`, `src/settingsStore.ts`, `src/settingsColorService.ts`, `src/settingsBundle.ts`, `src/settingsEffectsPersistence.ts`, `src/settingsWebview.js`, `src/webview`, `src/workbenchPatch.ts`, `src/js/theme_template.js`, `src/css/editor_chrome.css`, `themes/kawaii_synthwave-color-theme-overrides.json`, `themes/kawaii_synthwave-color-theme-light-overrides.json`, packaging metadata, test tooling, or marketplace docs.
 
 ## Project Snapshot
 
@@ -139,7 +139,13 @@ Implementation caution:
 | `src/settings.js` message chain | Mocked `openSettings -> onDidReceiveMessage -> persistence` wiring | `test/unit/settings-message-persistence.test.js` |
 | `src/webview/settings` | Typed settings webview view model, CSP helper, page ids, style token names, and client message names while the legacy inline renderer remains in `src/settingsWebview.js` | `test/dom/settings-webview-split.test.js` |
 
-### `src/js/theme_template.js`
+### `src/renderer` and `src/js/theme_template.js`
+
+| Module | Responsibility | Validation |
+| --- | --- | --- |
+| `src/renderer/ThemeTemplate.ts` | Browser-only typed constants and pure helpers for renderer token replacement maps, Kawaii wrapper selectors, runtime style ids, token color normalization, and token CSS replacement behavior | `test/unit/renderer-theme-template.test.js` |
+| `src/shared/contracts/rendererPlaceholders.ts` | Typed renderer placeholder names plus helper functions to find and replace known placeholders without touching unknown template text | `test/unit/renderer-theme-template.test.js`, `test/unit/shared-contracts.test.js` |
+| `src/js/theme_template.js` | Injected browser runtime template still read by the extension host and written as `neondreams.js` | Safe E2E and gated Neon E2E when renderer behavior changes |
 
 | API/surface | Current usage | Docs |
 | --- | --- | --- |
