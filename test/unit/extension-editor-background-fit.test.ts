@@ -1,6 +1,11 @@
 import assert = require("node:assert/strict");
+import fs = require("node:fs");
 import path = require("node:path");
 import test = require("node:test");
+
+const { JSDOM } = require("jsdom") as {
+  JSDOM: new (html: string) => { window: { document: Document } };
+};
 
 const {
   getEditorBackgroundFitArea,
@@ -9,6 +14,12 @@ const {
   "extensionHost",
   "services",
   "NeonEffectService"
+);
+const {
+  KAWAII_THEME_WRAPPER_SELECTORS
+} = requireOut<typeof import("../../src/renderer/ThemeTemplate")>(
+  "renderer",
+  "ThemeTemplate"
 );
 
 const EXPECTED_EDITOR_BACKGROUND_FIT_AREAS = {
@@ -38,6 +49,56 @@ test("extension maps every editor background fit option to its CSS area", () => 
   assert.deepEqual(toPlainObject(getEditorBackgroundFitArea("unknown")), EXPECTED_EDITOR_BACKGROUND_FIT_AREAS.full);
 });
 
+test("editor chrome CSS applies page background variables to every theme wrapper fallback", () => {
+  const editorChromeCss = fs.readFileSync(path.join(process.cwd(), "src", "css", "editor_chrome.css"), "utf8");
+  const editorBackgroundRule = findRuleWithBodyText(editorChromeCss, "--kawaii-editor-background-image:");
+
+  assert.ok(editorBackgroundRule, "Expected editor chrome CSS to define editor background variables.");
+  for (const selector of KAWAII_THEME_WRAPPER_SELECTORS) {
+    assert.match(editorBackgroundRule.selectorText, new RegExp(escapeRegExp(selector)));
+  }
+});
+
+test("editor background theme wrapper fallbacks match legacy, renamed, and current theme classes", () => {
+  const dom = new JSDOM(`
+    <div id="dark-legacy-underscore" class="vs-dark kawaii_synthwave-generated-color-theme-json"></div>
+    <div id="dark-legacy-hyphen" class="vs-dark kawaii-synthwave-generated-color-theme-json"></div>
+    <div id="dark-current" class="vs-dark kawaii-vscode-color-generated-color-theme-json"></div>
+    <div id="light-legacy-underscore" class="vs kawaii_synthwave-generated-color-theme-light-json"></div>
+    <div id="light-legacy-hyphen" class="vs kawaii-synthwave-generated-color-theme-light-json"></div>
+    <div id="light-current" class="vs kawaii-vscode-color-generated-color-theme-light-json"></div>
+  `);
+  const expectedMatches = [
+    "dark-legacy-underscore",
+    "dark-legacy-hyphen",
+    "dark-current",
+    "light-legacy-underscore",
+    "light-legacy-hyphen",
+    "light-current"
+  ];
+
+  const matches = KAWAII_THEME_WRAPPER_SELECTORS.map((selector) => {
+    const match = dom.window.document.querySelector(selector);
+    return match ? match.id : "";
+  });
+
+  assert.deepEqual(matches, expectedMatches);
+});
+
 function toPlainObject(value: unknown): unknown {
   return JSON.parse(JSON.stringify(value)) as unknown;
+}
+
+function findRuleWithBodyText(css: string, bodyText: string): { readonly selectorText: string; readonly body: string } | undefined {
+  return css.split("}").map((rule) => {
+    const [selectorText, body] = rule.split("{");
+    return {
+      selectorText: selectorText ? selectorText.trim() : "",
+      body: body || ""
+    };
+  }).find((rule) => rule.body.includes(bodyText));
+}
+
+function escapeRegExp(value: string): string {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
