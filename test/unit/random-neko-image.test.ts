@@ -1,12 +1,17 @@
-const assert = require("node:assert/strict");
-const test = require("node:test");
+import assert = require("node:assert/strict");
+import path = require("node:path");
+import test = require("node:test");
 
 const {
   createRandomNekoImageFetcher,
   getImageExtensionFromResponse,
   getRandomNekoImageFromPayload,
   getRandomNekoImageUrl
-} = require("../../out/src/randomNekoImage");
+} = requireOut<typeof import("../../src/randomNekoImage")>("randomNekoImage");
+
+function requireOut<TModule>(...segments: readonly string[]): TModule {
+  return require(path.join(process.cwd(), "out", "src", ...segments)) as TModule;
+}
 
 test("random neko fetcher normalizes a mocked API image without using external network", async () => {
   const fetchRandomNekoImage = createRandomNekoImageFetcher({

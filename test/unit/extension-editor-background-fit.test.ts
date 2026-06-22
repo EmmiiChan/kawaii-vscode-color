@@ -1,10 +1,16 @@
-const assert = require("node:assert/strict");
-const test = require("node:test");
+import assert = require("node:assert/strict");
+import path = require("node:path");
+import test = require("node:test");
 
 const {
   getEditorBackgroundFitArea,
   normalizeEditorBackgroundFit
-} = require("../../out/src/extensionHost/services/NeonEffectService");
+} = requireOut<typeof import("../../src/extensionHost/services/NeonEffectService")>(
+  "extensionHost",
+  "services",
+  "NeonEffectService"
+);
+
 const EXPECTED_EDITOR_BACKGROUND_FIT_AREAS = {
   full: { top: "0", right: "auto", bottom: "auto", left: "0", width: "100%", height: "100%" },
   top: { top: "0", right: "auto", bottom: "auto", left: "0", width: "100%", height: "50%" },
@@ -17,6 +23,10 @@ const EXPECTED_EDITOR_BACKGROUND_FIT_AREAS = {
   "bottom-right": { top: "auto", right: "0", bottom: "0", left: "auto", width: "50%", height: "50%" }
 };
 
+function requireOut<TModule>(...segments: readonly string[]): TModule {
+  return require(path.join(process.cwd(), "out", "src", ...segments)) as TModule;
+}
+
 test("extension maps every editor background fit option to its CSS area", () => {
   for (const [fit, expectedArea] of Object.entries(EXPECTED_EDITOR_BACKGROUND_FIT_AREAS)) {
     assert.equal(normalizeEditorBackgroundFit(fit), fit);
@@ -28,6 +38,6 @@ test("extension maps every editor background fit option to its CSS area", () => 
   assert.deepEqual(toPlainObject(getEditorBackgroundFitArea("unknown")), EXPECTED_EDITOR_BACKGROUND_FIT_AREAS.full);
 });
 
-function toPlainObject(value) {
-  return JSON.parse(JSON.stringify(value));
+function toPlainObject(value: unknown): unknown {
+  return JSON.parse(JSON.stringify(value)) as unknown;
 }

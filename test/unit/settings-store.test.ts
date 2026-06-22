@@ -1,35 +1,79 @@
-const assert = require("node:assert/strict");
-const test = require("node:test");
+import assert = require("node:assert/strict");
+import path = require("node:path");
+import test = require("node:test");
 
-const { createSettingsStore } = require("../../out/src/settingsStore");
+const { createSettingsStore } = requireOut<typeof import("../../src/settingsStore")>("settingsStore");
 
-function createWorkspaceMock(options = {}) {
-  const updates = [];
-  const configuration = {
-    get(settingName) {
+interface WorkspaceMockOptions {
+  readonly values?: Record<string, unknown>;
+  readonly inspections?: Record<string, ConfigurationInspectionMock>;
+  readonly inspect?: false;
+  readonly workspaceFile?: unknown;
+  readonly workspaceFolders?: unknown[];
+}
+
+interface WorkspaceUpdate {
+  readonly settingName: string;
+  readonly value: unknown;
+  readonly target: boolean;
+}
+
+interface ConfigurationInspectionMock {
+  readonly globalValue?: unknown;
+  readonly workspaceValue?: unknown;
+}
+
+interface WorkspaceConfigurationMock {
+  get(settingName: string): unknown;
+  inspect(settingName: string): ConfigurationInspectionMock | undefined;
+  update(settingName: string, value: unknown, target: boolean): Promise<void>;
+}
+
+interface WorkspaceMock {
+  workspaceFile?: unknown;
+  workspaceFolders?: readonly unknown[];
+  getConfiguration(): WorkspaceConfigurationMock;
+}
+
+function requireOut<TModule>(...segments: readonly string[]): TModule {
+  return require(path.join(process.cwd(), "out", "src", ...segments)) as TModule;
+}
+
+function createWorkspaceMock(options: WorkspaceMockOptions = {}) {
+  const updates: WorkspaceUpdate[] = [];
+  const configuration: WorkspaceConfigurationMock = {
+    get(settingName: string): unknown {
       return options.values ? options.values[settingName] : undefined;
     },
-    inspect(settingName) {
+    inspect(settingName: string): ConfigurationInspectionMock | undefined {
       if (options.inspect === false) {
         return undefined;
       }
 
       return options.inspections ? options.inspections[settingName] : undefined;
     },
-    update(settingName, value, target) {
+    update(settingName: string, value: unknown, target: boolean): Promise<void> {
       updates.push({ settingName, value, target });
       return Promise.resolve();
     }
   };
 
+  const workspace: WorkspaceMock = {
+    getConfiguration() {
+      return configuration;
+    }
+  };
+
+  if ("workspaceFile" in options) {
+    workspace.workspaceFile = options.workspaceFile;
+  }
+
+  if (options.workspaceFolders !== undefined) {
+    workspace.workspaceFolders = options.workspaceFolders;
+  }
+
   return {
-    workspace: {
-      workspaceFile: options.workspaceFile,
-      workspaceFolders: options.workspaceFolders,
-      getConfiguration() {
-        return configuration;
-      }
-    },
+    workspace,
     updates
   };
 }
@@ -43,8 +87,8 @@ test("getSettingsObject reads and clones configuration objects", () => {
   });
   const store = createSettingsStore(workspace);
 
-  const result = store.getSettingsObject("workbench.colorCustomizations");
-  result["[Kawaii VS Code Color]"]["editor.background"] = "#000000";
+  const result = store.getSettingsObject("workbench.colorCustomizations") as Record<string, Record<string, unknown>>;
+  result["[Kawaii VS Code Color]"]!["editor.background"] = "#000000";
 
   assert.deepEqual(source, { "[Kawaii VS Code Color]": { "editor.background": "#31202b" } });
 });

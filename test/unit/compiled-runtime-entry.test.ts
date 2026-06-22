@@ -1,14 +1,18 @@
-const assert = require("node:assert/strict");
-const path = require("node:path");
-const test = require("node:test");
+import assert = require("node:assert/strict");
+import path = require("node:path");
+import test = require("node:test");
 
-const packageManifest = require("../../package.json");
+const packageManifest = require(path.join(process.cwd(), "package.json")) as { readonly main: string };
 const {
   resolveExtensionAssetPath,
   resolveExtensionRoot
-} = require("../../out/src/extensionRoot");
+} = requireOut<typeof import("../../src/extensionRoot")>("extensionRoot");
 
-const workspaceRoot = path.resolve(__dirname, "..", "..");
+const workspaceRoot = process.cwd();
+
+function requireOut<TModule>(...segments: readonly string[]): TModule {
+  return require(path.join(process.cwd(), "out", "src", ...segments)) as TModule;
+}
 
 test("package main points to the compiled extension entry", () => {
   assert.equal(packageManifest.main, "./out/src/extension.js");

@@ -1,5 +1,6 @@
-const assert = require("node:assert/strict");
-const test = require("node:test");
+import assert = require("node:assert/strict");
+import path = require("node:path");
+import test = require("node:test");
 
 const {
   areScopesEqual,
@@ -17,10 +18,16 @@ const {
   updateTokenColorBlock,
   updateWorkbenchColorBlock,
   writeThemeCustomizationBlock
-} = require("../../out/src/settingsPersistence");
+} = requireOut<typeof import("../../src/settingsPersistence")>("settingsPersistence");
 
 const darkVariant = { id: "dark", label: "Kawaii VS Code Color" };
 const lightVariant = { id: "light", label: "Kawaii VS Code Color Light" };
+type ThemeCustomizationBlocks = Record<string, Record<string, unknown>>;
+type TokenCustomizationBlocks = Record<string, { textMateRules: unknown[] }>;
+
+function requireOut<TModule>(...segments: readonly string[]): TModule {
+  return require(path.join(process.cwd(), "out", "src", ...segments)) as TModule;
+}
 
 test("normalizeHexColor accepts VS Code hex formats and preserves trimmed values", () => {
   assert.equal(normalizeHexColor(" #abc "), "#abc");
@@ -41,7 +48,7 @@ test("getThemeCustomizationKey returns theme-specific VS Code customization keys
 });
 
 test("clonePlainObject and ensurePlainObject return safe plain objects", () => {
-  const circular = {};
+  const circular: Record<string, unknown> = {};
   circular.self = circular;
 
   assert.deepEqual(clonePlainObject(["not", "plain"]), {});
@@ -52,7 +59,7 @@ test("clonePlainObject and ensurePlainObject return safe plain objects", () => {
   assert.deepEqual(ensurePlainObject({ nested: { value: 1 } }), { nested: { value: 1 } });
 
   const source = { nested: { value: 1 } };
-  const clone = clonePlainObject(source);
+  const clone = clonePlainObject(source) as { nested: { value: number } };
   clone.nested.value = 2;
   assert.equal(source.nested.value, 1);
 });
@@ -122,8 +129,8 @@ test("workbench block update and reset preserve unrelated theme blocks", () => {
     }
   };
 
-  const updated = updateWorkbenchColorBlock(customizations, "editor.background", "#31202b", darkVariant);
-  assert.equal(updated["[Kawaii VS Code Color]"]["editor.background"], "#31202b");
+  const updated = updateWorkbenchColorBlock(customizations, "editor.background", "#31202b", darkVariant) as ThemeCustomizationBlocks;
+  assert.equal(updated["[Kawaii VS Code Color]"]!["editor.background"], "#31202b");
   assert.deepEqual(updated["[Unrelated Theme]"], { "editor.background": "#222222" });
   assert.equal(customizations["[Kawaii VS Code Color]"]["editor.background"], "#000000");
 
@@ -147,16 +154,16 @@ test("token block update replaces matching scope and appends missing scope", () 
     { scope: "source.js, keyword" },
     "#ffffff",
     darkVariant
-  );
+  ) as TokenCustomizationBlocks;
 
-  assert.deepEqual(replaced["[Kawaii VS Code Color]"].textMateRules, [
+  assert.deepEqual(replaced["[Kawaii VS Code Color]"]!.textMateRules, [
     { scope: "comment", settings: { foreground: "#848bbd" } },
     { scope: "source.js, keyword", settings: { foreground: "#ffffff" } }
   ]);
 
-  const appended = updateTokenColorBlock(replaced, { scope: "string" }, "#ff8b39", darkVariant);
+  const appended = updateTokenColorBlock(replaced, { scope: "string" }, "#ff8b39", darkVariant) as TokenCustomizationBlocks;
 
-  assert.deepEqual(appended["[Kawaii VS Code Color]"].textMateRules[2], {
+  assert.deepEqual(appended["[Kawaii VS Code Color]"]!.textMateRules[2], {
     scope: "string",
     settings: { foreground: "#ff8b39" }
   });
@@ -172,8 +179,8 @@ test("token reset removes matching rules and deletes empty textMateRules", () =>
     }
   };
 
-  const withOneRule = resetTokenColorBlock(customizations, { scope: "comment" }, darkVariant);
-  assert.deepEqual(withOneRule["[Kawaii VS Code Color]"].textMateRules, [
+  const withOneRule = resetTokenColorBlock(customizations, { scope: "comment" }, darkVariant) as TokenCustomizationBlocks;
+  assert.deepEqual(withOneRule["[Kawaii VS Code Color]"]!.textMateRules, [
     { scope: "string", settings: { foreground: "#ff8b39" } }
   ]);
 

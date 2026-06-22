@@ -1,6 +1,6 @@
-const assert = require("node:assert/strict");
-const path = require("node:path");
-const test = require("node:test");
+import assert = require("node:assert/strict");
+import path = require("node:path");
+import test = require("node:test");
 
 const {
   applyWorkbenchPatchScriptTag,
@@ -8,7 +8,11 @@ const {
   removeWorkbenchPatchScriptTag,
   resolveWorkbenchPatchPaths,
   resolveWorkbenchPaths
-} = require("../../out/src/workbenchPatch");
+} = requireOut<typeof import("../../src/workbenchPatch")>("workbenchPatch");
+
+function requireOut<TModule>(...segments: readonly string[]): TModule {
+  return require(path.join(process.cwd(), "out", "src", ...segments)) as TModule;
+}
 
 test("applyWorkbenchPatchScriptTag inserts a cache-busted script before the closing html tag", () => {
   const html = "<html><body>Workbench</body></html>\n";

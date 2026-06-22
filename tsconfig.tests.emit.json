@@ -2,7 +2,11 @@
     "extends": "./tsconfig.tests.json",
     "compilerOptions": {
         "allowJs": false,
-        "checkJs": false
+        "checkJs": false,
+        "types": [
+            "node",
+            "vscode"
+        ]
     },
     "include": [
         "scripts/**/*.ts",
