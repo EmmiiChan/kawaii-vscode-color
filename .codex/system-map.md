@@ -50,6 +50,8 @@ Dev dependency contract:
 - `scripts/increment-package-version.ts`
 - `scripts/package-local-vsix.js`
 - `scripts/package-local-vsix.ts`
+- `scripts/require-e2e-neon-flag.js`
+- `scripts/require-e2e-neon-flag.ts`
 - `scripts/run-e2e.js`
 - `scripts/run-e2e.ts`
 - `scripts/run-test-all.js`

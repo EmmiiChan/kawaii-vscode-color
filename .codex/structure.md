@@ -471,6 +471,8 @@ Local source anchors:
 - `scripts/increment-package-version.ts`: TypeScript implementation for package patch version increments and `package-lock.json` root version synchronization.
 - `scripts/package-local-vsix.js`: stable Node wrapper for local VSIX packaging.
 - `scripts/package-local-vsix.ts`: TypeScript implementation for local VSIX output path resolution, `@vscode/vsce` command selection, dist directory creation, and package command execution.
+- `scripts/require-e2e-neon-flag.js`: stable Node wrapper for the gated Neon E2E acknowledgement guard.
+- `scripts/require-e2e-neon-flag.ts`: TypeScript implementation for refusing real Neon E2E unless `KAWAII_E2E_ALLOW_NEON_PATCH=1` is set.
 - `scripts/run-e2e.js`: stable Node wrapper for safe, current, and gated real VS Code E2E orchestration.
 - `scripts/run-e2e.ts`: TypeScript implementation for ExTester phase selection, disposable storage configuration, E2E process execution, and `test-results/e2e/kawaii-last-run.json` updates for safe, current, and Neon modes.
 - `scripts/run-test-all.js`: stable Node wrapper for safe test orchestration.

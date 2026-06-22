@@ -1,0 +1,17 @@
+STEP09 SCRIPT 08 BEFORE - require-e2e-neon-flag JavaScript baseline
+
+> node --test scripts/require-e2e-neon-flag.test.js
+✔ require-e2e-neon-flag rejects Neon E2E without explicit acknowledgement (132.7778ms)
+✔ require-e2e-neon-flag allows Neon E2E with explicit acknowledgement (140.3255ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 408.4344
+NODE_--TEST_SCRIPTS/REQUIRE-E2E-NEON-FLAG.TEST.JS_EXIT_CODE: 0
+
+> node --check scripts/require-e2e-neon-flag.js
+NODE_--CHECK_SCRIPTS/REQUIRE-E2E-NEON-FLAG.JS_EXIT_CODE: 0

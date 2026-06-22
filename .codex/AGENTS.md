@@ -63,7 +63,7 @@ TypeScript migration note:
 - `tsconfig.tests.emit.json` and `npm run compile:tests` emit converted TypeScript tests into `out-tests` without duplicating legacy JavaScript tests.
 - Real E2E orchestration lives in `scripts/run-e2e.ts` behind the stable `scripts/run-e2e.js` wrapper; E2E commands compile scripts before invoking the wrapper.
 - Safe all-tests orchestration lives in `scripts/run-test-all.ts` behind the stable `scripts/run-test-all.js` wrapper; `npm run test:all` compiles scripts before invoking the wrapper.
-- `vscode:prepublish`, `build:local`, integration tests, E2E scripts, package version scripts, and local VSIX package scripts compile before loading or packaging the extension.
+- `vscode:prepublish`, `build:local`, integration tests, E2E scripts, gated Neon guard scripts, package version scripts, and local VSIX package scripts compile before loading or packaging the extension.
 
 Codex documentation rule:
 
