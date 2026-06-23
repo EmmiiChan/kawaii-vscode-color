@@ -31,6 +31,22 @@ interface E2ERunnerConfig {
     readonly env: NodeJS.ProcessEnv;
 }
 
+interface E2ERunnerConfigOptions {
+    readonly argv?: readonly string[];
+    readonly env?: NodeJS.ProcessEnv;
+    readonly platform?: NodeJS.Platform;
+    readonly workspaceRoot?: string;
+    readonly extestBinary?: string;
+}
+
+interface E2ERunnerDependencies {
+    readonly console?: Pick<Console, "error" | "log">;
+    readonly now?: () => string;
+    readonly readExTesterLastRun?: typeof readExTesterLastRun;
+    readonly spawnSync?: typeof spawnSync;
+    readonly writeE2ELastRunRecord?: typeof writeE2ELastRunRecord;
+}
+
 const E2E_TEST_PATTERN = "test/e2e/**/*.spec.js";
 const DEFAULT_CODE_VERSION = "1.111.0";
 const CURRENT_CODE_VERSION_FALLBACK = "max";
@@ -94,28 +110,30 @@ function getPhases(mode: E2EMode): readonly E2EPhase[] {
     ];
 }
 
-function createRunnerEnv(storage: string): NodeJS.ProcessEnv {
-    const env: NodeJS.ProcessEnv = { ...process.env };
+function createRunnerEnv(storage: string, workspaceRoot = process.cwd(), baseEnv: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+    const env: NodeJS.ProcessEnv = { ...baseEnv };
 
-    env.KAWAII_E2E_STORAGE = path.resolve(storage);
+    env.KAWAII_E2E_STORAGE = path.resolve(workspaceRoot, storage);
     env.KAWAII_E2E_TEST_HOOKS = "1";
     delete env.ELECTRON_RUN_AS_NODE;
 
     return env;
 }
 
-function createE2ERunnerConfig(): E2ERunnerConfig {
-    const mode = normalizeMode(process.argv[2]);
-    const isWindows = process.platform === "win32";
-    const workspaceRoot = process.cwd();
-    const extestBinary = path.join(
+function createE2ERunnerConfig(options: E2ERunnerConfigOptions = {}): E2ERunnerConfig {
+    const argv = options.argv || process.argv;
+    const mode = normalizeMode(argv[2]);
+    const platform = options.platform || process.platform;
+    const isWindows = platform === "win32";
+    const workspaceRoot = options.workspaceRoot || process.cwd();
+    const extestBinary = options.extestBinary || path.join(
         workspaceRoot,
         "node_modules",
         ".bin",
         isWindows ? "extest.cmd" : "extest"
     );
     const storage = getStorage(mode);
-    const env = createRunnerEnv(storage);
+    const env = createRunnerEnv(storage, workspaceRoot, options.env || process.env);
 
     return {
         mode,
@@ -161,19 +179,23 @@ function finalizeAndWriteRunRecord(
     record: E2ELastRunRecord,
     config: E2ERunnerConfig,
     exitCode: number,
-    error?: unknown
+    error?: unknown,
+    dependencies: E2ERunnerDependencies = {}
 ): void {
+    const readExTesterLastRunImpl = dependencies.readExTesterLastRun || readExTesterLastRun;
+    const writeE2ELastRunRecordImpl = dependencies.writeE2ELastRunRecord || writeE2ELastRunRecord;
+    const now = dependencies.now || (() => new Date().toISOString());
     const extesterLastRun = exitCode === 0
         ? { failedTests: [] }
-        : readExTesterLastRun({ workspaceRoot: config.workspaceRoot, minModifiedAt: record.startedAt });
+        : readExTesterLastRunImpl({ workspaceRoot: config.workspaceRoot, minModifiedAt: record.startedAt });
 
     finalizeE2ELastRunRecord(record, {
         exitCode,
         error,
         failedTests: extesterLastRun.failedTests,
-        finishedAt: new Date().toISOString()
+        finishedAt: now()
     });
-    writeE2ELastRunRecord(record, { workspaceRoot: config.workspaceRoot });
+    writeE2ELastRunRecordImpl(record, { workspaceRoot: config.workspaceRoot });
 }
 
 /**
@@ -182,7 +204,14 @@ function finalizeAndWriteRunRecord(
  * @returns Process exit code for the selected E2E run.
  */
 function runE2E(): number {
-    const config = createE2ERunnerConfig();
+    return runE2EWithConfig(createE2ERunnerConfig());
+}
+
+function runE2EWithConfig(config: E2ERunnerConfig, dependencies: E2ERunnerDependencies = {}): number {
+    const consoleImpl = dependencies.console || console;
+    const spawnSyncImpl = dependencies.spawnSync || spawnSync;
+    const writeE2ELastRunRecordImpl = dependencies.writeE2ELastRunRecord || writeE2ELastRunRecord;
+    const now = dependencies.now || (() => new Date().toISOString());
 
     try {
         validateE2ERunOptions({
@@ -192,23 +221,23 @@ function runE2E(): number {
             env: config.env
         });
     } catch (error) {
-        console.error(getErrorMessage(error));
+        consoleImpl.error(getErrorMessage(error));
         return 1;
     }
 
     const runRecord = createRunRecord(config);
 
-    writeE2ELastRunRecord(runRecord, { workspaceRoot: config.workspaceRoot });
+    writeE2ELastRunRecordImpl(runRecord, { workspaceRoot: config.workspaceRoot });
 
     for (const phase of config.phases) {
-        console.log(`Running E2E phase: ${phase.name}`);
+        consoleImpl.log(`Running E2E phase: ${phase.name}`);
         updateE2ELastRunPhase(runRecord, phase.name, {
             status: "running",
-            startedAt: new Date().toISOString()
+            startedAt: now()
         });
-        writeE2ELastRunRecord(runRecord, { workspaceRoot: config.workspaceRoot });
+        writeE2ELastRunRecordImpl(runRecord, { workspaceRoot: config.workspaceRoot });
 
-        const result = spawnSync(config.extestBinary, [
+        const result = spawnSyncImpl(config.extestBinary, [
             "setup-and-run",
             E2E_TEST_PATTERN,
             "--code_version",
@@ -232,12 +261,12 @@ function runE2E(): number {
         if (result.error) {
             updateE2ELastRunPhase(runRecord, phase.name, {
                 status: "failed",
-                finishedAt: new Date().toISOString(),
+                finishedAt: now(),
                 exitCode: 1,
                 error: result.error
             });
-            finalizeAndWriteRunRecord(runRecord, config, 1, result.error);
-            console.error(result.error);
+            finalizeAndWriteRunRecord(runRecord, config, 1, result.error, dependencies);
+            consoleImpl.error(result.error);
 
             return 1;
         }
@@ -245,23 +274,23 @@ function runE2E(): number {
         if (result.status) {
             updateE2ELastRunPhase(runRecord, phase.name, {
                 status: "failed",
-                finishedAt: new Date().toISOString(),
+                finishedAt: now(),
                 exitCode: result.status
             });
-            finalizeAndWriteRunRecord(runRecord, config, result.status);
+            finalizeAndWriteRunRecord(runRecord, config, result.status, undefined, dependencies);
 
             return result.status;
         }
 
         updateE2ELastRunPhase(runRecord, phase.name, {
             status: "passed",
-            finishedAt: new Date().toISOString(),
+            finishedAt: now(),
             exitCode: 0
         });
-        writeE2ELastRunRecord(runRecord, { workspaceRoot: config.workspaceRoot });
+        writeE2ELastRunRecordImpl(runRecord, { workspaceRoot: config.workspaceRoot });
     }
 
-    finalizeAndWriteRunRecord(runRecord, config, 0);
+    finalizeAndWriteRunRecord(runRecord, config, 0, undefined, dependencies);
 
     return 0;
 }
@@ -280,6 +309,8 @@ if (require.main === module) {
 }
 
 export {
+    createE2ERunnerConfig,
     runCli,
-    runE2E
+    runE2E,
+    runE2EWithConfig
 };

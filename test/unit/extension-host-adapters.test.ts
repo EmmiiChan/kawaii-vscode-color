@@ -1,0 +1,116 @@
+import assert = require("node:assert/strict");
+import fs = require("node:fs");
+import os = require("node:os");
+import path = require("node:path");
+import test = require("node:test");
+
+const {
+  nodeFileSystem
+} = requireOut<typeof import("../../src/extensionHost/adapters/NodeFileSystem")>(
+  "extensionHost",
+  "adapters",
+  "NodeFileSystem"
+);
+const {
+  createVscodeExtensionStorage
+} = requireOut<typeof import("../../src/extensionHost/adapters/VscodeExtensionStorage")>(
+  "extensionHost",
+  "adapters",
+  "VscodeExtensionStorage"
+);
+const {
+  WORKBENCH_RELOAD_COMMAND,
+  createVscodeNotificationService
+} = requireOut<typeof import("../../src/extensionHost/adapters/VscodeNotificationService")>(
+  "extensionHost",
+  "adapters",
+  "VscodeNotificationService"
+);
+
+interface NotificationCall {
+  readonly method: "error" | "info" | "command";
+  readonly message?: string;
+  readonly command?: string;
+  readonly actionTitle?: string | undefined;
+}
+
+function requireOut<TModule>(...segments: readonly string[]): TModule {
+  return require(path.join(process.cwd(), "out", "src", ...segments)) as TModule;
+}
+
+test("nodeFileSystem delegates text and binary file operations", (t) => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "kawaii-adapter-"));
+  t.after(() => {
+    fs.rmSync(tempRoot, { force: true, recursive: true });
+  });
+
+  const filePath = path.join(tempRoot, "sample.txt");
+
+  assert.equal(nodeFileSystem.exists(filePath), false);
+
+  nodeFileSystem.writeTextFile(filePath, "adapter content");
+
+  assert.equal(nodeFileSystem.exists(filePath), true);
+  assert.equal(nodeFileSystem.readTextFile(filePath), "adapter content");
+  assert.equal(nodeFileSystem.readFile(filePath).toString("utf8"), "adapter content");
+});
+
+test("VscodeExtensionStorage reads global state and resolves storage path fallbacks", () => {
+  const readKeys: string[] = [];
+  const storage = createVscodeExtensionStorage({
+    globalState: {
+      get<T = unknown>(key: string): T | undefined {
+        readKeys.push(key);
+        return (key === "known" ? "stored-value" : undefined) as T | undefined;
+      }
+    },
+    globalStoragePath: path.normalize("C:/fallback-storage"),
+    globalStorageUri: {
+      fsPath: path.normalize("C:/uri-storage")
+    }
+  });
+
+  assert.equal(storage.getValue("known"), "stored-value");
+  assert.deepEqual(readKeys, ["known"]);
+  assert.equal(storage.getGlobalStoragePath(), path.normalize("C:/uri-storage"));
+
+  assert.equal(createVscodeExtensionStorage({
+    globalStoragePath: path.normalize("C:/legacy-storage")
+  }).getGlobalStoragePath(), path.normalize("C:/legacy-storage"));
+
+  assert.equal(createVscodeExtensionStorage({}).getValue("missing"), undefined);
+  assert.throws(
+    () => createVscodeExtensionStorage({}).getGlobalStoragePath(),
+    /VS Code extension global storage path is unavailable\./
+  );
+});
+
+test("VscodeNotificationService forwards messages and reload commands", async () => {
+  const calls: NotificationCall[] = [];
+  const service = createVscodeNotificationService({
+    commands: {
+      async executeCommand(command: string): Promise<void> {
+        calls.push({ method: "command", command });
+      }
+    },
+    window: {
+      async showErrorMessage(message: string): Promise<void> {
+        calls.push({ method: "error", message });
+      },
+      async showInformationMessage(message: string, item?: { readonly title: string }): Promise<void> {
+        calls.push({ method: "info", message, actionTitle: item ? item.title : undefined });
+      }
+    }
+  });
+
+  await service.showErrorMessage("broken");
+  await service.showInformationMessage("saved");
+  await service.requestWorkbenchReload("reload now", "Reload");
+
+  assert.deepEqual(calls, [
+    { method: "error", message: "broken" },
+    { method: "info", message: "saved", actionTitle: undefined },
+    { method: "info", message: "reload now", actionTitle: "Reload" },
+    { method: "command", command: WORKBENCH_RELOAD_COMMAND }
+  ]);
+});

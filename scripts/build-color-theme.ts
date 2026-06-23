@@ -432,6 +432,10 @@ if (require.main === module) {
 
 export {
   buildGeneratedTheme,
+  buildThemeVariant,
   main,
+  readJsoncFile,
+  removeJsonComments,
+  removeTrailingCommas,
   runCli
 };

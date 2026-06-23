@@ -19,12 +19,13 @@ function createUri(filePath) {
   };
 }
 
-function createSettingsHarness() {
+function createSettingsHarness(options = {}) {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "kawaii-settings-message-"));
   const postedMessages = [];
   const informationMessages = [];
   const warningMessages = [];
   const errorMessages = [];
+  const openExternalCalls = [];
   const configurationValues = new Map([
     ["workbench.colorTheme", "Kawaii VS Code Color"],
     ["workbench.colorCustomizations", {}],
@@ -61,8 +62,9 @@ function createSettingsHarness() {
       }
     },
     env: {
-      openExternal() {
-        return Promise.resolve(true);
+      openExternal(uri) {
+        openExternalCalls.push(uri);
+        return Promise.resolve(options.openExternalResult !== undefined ? options.openExternalResult : true);
       }
     },
     window: {
@@ -144,9 +146,23 @@ function createSettingsHarness() {
 
   const originalLoad = Module._load;
   const originalConsoleError = console.error;
+  const originalReadFileSync = fs.readFileSync;
   console.error = function captureConsoleError(...args) {
     loggedErrors.push(args);
   };
+
+  if (options.failColorReferenceRead) {
+    fs.readFileSync = function readFileSyncWithMissingColorReference(filePath, ...args) {
+      const normalizedFilePath = path.normalize(String(filePath));
+      const colorReferenceSuffix = path.normalize(path.join(".codex", "color_scheme_reference.md"));
+
+      if (normalizedFilePath.endsWith(colorReferenceSuffix)) {
+        throw new Error("Simulated missing color scheme reference");
+      }
+
+      return originalReadFileSync.call(this, filePath, ...args);
+    };
+  }
 
   Module._load = function loadWithVscodeStub(request, parent, isMain) {
     if (request === "vscode") {
@@ -188,6 +204,7 @@ function createSettingsHarness() {
     cleanup() {
       Module._load = originalLoad;
       console.error = originalConsoleError;
+      fs.readFileSync = originalReadFileSync;
       delete require.cache[require.resolve(settingsPath)];
       fs.rmSync(tempRoot, { recursive: true, force: true });
     },
@@ -200,6 +217,7 @@ function createSettingsHarness() {
       return messageHandler;
     },
     informationMessages,
+    openExternalCalls,
     panel: () => panel,
     postedMessages,
     settings,
@@ -573,6 +591,117 @@ test("settings webview sync and file messages restore saved state after chained 
     assert.match(harness.postedMessages.at(-1).message, /Settings imported/);
     assert.ok(harness.informationMessages.includes("Kawaii VS Code Color settings exported."));
     assert.ok(harness.informationMessages.includes("Kawaii VS Code Color settings imported."));
+  } finally {
+    harness.cleanup();
+  }
+});
+
+test("settings documentation links open only allow-listed URLs", async () => {
+  const harness = createSettingsHarness();
+
+  try {
+    await harness.settings.openSettings(harness.context, {
+      enableNeon: async () => {
+        harness.actions.enable += 1;
+      },
+      disableNeon: async () => {
+        harness.actions.disable += 1;
+      }
+    });
+
+    const messageHandler = harness.getMessageHandler();
+    const allowedUrl = "https://github.com/EmmiiChan/kawaii-vscode-color";
+
+    await messageHandler({
+      type: "open-link",
+      url: allowedUrl
+    });
+
+    assert.equal(harness.openExternalCalls.length, 1);
+    assert.equal(harness.openExternalCalls[0].toString(), allowedUrl);
+
+    await messageHandler({
+      type: "open-link",
+      url: "https://malicious.example.test"
+    });
+
+    assert.equal(harness.openExternalCalls.length, 1);
+    assert.equal(harness.postedMessages.at(-1).type, "error");
+    assert.match(harness.postedMessages.at(-1).message, /Unsupported documentation link/);
+    assert.match(harness.errorMessages.at(-1), /Kawaii VS Code Color settings failed/);
+    assert.ok(
+      harness.loggedErrors.some((args) => String(args[0]).includes("handleSettingsMessage")),
+      "expected blocked link to be logged with settings-message context"
+    );
+  } finally {
+    harness.cleanup();
+  }
+});
+
+test("settings image dialog cancellation refreshes state without persisting image metadata", async () => {
+  const harness = createSettingsHarness();
+
+  try {
+    await harness.settings.openSettings(harness.context, {
+      enableNeon: async () => {
+        harness.actions.enable += 1;
+      },
+      disableNeon: async () => {
+        harness.actions.disable += 1;
+      }
+    });
+
+    const messageHandler = harness.getMessageHandler();
+    const firstMessageIndex = harness.postedMessages.length;
+
+    await messageHandler({ type: "select-editor-background-image" });
+
+    assert.equal(harness.globalStateValues.get("kawaii_synthwave.editorBackgroundImage"), undefined);
+    assert.equal(harness.postedMessages.at(-1).type, "state");
+    assert.equal(
+      harness.postedMessages.slice(firstMessageIndex).some((message) => message.type === "effects-pending"),
+      false
+    );
+
+    const secondMessageIndex = harness.postedMessages.length;
+
+    await messageHandler({ type: "select-empty-editor-logo-image" });
+
+    assert.equal(harness.globalStateValues.get("kawaii_synthwave.emptyEditorLogoImage"), undefined);
+    assert.equal(harness.postedMessages.at(-1).type, "state");
+    assert.equal(
+      harness.postedMessages.slice(secondMessageIndex).some((message) => message.type === "effects-pending"),
+      false
+    );
+  } finally {
+    harness.cleanup();
+  }
+});
+
+test("settings state falls back to generated color descriptions when reference markdown cannot be read", async () => {
+  const harness = createSettingsHarness({ failColorReferenceRead: true });
+
+  try {
+    await harness.settings.openSettings(harness.context, {
+      enableNeon: async () => {
+        harness.actions.enable += 1;
+      },
+      disableNeon: async () => {
+        harness.actions.disable += 1;
+      }
+    });
+
+    const messageHandler = harness.getMessageHandler();
+    await messageHandler({ type: "refresh" });
+
+    const state = harness.postedMessages.at(-1).state;
+    const editorBackgroundColor = state.workbenchColors.find((color) => color.id === "editor.background");
+
+    assert.equal(editorBackgroundColor.description, "Controls the editor background color in VS Code.");
+    assert.ok(
+      harness.loggedErrors.some((args) => String(args[0]).includes("readColorDescriptionReference")),
+      "expected missing color reference to be logged"
+    );
   } finally {
     harness.cleanup();
   }
