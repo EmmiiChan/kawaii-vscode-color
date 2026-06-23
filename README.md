@@ -2,7 +2,19 @@
 
 ![Kawaii VS Code Color logo](icon.png)
 
-Kawaii VS Code Color provides dark pink and light green pastel-pink themes for Visual Studio Code, with optional glow effects, image-backed editor styling, theme-specific color customization, Settings Sync support, and JSON import/export.
+Kawaii VS Code Color is a TypeScript-based VS Code theme extension with dark pink and light green pastel-pink themes, optional Neon Effect workbench styling, image-backed editor customization, Settings Sync support, and JSON import/export.
+
+The current extension has grown into a standalone codebase with a compiled TypeScript extension host, typed settings/effects services, a settings webview, generated theme assets, local VSIX packaging, and automated unit, DOM, integration, package, and E2E validation.
+
+## Current Project
+
+| Area | Current behavior |
+| --- | --- |
+| Themes | Ships `Dark Pink Kawaii` and `Light Pink-Pastel Kawaii`, generated from protected base themes plus Kawaii override files. |
+| Settings UI | Opens `Kawaii VS Code Color: Settings` as an editor tab for color overrides, Neon Effect controls, image customization, Settings Sync, JSON export/import, and help links. |
+| Customization | Writes user-specific VS Code settings instead of mutating packaged theme files at runtime. |
+| Neon Effect | Optionally patches VS Code workbench files to add glow, editor background images, and no-tab logo replacement. |
+| Development | Uses strict TypeScript source, stable JavaScript wrappers for scripts, and project-owned validation commands. |
 
 ## Preview
 
@@ -94,7 +106,7 @@ Use `Reset` to remove one custom color. Use `Reset All` to remove all color cust
 
 ### Image Customization
 
-The `Color Settings` page can store one editor background image and one no-tab logo replacement.
+The `Image Customization` page can store one editor background image and one no-tab logo replacement.
 
 | Setting | Behavior |
 | --- | --- |
@@ -182,6 +194,21 @@ Keep editor chrome updates but disable token glow:
 After changing either setting, open `Kawaii VS Code Color: Settings`, apply the Neon Effect again, and reload VS Code.
 
 ## Developer Guide
+
+### TypeScript Architecture
+
+The extension runtime is compiled from TypeScript into `out/src`, and `package.json.main` points to `./out/src/extension.js`.
+
+| Area | Source of truth |
+| --- | --- |
+| Extension activation | `src/extension.ts` registers commands, Settings Sync keys, theme-change handling, and service composition. |
+| Extension host services | `src/extensionHost` contains typed controllers, adapters, and services for Settings and Neon Effect workflows. |
+| Settings webview | `src/settings.ts`, `src/settingsWebview.ts`, and `src/webview/settings` own the settings editor tab, view model contracts, messages, and VS Code webview token styling. |
+| Shared contracts | `src/shared` contains typed models, message contracts, renderer placeholders, schemas, guards, and validation helpers. |
+| Injected renderer | `src/js/theme_template.js` remains the workbench runtime template; `src/renderer/ThemeTemplate.ts` mirrors renderer contracts for TypeScript tests. |
+| Theme generation | `themes/*-overrides.json` files are edited by hand; `scripts/build-color-theme.ts` generates the VS Code-loaded theme files. |
+| Workbench CSS | `src/scss/kawaii-vscode-colors-ui.scss` and `scripts/build-ui-css.ts` generate the scoped CSS linked by the injected runtime. |
+| Build scripts | `scripts/*.ts` hold implementations; matching `scripts/*.js` files stay as stable command wrappers. |
 
 ### Local Setup
 
@@ -309,32 +336,14 @@ Before publishing:
 - Package to `./dist` with `npm run build:local`.
 - Publish only from an account authorized for the configured publisher.
 
-## Credits
+## History
 
-Kawaii VS Code Color is based on [SynthWave '84](https://github.com/robb0wen/synthwave-vscode). The original theme, glow concept, and much of the historical implementation came from Robb Owen's project.
-
-Light Pink-Pastel Kawaii is inspired by [Sakura Theme](https://github.com/mhiratani/theme-sakura), a soft pastel VS Code theme by [mhiratani](https://github.com/mhiratani). Sakura Theme is released under the [MIT License](https://github.com/mhiratani/theme-sakura/blob/main/LICENSE).
-
-The Random Neko image flow was inspired by [NyarchLinux/CatgirlDownloader](https://github.com/NyarchLinux/CatgirlDownloader), which uses Nekos.moe as one of its image sources.
-
-The original SynthWave '84 README also credited:
-
-- [Sarah Drasner](https://twitter.com/sarah_edo) and her CSS-Tricks theme tutorial.
-- [Wes Bos](https://twitter.com/wesbos) and the [Cobalt2 VS Code theme](https://github.com/wesbos/cobalt2-vscode).
-- [Fira Code](https://github.com/tonsky/FiraCode), used in the original screenshots.
-- Banner cityscape image from [Unsplash](https://unsplash.com/photos/DxHR8K5Egjk).
+Kawaii VS Code Color is rewrited with Typescript and roots in `SynthWave '84 - VS Code theme`, It also extends with its own settings UI, persistence, generated assets, packaging flow, and test coverage. Historical README material and attribution details are preserved in [README_LEGACY.md](./README_LEGACY.md).
 
 ## References
 
 - Marketplace extension: [Kawaii VS Code Color](https://marketplace.visualstudio.com/items?itemName=ITEM-PIXEL.kawaii-vscode-color)
 - Repository: [EmmiiChan/kawaii-vscode-color](https://github.com/EmmiiChan/kawaii-vscode-color)
-- Upstream base: [robb0wen/synthwave-vscode](https://github.com/robb0wen/synthwave-vscode)
-- SynthWave Marketplace extension: [SynthWave '84](https://marketplace.visualstudio.com/items?itemName=RobbOwen.synthwave-vscode)
-- Light theme inspiration: [mhiratani/theme-sakura](https://github.com/mhiratani/theme-sakura)
-- Nekos.moe site: [nekos.moe](https://nekos.moe)
-- Nekos.moe API docs: [docs.nekos.moe](https://docs.nekos.moe/)
-- Nekos.moe image routes: [Images / Posts](https://docs.nekos.moe/images.html)
-- Random Neko downloader inspiration: [NyarchLinux/CatgirlDownloader](https://github.com/NyarchLinux/CatgirlDownloader)
 - VS Code Color Theme guide: [Color Theme](https://code.visualstudio.com/api/extension-guides/color-theme)
 - VS Code Theme Color reference: [Theme Color](https://code.visualstudio.com/api/references/theme-color)
 - VS Code theme customization: [Customize a color theme](https://code.visualstudio.com/docs/configure/themes#_customize-a-color-theme)

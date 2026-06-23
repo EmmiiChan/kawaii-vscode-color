@@ -25,16 +25,24 @@ Use only the sections that matter for a given release:
 
 ## [Unreleased]
 
+### Added
+
+- Add a clean local build workflow for removing generated test artifacts before packaging.
+- Add current TypeScript architecture documentation and consolidate historical README material into one chronological legacy archive.
+
+### Changed
+
+- Scope injected Neon UI assets by active Kawaii theme wrapper and keep the generated workbench runtime asset names Kawaii-specific.
+- Remove packaged VSIX artifacts from source control.
+
 ### Fixed
 
-- Restore custom no-tab logo rendering on VS Code builds that wrap the empty editor watermark in `.editor-group-watermark-wrapper`.
-- Keep compatibility with the older empty editor watermark DOM used by VS Code 1.111/1.124 while adding support for VS Code 1.125-style markup.
+- Restore no-tab logo and editor background behavior across older and newer VS Code empty-editor DOM shapes.
+- Align settings webview contracts with the safe DOM and E2E flows.
 
 ### Tests
 
-- Add unit coverage for generated no-tab logo selectors, old/new synthetic watermark DOM shapes, data URI output, and opacity output.
-- Extend gated Neon E2E coverage to assert the active VS Code workbench still exposes a watermark target for the shared selector list.
-- Validate `images/dev-images/logo-nopage.png` visually in a disposable VS Code test environment.
+- Harden unit, DOM, package, and E2E coverage for theme wrappers, settings webview contracts, image/logo states, and disposable Neon patch behavior.
 
 ## [0.2.0] - 2026-06-22
 
