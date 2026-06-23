@@ -7,6 +7,7 @@ docs/**
 test/**
 test-results/**
 playwright-report/**
+*.log
 out-scripts/**
 out-tests/**
 out/package.json

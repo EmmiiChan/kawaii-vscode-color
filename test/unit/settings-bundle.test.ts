@@ -13,6 +13,7 @@ type ChainActionName = "saveVSSync" | "importVSSync" | "exportAs" | "import";
 interface ThemeVariant {
   readonly id: string;
   readonly label: string;
+  readonly legacyLabels?: readonly string[];
 }
 
 interface WorkspaceUpdate {
@@ -162,8 +163,8 @@ const TOKEN_SETTING = "editor.tokenColorCustomizations";
 const SYNC_SETTINGS_STATE_KEY = "kawaii_synthwave.syncedSettingsBundle";
 const EXPORT_FILE_NAME = "kawaii-vscode-color-settings.json";
 const FIXTURES_DIR = path.join(process.cwd(), "test", "fixtures", "settings");
-const darkVariant: ThemeVariant = { id: "dark", label: "Kawaii VS Code Color" };
-const lightVariant: ThemeVariant = { id: "light", label: "Kawaii VS Code Color Light" };
+const darkVariant: ThemeVariant = { id: "dark", label: "Dark Pink Kawaii", legacyLabels: ["Kawaii VS Code Color"] };
+const lightVariant: ThemeVariant = { id: "light", label: "Light Pink-Pastel Kawaii", legacyLabels: ["Kawaii VS Code Color Light"] };
 const themeVariants: readonly ThemeVariant[] = [darkVariant, lightVariant];
 
 function readSettingsFixture(fileName: string): PlainRecord {
@@ -444,8 +445,8 @@ function createStatefulBundleHarness(initialSnapshot: BundleSnapshot): StatefulB
 function createThemeSettingsObject(blocks: Record<string, PlainRecord>, unrelatedBlock?: PlainRecord): PlainRecord {
   const settings: PlainRecord = {};
 
-  settings["[Kawaii VS Code Color]"] = clone(blocks.dark || {});
-  settings["[Kawaii VS Code Color Light]"] = clone(blocks.light || {});
+  settings["[Dark Pink Kawaii]"] = clone(blocks.dark || {});
+  settings["[Light Pink-Pastel Kawaii]"] = clone(blocks.light || {});
 
   if (unrelatedBlock) {
     settings["[Unrelated Theme]"] = clone(unrelatedBlock);
@@ -677,7 +678,7 @@ test("color customization export and import handle dark and light blocks while p
     {
       settingName: WORKBENCH_SETTING,
       value: {
-        "[Kawaii VS Code Color]": { "sideBar.background": "#2c1925" },
+        "[Dark Pink Kawaii]": { "sideBar.background": "#2c1925" },
         "[Unrelated Theme]": { "editor.background": "#000000" }
       },
       target: true
@@ -685,7 +686,7 @@ test("color customization export and import handle dark and light blocks while p
     {
       settingName: TOKEN_SETTING,
       value: {
-        "[Kawaii VS Code Color Light]": { textMateRules: [{ scope: "string" }] }
+        "[Light Pink-Pastel Kawaii]": { textMateRules: [{ scope: "string" }] }
       },
       target: true
     }
@@ -701,7 +702,7 @@ test("createSettingsBundle exports active theme, configuration, colors, and effe
   assert.equal(bundle.schemaVersion, 1);
   assert.equal(bundle.exportedAt, "2026-06-17T12:00:00.000Z");
   assert.equal(bundle.activeThemeVariantId, "light");
-  assert.equal(bundle.activeThemeLabel, "Kawaii VS Code Color Light");
+  assert.equal(bundle.activeThemeLabel, "Light Pink-Pastel Kawaii");
   assert.deepEqual(bundle.effects, { editorBackground: { opacity: 0.12 } });
   assert.deepEqual(calls, ["effects-export:ctx"]);
 });
@@ -831,13 +832,13 @@ test("applySettingsBundle restores fixture config, dark/light colors, effects, a
   assert.deepEqual(updates[1], { settingName: DISABLE_GLOW_SETTING, value: true, target: true });
   assert.deepEqual(updates[2]?.value, {
     "[Unrelated Theme]": { "editor.background": "#000000" },
-    "[Kawaii VS Code Color]": fixtureBundle.colorCustomizations.workbench.dark,
-    "[Kawaii VS Code Color Light]": fixtureBundle.colorCustomizations.workbench.light
+    "[Dark Pink Kawaii]": fixtureBundle.colorCustomizations.workbench.dark,
+    "[Light Pink-Pastel Kawaii]": fixtureBundle.colorCustomizations.workbench.light
   });
   assert.deepEqual(updates[3]?.value, {
     "[Unrelated Theme]": { textMateRules: [{ scope: "comment" }] },
-    "[Kawaii VS Code Color]": fixtureBundle.colorCustomizations.token.dark,
-    "[Kawaii VS Code Color Light]": fixtureBundle.colorCustomizations.token.light
+    "[Dark Pink Kawaii]": fixtureBundle.colorCustomizations.token.dark,
+    "[Light Pink-Pastel Kawaii]": fixtureBundle.colorCustomizations.token.light
   });
   assert.deepEqual(calls, [
     {

@@ -5,12 +5,12 @@ const path = require("node:path");
 const {
     assertWebviewCssVisible,
     assertWebviewPageVisible,
+    closeAllEditors,
     clickWebviewCss,
     getWebviewElementCount,
     getWebviewInputValue,
     getWebviewText,
     postWebviewE2EMessage,
-    runCommand,
     selectWebviewOptionByText,
     setWebviewInputValue,
     takeE2EScreenshot,
@@ -29,7 +29,7 @@ async function openColorSettingsPage() {
     await clickWebviewCss('.nav-button[data-page="color-settings"]');
     await assertWebviewPageVisible("color-settings-page");
     await waitForWebviewTextIncludes("#color-settings-page", "THEME MODE");
-    await selectWebviewOptionByText("#theme-variant", "Dark - Kawaii VS Code Color");
+    await selectWebviewOptionByText("#theme-variant", "Dark - Dark Pink Kawaii");
     await waitForWebviewInputValue("#theme-variant", "dark", 20000);
     await clickWebviewCss('.tab[data-section="workbench"]');
     await setWebviewInputValue("#search", "");
@@ -70,7 +70,7 @@ describe("Settings safe flows E2E", function () {
     it("switches theme variant selector in isolated profile", async function () {
         await withSettingsWebview(async () => {
             await openColorSettingsPage();
-            const selectedValue = await selectWebviewOptionByText("#theme-variant", "Kawaii VS Code Color Light");
+            const selectedValue = await selectWebviewOptionByText("#theme-variant", "Light Pink-Pastel Kawaii");
 
             assert.equal(selectedValue, "light");
             await assertWebviewCssVisible("#theme-variant");
@@ -175,7 +175,7 @@ describe("Settings safe flows E2E", function () {
                 await takeE2EScreenshot("settings-controlled-dialog-random-flows");
             });
         } finally {
-            await runCommand("View: Close All Editors").catch(() => undefined);
+            await closeAllEditors().catch(() => undefined);
         }
     });
 

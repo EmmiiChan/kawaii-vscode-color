@@ -1,5 +1,5 @@
 module.exports = {
     timeout: 180000,
     reporter: "spec",
-    grep: "@neon-real-restored"
+    grep: /@neon-real-restored(?:\s|$)/
 };

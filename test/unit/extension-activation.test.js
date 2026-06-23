@@ -18,7 +18,7 @@ function createExtensionHarness() {
   const controllerFactoryInputs = [];
   const settingsCommandFactoryInputs = [];
   const configurationValues = new Map([
-    ["workbench.colorTheme", "Kawaii VS Code Color"],
+    ["workbench.colorTheme", "Dark Pink Kawaii"],
     ["kawaii_synthwave.brightness", 0.45],
     ["kawaii_synthwave.disableGlow", false]
   ]);
@@ -253,7 +253,7 @@ test("extension activation wires command, settings sync, configuration listener,
     assert.equal(harness.neonEffectServiceOptions[0].storage, harness.fakeStorage);
     assert.equal(harness.neonEffectServiceOptions[0].workbenchPatchService, harness.fakeWorkbenchPatchService);
     assert.equal(harness.controllerFactoryInputs[0].neonEffectService, harness.fakeNeonEffectService);
-    assert.equal(harness.controllerFactoryInputs[0].getActiveColorThemeLabel(), "Kawaii VS Code Color");
+    assert.equal(harness.controllerFactoryInputs[0].getActiveColorThemeLabel(), "Dark Pink Kawaii");
     assert.deepEqual(harness.controllerFactoryInputs[0].getNeonConfiguration(), {
       brightness: 0.45,
       disableGlow: false

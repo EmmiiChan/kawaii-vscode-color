@@ -20,8 +20,13 @@ export interface WorkbenchPatchRemoveResult {
   readonly status: WorkbenchPatchRemoveStatus;
 }
 
+export interface WorkbenchPatchAssets {
+  readonly scriptContent: string;
+  readonly styleContent: string;
+}
+
 export interface WorkbenchPatchService {
-  applyScriptTag(basePath: string, scriptContent: string): WorkbenchPatchApplyResult;
+  applyAssets(basePath: string, assets: WorkbenchPatchAssets): WorkbenchPatchApplyResult;
   isEnabled(basePath: string): boolean;
   removeScriptTag(basePath: string): WorkbenchPatchRemoveResult;
   resolvePatchPaths(basePath: string): WorkbenchPatchPaths | null;
@@ -39,7 +44,7 @@ export function createWorkbenchPatchService(dependencies: WorkbenchPatchServiceD
 class DefaultWorkbenchPatchService implements WorkbenchPatchService {
   constructor(private readonly dependencies: WorkbenchPatchServiceDependencies) {}
 
-  applyScriptTag(basePath: string, scriptContent: string): WorkbenchPatchApplyResult {
+  applyAssets(basePath: string, assets: WorkbenchPatchAssets): WorkbenchPatchApplyResult {
     const paths = this.resolvePatchPaths(basePath);
 
     if (!paths) {
@@ -48,9 +53,12 @@ class DefaultWorkbenchPatchService implements WorkbenchPatchService {
 
     const html = this.dependencies.fileSystem.readTextFile(paths.htmlFile);
     const wasEnabled = isWorkbenchPatchEnabled(html);
-    const output = applyWorkbenchPatchScriptTag(html, this.getVersionToken());
+    const versionToken = this.getVersionToken();
+    const scriptContent = assets.scriptContent.replace(/\[KAWAII_UI_STYLE_VERSION\]/g, String(versionToken));
+    const output = applyWorkbenchPatchScriptTag(html, versionToken);
 
-    this.dependencies.fileSystem.writeTextFile(paths.templateFile, scriptContent);
+    this.dependencies.fileSystem.writeTextFile(paths.styleFile, assets.styleContent);
+    this.dependencies.fileSystem.writeTextFile(paths.scriptFile, scriptContent);
     this.dependencies.fileSystem.writeTextFile(paths.htmlFile, output);
 
     return {

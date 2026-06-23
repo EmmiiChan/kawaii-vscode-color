@@ -43,6 +43,8 @@ Dev dependency contract:
 - `package-lock.json`
 - `scripts/build-color-theme.js`
 - `scripts/build-color-theme.ts`
+- `scripts/build-ui-css.js`
+- `scripts/build-ui-css.ts`
 - `scripts/check-codex-docs.js`
 - `scripts/check-codex-docs.ts`
 - `scripts/clean-test-artifacts.js`
@@ -60,6 +62,7 @@ Dev dependency contract:
 - `scripts/run-test-all.js`
 - `scripts/run-test-all.ts`
 - `src/css/editor_chrome.css`
+- `src/css/kawaii-vscode-colors-ui.min.css`
 - `src/emptyEditorLogoStyles.ts`
 - `src/extension.ts`
 - `src/extensionHost`
@@ -67,6 +70,8 @@ Dev dependency contract:
 - `src/js/theme_template.js`
 - `src/randomNekoImage.ts`
 - `src/renderer`
+- `src/scss/kawaii-vscode-colors-ui.scss`
+- `src/scss/generated/_editor-chrome.generated.scss`
 - `src/settings.ts`
 - `src/settingsBundle.ts`
 - `src/settingsColorService.ts`
@@ -92,8 +97,8 @@ Dev dependency contract:
 
 | Variant | uiTheme | Base | Overrides | Generated |
 | --- | --- | --- | --- | --- |
-| `Kawaii VS Code Color` | `vs-dark` | `themes/kawaii_synthwave-color-theme.json` | `themes/kawaii_synthwave-color-theme-overrides.json` | `./themes/kawaii_synthwave-generated-color-theme.json` / `themes/kawaii_synthwave-generated-color-theme.json` |
-| `Kawaii VS Code Color Light` | `vs` | `themes/kawaii_synthwave-color-theme-light.json` | `themes/kawaii_synthwave-color-theme-light-overrides.json` | `./themes/kawaii_synthwave-generated-color-theme-light.json` / `themes/kawaii_synthwave-generated-color-theme-light.json` |
+| `Dark Pink Kawaii` | `vs-dark` | `themes/kawaii_synthwave-color-theme.json` | `themes/kawaii_synthwave-color-theme-overrides.json` | `./themes/kawaii_synthwave-generated-color-theme.json` / `themes/kawaii_synthwave-generated-color-theme.json` |
+| `Light Pink-Pastel Kawaii` | `vs` | `themes/kawaii_synthwave-color-theme-light.json` | `themes/kawaii_synthwave-color-theme-light-overrides.json` | `./themes/kawaii_synthwave-generated-color-theme-light.json` / `themes/kawaii_synthwave-generated-color-theme-light.json` |
 
 Build behavior:
 
@@ -110,7 +115,7 @@ Build behavior:
 | `src/extension.ts` -> `out/src/extension.js` | Extension activation, command registration, Settings Sync setup, and composition of typed extension-host services. |
 | `src/extensionHost` -> `out/src/extensionHost` | VS Code adapters, Neon Effect controller, Settings command/message controllers, renderer template assembly, stored image CSS values, settings host boundaries, workbench patch apply/remove orchestration, reload prompts. |
 | `src/extensionRoot.ts` -> `out/src/extensionRoot.js` | Resolves package-root asset paths from both source and compiled `out/src` runtime directories. |
-| `src/workbenchPatch.ts` -> `out/src/workbenchPatch.js` | Pure workbench path detection and marked HTML patch helpers for `kawaii-vscode-colors-ui.js`, plus legacy marker cleanup for old `neondreams.js` wrappers. |
+| `src/workbenchPatch.ts` -> `out/src/workbenchPatch.js` | Pure workbench path detection and marked HTML patch helpers for `kawaii-vscode-colors-ui.js` plus `kawaii-vscode-colors-ui.min.css`, with legacy marker cleanup for old `neondreams.js` wrappers. |
 | `src/settings.ts` | Settings webview lifecycle, message routing, Settings Sync/JSON orchestration, image workflows, color state composition, runtime read of `.codex/color_scheme_reference.md`. |
 | `src/settingsWebview.ts` | Compatibility settings webview renderer for inline HTML/CSS/JS, DOM state, UI event emission, and VS Code webview token styling. |
 | `src/webview` -> `out/src/webview` | Typed settings webview view model, CSP/HTML helper contract, page ids, VS Code token names, and client `postMessage` names used while the renderer remains inline. |
@@ -122,8 +127,11 @@ Build behavior:
 | `src/emptyEditorLogoStyles.ts` -> `out/src/emptyEditorLogoStyles.js` | CSS selector list and generated CSS for no-tab logo replacement. |
 | `src/randomNekoImage.ts` -> `out/src/randomNekoImage.js` | Testable Random Neko API payload parsing, URL resolution, guarded HTTPS fetch, and image response normalization. |
 | `src/renderer` -> `out/src/renderer` | Browser-only typed renderer token replacement maps, Kawaii theme wrapper selectors, runtime style ids, token color normalization, and token replacement helpers for the injected workbench script boundary. |
-| `src/js/theme_template.js` | Renderer-side token CSS detection, theme matching, glow transformation, style-tag management. |
-| `src/css/editor_chrome.css` | CSS injected into the VS Code workbench renderer after placeholder replacement. |
+| `src/js/theme_template.js` | Renderer-side wrapper bootstrap, stylesheet link lifecycle, token CSS detection, theme matching, and additive scoped token glow rule generation. |
+| `src/css/kawaii-vscode-colors-ui.min.css` | Generated Sass output written next to the workbench HTML and linked by the injected renderer script. |
+| `src/scss/kawaii-vscode-colors-ui.scss` | Sass wrapper entrypoint for additive `.kawaii-vscode-colors-ui` static workbench chrome rules. |
+| `src/scss/generated/_editor-chrome.generated.scss` | Generated bridge partial created from the legacy `src/css/editor_chrome.css` source. |
+| `src/css/editor_chrome.css` | Legacy bridge input for static workbench chrome CSS during migration; no longer embedded into the generated renderer script. |
 | `src/shared` | TypeScript migration contracts, models, branded primitives, and runtime guards for external inputs. |
 
 ## Webview Message Contract
@@ -221,7 +229,6 @@ Workbench patch marker:
 
 Renderer placeholders replaced by `src/extensionHost/services/NeonEffectService.ts`:
 
-- `CHROME_STYLES`
 - `DISABLE_GLOW`
 - `EDITOR_BACKGROUND_AREA_BOTTOM`
 - `EDITOR_BACKGROUND_AREA_HEIGHT`
@@ -235,12 +242,15 @@ Renderer placeholders replaced by `src/extensionHost/services/NeonEffectService.
 - `EDITOR_BACKGROUND_IMAGE_REPEAT`
 - `EDITOR_BACKGROUND_IMAGE_SIZE`
 - `EMPTY_EDITOR_LOGO_STYLES`
+- `KAWAII_UI_STYLE_VERSION`
 - `NEON_BRIGHTNESS`
 
-Runtime style tags:
+Runtime DOM/CSS contract:
 
-- `#kawaii_synthwave-chrome-styles`
-- `#kawaii_synthwave-theme-styles`
+- Workbench HTML receives only the marked `kawaii-vscode-colors-ui.js` script tag.
+- The script adds `.kawaii-vscode-colors-ui` and exactly one sanitized inner theme class, normally `.dark-pink-kawaii` or `.light-pink-pastel-kawaii`, to the highest available workbench root, normally `document.documentElement`.
+- Static UI CSS is linked with `#kawaii-vscode-colors-ui-stylesheet` and `kawaii-vscode-colors-ui.min.css?v=<same-token-as-script>`.
+- Dynamic token glow rules are additive and emitted into `#kawaii-vscode-colors-ui-token-styles` as `.kawaii-vscode-colors-ui.<inner-theme-wrapper> <token-selector> { ... }`.
 
 The renderer code must keep using VS Code workbench/theme tokens and must not define an independent UI palette for the settings webview or injected workbench surfaces. Typed renderer helpers live in `src/renderer/ThemeTemplate.ts`; the injected runtime template remains `src/js/theme_template.js` until the browser script is fully migrated.
 
@@ -259,5 +269,5 @@ The renderer code must keep using VS Code workbench/theme tokens and must not de
 | Test artifact cleanup | `npm run clean:test-artifacts` | Compiles script wrappers, then removes `.vscode-test`, `test-results`, `playwright-report`, and `out-tests` if they exist inside the workspace. |
 | Safe E2E | `npm run test:e2e` | Compiles, then runs disposable VS Code UI automation without applying the real Neon patch. |
 | Current VS Code E2E | `npm run test:e2e:current` | Compiles, then runs experimental safe E2E against the latest ExTester-supported VS Code version, isolated from the stable `1.111.0` safe gate. |
-| Gated Neon E2E | `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` | Requires the flag, compiles, then runs real disposable workbench patch lifecycle, screenshots, restore checks, and fit matrix. |
+| Gated Neon E2E | `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` | Requires the flag, removes stale marked Kawaii/legacy script tags and generated UI assets from the disposable workbench before the first launch, compiles, then runs real disposable workbench patch lifecycle, screenshots, restore checks, and fit matrix. |
 | Safe all-tests gate | `npm run test:all` | Runs `test:check`, unit, DOM, integration, package, and safe E2E phases in sequence with fail-fast behavior and a final pass/fail/skipped summary; gated Neon E2E is excluded. |

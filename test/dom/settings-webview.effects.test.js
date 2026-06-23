@@ -78,7 +78,7 @@ test("settings webview posts color settings apply effects with dark image custom
 
 test("settings webview posts color settings apply effects with light missing-image state", async () => {
   const { document, postedMessages } = await renderWebview({
-    themeLabel: "Kawaii VS Code Color Light",
+    themeLabel: "Light Pink-Pastel Kawaii",
     activeThemeVariantId: "light",
     editorBackground: {
       opacity: 0.18,

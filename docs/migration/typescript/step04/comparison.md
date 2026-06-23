@@ -5,7 +5,7 @@
 - Converted the extension host entry source from `src/extension.js` to `src/extension.ts` while keeping `package.json.main` at compiled `./out/src/extension.js`.
 - Extracted Neon Effect host responsibilities into typed modules under `src/extensionHost`.
 - Kept the Settings webview contract unchanged: `src/settings.js` still receives `enableNeon`, `disableNeon`, and `isNeonEnabled` actions.
-- Kept workbench marker, generated `neondreams.js` filename, reload prompts, brightness normalization, image placeholder behavior, and theme-switch regeneration behavior intact.
+- Kept the then-current workbench marker/runtime asset behavior, reload prompts, brightness normalization, image placeholder behavior, and theme-switch regeneration behavior intact. The runtime asset has since been renamed to `kawaii-vscode-colors-ui.js`.
 
 ## New Architecture
 

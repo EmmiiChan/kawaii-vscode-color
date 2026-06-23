@@ -2,6 +2,7 @@ import fs = require("fs");
 import path = require("path");
 
 export const KAWAII_UI_SCRIPT_FILE_NAME = "kawaii-vscode-colors-ui.js";
+export const KAWAII_UI_STYLE_FILE_NAME = "kawaii-vscode-colors-ui.min.css";
 
 const WORKBENCH_PATCH_START_MARKER = "<!-- KAWAII VSCODE COLORS UI -->";
 const WORKBENCH_PATCH_END_MARKER = "<!-- /KAWAII VSCODE COLORS UI -->";
@@ -13,7 +14,8 @@ const WORKBENCH_HTML_CLOSING_TAG_PATTERN = /<\/html>/i;
 
 export interface WorkbenchPatchPaths {
   readonly htmlFile: string;
-  readonly templateFile: string;
+  readonly scriptFile: string;
+  readonly styleFile: string;
 }
 
 type ExistsSync = (candidatePath: string) => boolean;
@@ -97,7 +99,8 @@ export function resolveWorkbenchPatchPaths(base: string, existsSync: ExistsSync 
 
   return {
     htmlFile: path.join(workbenchDirectory, workBenchFilename),
-    templateFile: path.join(workbenchDirectory, KAWAII_UI_SCRIPT_FILE_NAME)
+    scriptFile: path.join(workbenchDirectory, KAWAII_UI_SCRIPT_FILE_NAME),
+    styleFile: path.join(workbenchDirectory, KAWAII_UI_STYLE_FILE_NAME)
   };
 }
 

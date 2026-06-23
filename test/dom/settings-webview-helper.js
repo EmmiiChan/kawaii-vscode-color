@@ -4,18 +4,18 @@ const { JSDOM } = require("jsdom");
 const { createSettingsWebviewHtml } = require("../../out/src/settingsWebview");
 
 const baseState = {
-  themeLabel: "Kawaii VS Code Color",
+  themeLabel: "Dark Pink Kawaii",
   activeThemeVariantId: "dark",
   themeVariants: [
     {
       id: "dark",
       modeLabel: "Dark",
-      label: "Kawaii VS Code Color"
+      label: "Dark Pink Kawaii"
     },
     {
       id: "light",
       modeLabel: "Light",
-      label: "Kawaii VS Code Color Light"
+      label: "Light Pink-Pastel Kawaii"
     }
   ],
   documentationLinks: [

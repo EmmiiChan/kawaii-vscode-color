@@ -1000,6 +1000,12 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
           vscode.postMessage(message);
         }
       });
+      Object.defineProperty(window, "kawaiiVsCodeColorE2EGetState", {
+        configurable: true,
+        value() {
+          return JSON.parse(JSON.stringify(state));
+        }
+      });
     }
 
     const pages = {

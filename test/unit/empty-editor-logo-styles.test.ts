@@ -9,6 +9,7 @@ const { JSDOM } = require("jsdom") as {
 const {
   EMPTY_EDITOR_LOGO_FALLBACK_VERSION_CASES,
   EMPTY_EDITOR_LOGO_LETTERPRESS_SELECTORS,
+  EMPTY_EDITOR_LOGO_WRAPPER_SELECTORS,
   createEmptyEditorLogoStyles
 } = requireOut<typeof import("../../src/emptyEditorLogoStyles")>("emptyEditorLogoStyles");
 
@@ -19,9 +20,13 @@ function requireOut<TModule>(...segments: readonly string[]): TModule {
 test("createEmptyEditorLogoStyles includes old and wrapper watermark selectors", () => {
   const css = createEmptyEditorLogoStyles("data:image/png;base64,abc123", 0.42);
 
-  for (const selector of EMPTY_EDITOR_LOGO_LETTERPRESS_SELECTORS) {
-    assert.match(css, new RegExp(escapeRegExp(selector)));
+  for (const wrapperSelector of EMPTY_EDITOR_LOGO_WRAPPER_SELECTORS) {
+    for (const selector of EMPTY_EDITOR_LOGO_LETTERPRESS_SELECTORS) {
+      assert.match(css, new RegExp(escapeRegExp(`${wrapperSelector} ${selector}`)));
+    }
   }
+
+  assert.doesNotMatch(css, /\.kawaii-vscode-colors-ui\s+\.monaco-workbench/);
 });
 
 test("empty editor logo selectors match old and wrapper VS Code watermark markup", () => {

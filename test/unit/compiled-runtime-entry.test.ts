@@ -29,7 +29,7 @@ test("resolveExtensionRoot maps source and compiled directories to the package r
 
 test("resolveExtensionAssetPath resolves source assets from compiled output", () => {
   assert.equal(
-    resolveExtensionAssetPath(path.join(workspaceRoot, "out", "src"), "src", "css", "editor_chrome.css"),
-    path.join(workspaceRoot, "src", "css", "editor_chrome.css")
+    resolveExtensionAssetPath(path.join(workspaceRoot, "out", "src"), "src", "css", "kawaii-vscode-colors-ui.min.css"),
+    path.join(workspaceRoot, "src", "css", "kawaii-vscode-colors-ui.min.css")
   );
 });

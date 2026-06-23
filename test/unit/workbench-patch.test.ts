@@ -100,6 +100,7 @@ test("resolveWorkbenchPatchPaths resolves electron-sandbox workbench.esm.html", 
 
   assert.deepEqual(result, {
     htmlFile: existingPath,
-    templateFile: path.join(base, "electron-sandbox", "workbench", "kawaii-vscode-colors-ui.js")
+    scriptFile: path.join(base, "electron-sandbox", "workbench", "kawaii-vscode-colors-ui.js"),
+    styleFile: path.join(base, "electron-sandbox", "workbench", "kawaii-vscode-colors-ui.min.css")
   });
 });

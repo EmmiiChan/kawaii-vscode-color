@@ -19,13 +19,13 @@ const WORKSPACE_ROOT = resolveWorkspaceRoot(__dirname);
 const FILE_ENCODING = "utf8";
 const THEME_VARIANTS: readonly ThemeVariant[] = [
   {
-    label: "Kawaii VS Code Color",
+    label: "Dark Pink Kawaii",
     baseThemePath: path.join(WORKSPACE_ROOT, "themes", "kawaii_synthwave-color-theme.json"),
     overridesThemePath: path.join(WORKSPACE_ROOT, "themes", "kawaii_synthwave-color-theme-overrides.json"),
     generatedThemePath: path.join(WORKSPACE_ROOT, "themes", "kawaii_synthwave-generated-color-theme.json")
   },
   {
-    label: "Kawaii VS Code Color Light",
+    label: "Light Pink-Pastel Kawaii",
     baseThemePath: path.join(WORKSPACE_ROOT, "themes", "kawaii_synthwave-color-theme-light.json"),
     overridesThemePath: path.join(WORKSPACE_ROOT, "themes", "kawaii_synthwave-color-theme-light-overrides.json"),
     generatedThemePath: path.join(WORKSPACE_ROOT, "themes", "kawaii_synthwave-generated-color-theme-light.json")

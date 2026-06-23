@@ -30,9 +30,45 @@ test("shared opacity normalization clamps incoming numeric values", () => {
 });
 
 test("shared theme guards identify supported Kawaii theme variants", () => {
+  assert.equal(theme.isThemeName("Dark Pink Kawaii"), true);
+  assert.equal(theme.isThemeName("Light Pink-Pastel Kawaii"), true);
   assert.equal(theme.isThemeName("Kawaii VS Code Color"), true);
   assert.equal(theme.isThemeName("Kawaii VS Code Color Light"), true);
   assert.equal(theme.isThemeName("Other Theme"), false);
+});
+
+test("shared theme variants expose canonical labels, legacy aliases, and wrapper classes", () => {
+  assert.equal(theme.KAWAII_UI_ROOT_CLASS, "kawaii-vscode-colors-ui");
+  assert.equal(theme.sanitizeThemeWrapperClass("Dark Pink Kawaii"), "dark-pink-kawaii");
+  assert.equal(theme.sanitizeThemeWrapperClass("Light Pink-Pastel Kawaii"), "light-pink-pastel-kawaii");
+
+  assert.deepEqual(
+    theme.KAWAII_THEME_VARIANTS.map((variant) => ({
+      id: variant.id,
+      label: variant.label,
+      wrapperClass: variant.wrapperClass,
+      legacyLabels: variant.legacyLabels
+    })),
+    [
+      {
+        id: "dark",
+        label: "Dark Pink Kawaii",
+        wrapperClass: "dark-pink-kawaii",
+        legacyLabels: ["Kawaii VS Code Color"]
+      },
+      {
+        id: "light",
+        label: "Light Pink-Pastel Kawaii",
+        wrapperClass: "light-pink-pastel-kawaii",
+        legacyLabels: ["Kawaii VS Code Color Light"]
+      }
+    ]
+  );
+
+  assert.equal(theme.getThemeVariantByLabel("Dark Pink Kawaii")?.id, "dark");
+  assert.equal(theme.getThemeVariantByLabel("Kawaii VS Code Color")?.id, "dark");
+  assert.equal(theme.getThemeVariantByLabel("Light Pink-Pastel Kawaii")?.id, "light");
+  assert.equal(theme.getThemeVariantByLabel("Kawaii VS Code Color Light")?.id, "light");
 });
 
 test("webview message guard accepts known messages and rejects unknown payloads", () => {
@@ -57,7 +93,9 @@ test("settings bundle schema constants preserve current and legacy schema names"
 
 test("renderer placeholder contract includes required Neon placeholders", () => {
   assert.equal(rendererPlaceholders.isRendererPlaceholder("NEON_BRIGHTNESS"), true);
+  assert.equal(rendererPlaceholders.isRendererPlaceholder("KAWAII_UI_STYLE_VERSION"), true);
   assert.equal(rendererPlaceholders.isRendererPlaceholder("EMPTY_EDITOR_LOGO_STYLES"), true);
+  assert.equal(rendererPlaceholders.isRendererPlaceholder("CHROME_STYLES"), false);
   assert.equal(rendererPlaceholders.isRendererPlaceholder("UNKNOWN_PLACEHOLDER"), false);
 });
 

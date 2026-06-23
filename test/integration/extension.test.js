@@ -15,7 +15,7 @@ suite("Kawaii VS Code Color extension", () => {
     );
     assert.ok(
       extension.packageJSON.contributes.themes.some(
-        (theme) => theme.label === "Kawaii VS Code Color"
+        (theme) => theme.label === "Dark Pink Kawaii"
       ),
       "Expected the dark theme contribution to exist."
     );

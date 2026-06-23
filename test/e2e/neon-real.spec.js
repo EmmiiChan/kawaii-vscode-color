@@ -8,12 +8,13 @@ const { VSBrowser, Workbench } = require("vscode-extension-tester");
 const {
     assertWebviewPageVisible,
     clearTransientWorkbenchNotifications,
+    closeAllEditors,
     clickWebviewCss,
     getWebviewInputValue,
     postWebviewE2EMessage,
-    runCommand,
     setWebviewInputValue,
     takeE2EScreenshot,
+    waitForWebviewE2EState,
     waitForWebviewInputValue,
     waitForWebviewTextIncludes,
     withSettingsWebview
@@ -97,6 +98,9 @@ describe("Neon real gated E2E @neon-real", function () {
     it("captures before state and applies Neon Effect patch @neon-real-apply", async function () {
         const patchPaths = findDisposableWorkbenchPatchPaths();
         const baselineSnapshot = ensureCleanWorkbenchBaseline(patchPaths);
+        if (baselineSnapshot.runtimeReloadRequired) {
+            await reloadWorkbenchAfterBaselineCleanup();
+        }
         const baselineLogoState = await captureBaselineEmptyEditorLogoVisualState();
 
         assert.equal(baselineSnapshot.patchEnabled, false, "Expected disposable workbench to start without Kawaii UI patch");
@@ -105,11 +109,14 @@ describe("Neon real gated E2E @neon-real", function () {
         writeState({
             storage: NEON_STORAGE,
             htmlFile: patchPaths.htmlFile,
-            templateFile: patchPaths.templateFile,
+            scriptFile: patchPaths.scriptFile,
+            styleFile: patchPaths.styleFile,
             baselineHtml: baselineSnapshot.html,
             baselineHtmlHash: baselineSnapshot.htmlHash,
-            baselineTemplateExists: baselineSnapshot.templateExists,
-            baselineTemplateHash: baselineSnapshot.templateHash,
+            baselineScriptExists: baselineSnapshot.scriptExists,
+            baselineScriptHash: baselineSnapshot.scriptHash,
+            baselineStyleExists: baselineSnapshot.styleExists,
+            baselineStyleHash: baselineSnapshot.styleHash,
             baselineLogoState
         });
 
@@ -124,12 +131,14 @@ describe("Neon real gated E2E @neon-real", function () {
         assert.notEqual(appliedSnapshot.htmlHash, baselineSnapshot.htmlHash, "Expected workbench HTML to change after applying effects");
         assert.equal(appliedSnapshot.scriptTagCount, 1, "Expected exactly one Kawaii UI script tag after applying effects");
         assert.match(appliedSnapshot.html, /<!-- KAWAII VSCODE COLORS UI --><script src="kawaii-vscode-colors-ui\.js\?v=\d+"><\/script><!-- \/KAWAII VSCODE COLORS UI -->/);
-        assertAppliedTemplateUsesEditorTokens(appliedSnapshot.template);
-        assertAppliedTemplateIncludesVisualEffects(appliedSnapshot.template, DSTGROUP_VISUAL_CASE);
+        assertAppliedRuntimeScriptUsesAdditiveAssets(appliedSnapshot.script);
+        assertAppliedStyleUsesEditorTokens(appliedSnapshot.style);
+        assertAppliedStyleIncludesVisualEffects(appliedSnapshot.style, DSTGROUP_VISUAL_CASE);
 
         updateState({
             dstgroupHtmlHash: appliedSnapshot.htmlHash,
-            dstgroupTemplateHash: appliedSnapshot.templateHash
+            dstgroupTemplateHash: appliedSnapshot.templateHash,
+            dstgroupStyleHash: appliedSnapshot.styleHash
         });
     });
 
@@ -143,8 +152,10 @@ describe("Neon real gated E2E @neon-real", function () {
         assert.equal(appliedSnapshot.scriptTagCount, 1, "Expected one Kawaii UI script tag after full VS Code restart");
         assert.equal(appliedSnapshot.htmlHash, state.dstgroupHtmlHash, "Expected dstgroup HTML hash to persist across restart");
         assert.equal(appliedSnapshot.templateHash, state.dstgroupTemplateHash, "Expected dstgroup Kawaii UI script to persist across restart");
-        assertAppliedTemplateUsesEditorTokens(appliedSnapshot.template);
-        assertAppliedTemplateIncludesVisualEffects(appliedSnapshot.template, DSTGROUP_VISUAL_CASE);
+        assert.equal(appliedSnapshot.styleHash, state.dstgroupStyleHash, "Expected dstgroup Kawaii UI CSS to persist across restart");
+        assertAppliedRuntimeScriptUsesAdditiveAssets(appliedSnapshot.script);
+        assertAppliedStyleUsesEditorTokens(appliedSnapshot.style);
+        assertAppliedStyleIncludesVisualEffects(appliedSnapshot.style, DSTGROUP_VISUAL_CASE);
 
         const dstgroupLogoState = await captureAppliedEmptyEditorLogoVisualState(
             DSTGROUP_VISUAL_CASE,
@@ -169,21 +180,23 @@ describe("Neon real gated E2E @neon-real", function () {
         const alternateSnapshot = await waitForPatchSnapshot(
             patchPaths,
             (snapshot) => snapshot.patchEnabled
-                && snapshot.templateExists
-                && snapshot.templateHash !== state.dstgroupTemplateHash,
-            "Expected alternate image settings to regenerate the Kawaii UI script"
+                && snapshot.styleExists
+                && snapshot.styleHash !== state.dstgroupStyleHash,
+            "Expected alternate image settings to regenerate the Kawaii UI CSS"
         );
 
         assert.equal(alternateSnapshot.scriptTagCount, 1, "Expected exactly one Kawaii UI script tag after applying alternate image");
-        assert.notEqual(alternateSnapshot.templateHash, state.dstgroupTemplateHash, "Expected alternate image to change generated Kawaii UI script content");
-        assertAppliedTemplateUsesEditorTokens(alternateSnapshot.template);
-        assertAppliedTemplateIncludesVisualEffects(alternateSnapshot.template, ALTERNATE_VISUAL_CASE);
+        assert.notEqual(alternateSnapshot.styleHash, state.dstgroupStyleHash, "Expected alternate image to change generated Kawaii UI CSS content");
+        assertAppliedRuntimeScriptUsesAdditiveAssets(alternateSnapshot.script);
+        assertAppliedStyleUsesEditorTokens(alternateSnapshot.style);
+        assertAppliedStyleIncludesVisualEffects(alternateSnapshot.style, ALTERNATE_VISUAL_CASE);
 
         updateState({
             dstgroupLogoState,
             dstgroupEditorBackgroundState,
             alternateHtmlHash: alternateSnapshot.htmlHash,
-            alternateTemplateHash: alternateSnapshot.templateHash
+            alternateTemplateHash: alternateSnapshot.templateHash,
+            alternateStyleHash: alternateSnapshot.styleHash
         });
     });
 
@@ -197,8 +210,10 @@ describe("Neon real gated E2E @neon-real", function () {
         assert.equal(alternateSnapshot.scriptTagCount, 1, "Expected one Kawaii UI script tag after alternate full VS Code restart");
         assert.equal(alternateSnapshot.htmlHash, state.alternateHtmlHash, "Expected alternate HTML hash to persist across restart");
         assert.equal(alternateSnapshot.templateHash, state.alternateTemplateHash, "Expected alternate Kawaii UI script to persist across restart");
-        assertAppliedTemplateUsesEditorTokens(alternateSnapshot.template);
-        assertAppliedTemplateIncludesVisualEffects(alternateSnapshot.template, ALTERNATE_VISUAL_CASE);
+        assert.equal(alternateSnapshot.styleHash, state.alternateStyleHash, "Expected alternate Kawaii UI CSS to persist across restart");
+        assertAppliedRuntimeScriptUsesAdditiveAssets(alternateSnapshot.script);
+        assertAppliedStyleUsesEditorTokens(alternateSnapshot.style);
+        assertAppliedStyleIncludesVisualEffects(alternateSnapshot.style, ALTERNATE_VISUAL_CASE);
 
         const alternateLogoState = await captureAppliedEmptyEditorLogoVisualState(
             ALTERNATE_VISUAL_CASE,
@@ -236,22 +251,24 @@ describe("Neon real gated E2E @neon-real", function () {
         const revertedDstgroupSnapshot = await waitForPatchSnapshot(
             patchPaths,
             (snapshot) => snapshot.patchEnabled
-                && snapshot.templateExists
-                && snapshot.templateHash !== state.alternateTemplateHash,
-            "Expected dstgroup settings to regenerate the Kawaii UI script after alternate image"
+                && snapshot.styleExists
+                && snapshot.styleHash !== state.alternateStyleHash,
+            "Expected dstgroup settings to regenerate the Kawaii UI CSS after alternate image"
         );
 
         assert.equal(revertedDstgroupSnapshot.scriptTagCount, 1, "Expected exactly one Kawaii UI script tag after reverting to dstgroup");
-        assert.equal(revertedDstgroupSnapshot.templateHash, state.dstgroupTemplateHash, "Expected reverting to dstgroup to restore the original generated Kawaii UI script content");
-        assertAppliedTemplateUsesEditorTokens(revertedDstgroupSnapshot.template);
-        assertAppliedTemplateIncludesVisualEffects(revertedDstgroupSnapshot.template, DSTGROUP_VISUAL_CASE);
+        assert.equal(revertedDstgroupSnapshot.styleHash, state.dstgroupStyleHash, "Expected reverting to dstgroup to restore the original generated Kawaii UI CSS content");
+        assertAppliedRuntimeScriptUsesAdditiveAssets(revertedDstgroupSnapshot.script);
+        assertAppliedStyleUsesEditorTokens(revertedDstgroupSnapshot.style);
+        assertAppliedStyleIncludesVisualEffects(revertedDstgroupSnapshot.style, DSTGROUP_VISUAL_CASE);
 
         updateState({
             alternateLogoState,
             alternateEditorBackgroundState,
             alternateEditorBackgroundFitMatrixState,
             revertedDstgroupHtmlHash: revertedDstgroupSnapshot.htmlHash,
-            revertedDstgroupTemplateHash: revertedDstgroupSnapshot.templateHash
+            revertedDstgroupTemplateHash: revertedDstgroupSnapshot.templateHash,
+            revertedDstgroupStyleHash: revertedDstgroupSnapshot.styleHash
         });
     });
 
@@ -265,9 +282,11 @@ describe("Neon real gated E2E @neon-real", function () {
         assert.equal(revertedDstgroupSnapshot.scriptTagCount, 1, "Expected one Kawaii UI script tag after reverted dstgroup full VS Code restart");
         assert.equal(revertedDstgroupSnapshot.htmlHash, state.revertedDstgroupHtmlHash, "Expected reverted dstgroup HTML hash to persist across restart");
         assert.equal(revertedDstgroupSnapshot.templateHash, state.revertedDstgroupTemplateHash, "Expected reverted dstgroup Kawaii UI script to persist across restart");
-        assert.equal(revertedDstgroupSnapshot.templateHash, state.dstgroupTemplateHash, "Expected reverted dstgroup Kawaii UI script to match the original dstgroup script");
-        assertAppliedTemplateUsesEditorTokens(revertedDstgroupSnapshot.template);
-        assertAppliedTemplateIncludesVisualEffects(revertedDstgroupSnapshot.template, DSTGROUP_VISUAL_CASE);
+        assert.equal(revertedDstgroupSnapshot.styleHash, state.revertedDstgroupStyleHash, "Expected reverted dstgroup Kawaii UI CSS to persist across restart");
+        assert.equal(revertedDstgroupSnapshot.styleHash, state.dstgroupStyleHash, "Expected reverted dstgroup Kawaii UI CSS to match the original dstgroup CSS");
+        assertAppliedRuntimeScriptUsesAdditiveAssets(revertedDstgroupSnapshot.script);
+        assertAppliedStyleUsesEditorTokens(revertedDstgroupSnapshot.style);
+        assertAppliedStyleIncludesVisualEffects(revertedDstgroupSnapshot.style, DSTGROUP_VISUAL_CASE);
 
         const revertedDstgroupLogoState = await captureAppliedEmptyEditorLogoVisualState(
             DSTGROUP_VISUAL_CASE,
@@ -322,7 +341,7 @@ describe("Neon real gated E2E @neon-real", function () {
         assert.equal(restoredSnapshot.htmlHash, state.baselineHtmlHash, "Expected restored HTML hash to match the before state");
 
         const runtimeRestoredState = await waitForRuntimeNeonState(
-            (runtimeState) => !runtimeState.hasChromeStyles && !runtimeState.hasThemeStyles,
+            (runtimeState) => !runtimeState.hasUiRoot && !runtimeState.hasLinkedStyles && !runtimeState.hasScopedTokenStyles,
             "Expected Neon runtime CSS to be gone after full VS Code restart"
         );
 
@@ -376,7 +395,8 @@ function createVisualSettingsBundle(baseBundle, options) {
         `editor-background-image.${editorBackgroundExtension}`
     );
     bundle.activeThemeVariantId = "dark";
-    bundle.activeThemeLabel = "Kawaii VS Code Color";
+    bundle.activeThemeLabel = "Dark Pink Kawaii";
+    bundle.extensionConfiguration.disableGlow = false;
     bundle.effects.emptyEditorLogo.opacity = 1;
     bundle.effects.emptyEditorLogo.image = createImageExport(
         options.emptyEditorLogoImagePath,
@@ -434,7 +454,7 @@ function getImageMimeType(extension) {
 }
 
 async function captureBaselineEmptyEditorLogoVisualState() {
-    await runCommand("View: Close All Editors");
+    await closeAllEditors();
     await sleep(2000);
     await clearTransientWorkbenchNotifications();
 
@@ -448,16 +468,21 @@ async function captureBaselineEmptyEditorLogoVisualState() {
 }
 
 async function captureAppliedEmptyEditorLogoVisualState(visualCase, screenshotName) {
-    await runCommand("View: Close All Editors");
+    await closeAllEditors();
     await sleep(2000);
     await clearTransientWorkbenchNotifications();
 
     const runtimeState = await waitForRuntimeNeonState(
         (state) =>
-            state.hasChromeStyles
-            && state.hasThemeStyles
+            state.hasUiRoot
+            && state.uiRootTagName === "html"
+            && state.hasOriginalTokenStyles
+            && state.hasLinkedStyles
+            && state.hasChromeStyles
             && state.hasKawaiiThemeWrapper
             && state.hasThemeWrapperClass
+            && state.hasDarkInnerWrapper
+            && !state.hasLightInnerWrapper
             && state.usesEditorTokens
             && !state.hasOwnPaletteOnly
             && state.hasExpectedEditorBackgroundImage
@@ -471,6 +496,11 @@ async function captureAppliedEmptyEditorLogoVisualState(visualCase, screenshotNa
     const screenshotPath = await takeE2EScreenshot(screenshotName);
 
     assert.equal(runtimeState.hasThemeWrapperClass, true, `Expected ${visualCase.id} Kawaii theme wrapper class after restart`);
+    assert.equal(runtimeState.hasDarkInnerWrapper, true, `Expected ${visualCase.id} dark inner theme wrapper after restart`);
+    assert.equal(runtimeState.hasLightInnerWrapper, false, `Expected ${visualCase.id} inactive light inner theme wrapper to be absent after restart`);
+    assert.equal(runtimeState.uiRootTagName, "html", `Expected ${visualCase.id} Kawaii UI wrapper on html`);
+    assert.equal(runtimeState.hasOriginalTokenStyles, true, `Expected ${visualCase.id} original VS Code token style tag to remain`);
+    assert.equal(runtimeState.hasLinkedStyles, true, `Expected ${visualCase.id} linked Kawaii UI stylesheet`);
     assert.equal(runtimeState.hasOwnPaletteOnly, false, `Expected ${visualCase.id} runtime CSS to keep VS Code editor tokens`);
     assert.equal(runtimeState.hasExpectedEditorBackgroundImage, true, `Expected runtime CSS to include ${visualCase.id} editor background image data URL`);
     assert.equal(runtimeState.hasExpectedEmptyEditorLogoImage, true, `Expected runtime CSS to apply ${visualCase.id} no-tab logo image data URL to the real watermark target`);
@@ -491,9 +521,18 @@ async function captureAppliedEditorBackgroundVisualState(visualCase, screenshotN
         const runtimeState = await waitForRuntimeNeonState(
             (state) =>
                 state.hasChromeStyles
+                && state.hasUiRoot
+                && state.uiRootTagName === "html"
+                && state.hasOriginalTokenStyles
+                && state.hasLinkedStyles
                 && state.hasThemeStyles
+                && state.hasScopedTokenStyles
+                && /\.kawaii-vscode-colors-ui\.dark-pink-kawaii\s+\.mtk/.test(state.scopedTokenText)
+                && !/\.kawaii-vscode-colors-ui\s+\.mtk/.test(state.scopedTokenText)
                 && state.hasKawaiiThemeWrapper
                 && state.hasThemeWrapperClass
+                && state.hasDarkInnerWrapper
+                && !state.hasLightInnerWrapper
                 && state.usesEditorTokens
                 && !state.hasOwnPaletteOnly
                 && state.hasExpectedEditorBackgroundImage
@@ -510,13 +549,19 @@ async function captureAppliedEditorBackgroundVisualState(visualCase, screenshotN
         const screenshotPath = await takeE2EScreenshot(screenshotName);
 
         assert.equal(runtimeState.hasThemeWrapperClass, true, `Expected ${visualCase.id} Kawaii theme wrapper class with an editor page open`);
+        assert.equal(runtimeState.hasDarkInnerWrapper, true, `Expected ${visualCase.id} dark inner theme wrapper with an editor page open`);
+        assert.equal(runtimeState.hasLightInnerWrapper, false, `Expected ${visualCase.id} inactive light inner theme wrapper to be absent with an editor page open`);
+        assert.equal(runtimeState.uiRootTagName, "html", `Expected ${visualCase.id} Kawaii UI wrapper on html with an editor page open`);
+        assert.equal(runtimeState.hasOriginalTokenStyles, true, `Expected ${visualCase.id} original VS Code token style tag to remain with an editor page open`);
+        assert.equal(runtimeState.hasLinkedStyles, true, `Expected ${visualCase.id} linked Kawaii UI stylesheet with an editor page open`);
+        assert.equal(runtimeState.hasScopedTokenStyles, true, `Expected ${visualCase.id} scoped token style tag with an editor page open`);
         assert.equal(runtimeState.hasOwnPaletteOnly, false, `Expected ${visualCase.id} editor page runtime CSS to keep VS Code editor tokens`);
         assert.equal(runtimeState.hasExpectedEditorBackgroundImageOnEditor, true, `Expected ${visualCase.id} editor background image data URL on the real Monaco editor pseudo-element`);
         assert.equal(runtimeState.hasExpectedEditorBackgroundPseudoOpacity, true, `Expected ${visualCase.id} editor background pseudo-element opacity`);
 
         return { screenshotPath, runtimeState };
     } finally {
-        await runCommand("View: Close All Editors").catch(() => undefined);
+        await closeAllEditors().catch(() => undefined);
         await sleep(500);
     }
 }
@@ -617,7 +662,7 @@ async function captureEditorBackgroundFitMatrixVisualState(visualCase, screensho
 
         return { baseline: baselineState, fits, analyses };
     } finally {
-        await runCommand("View: Close All Editors").catch(() => undefined);
+        await closeAllEditors().catch(() => undefined);
         await sleep(500);
     }
 }
@@ -699,8 +744,7 @@ async function applyVisualSettingsBundleAndEffects(visualCase, screenshotName) {
 
         await postWebviewE2EMessage({ type: "e2e-apply-settings-bundle", bundle: visualCase.bundle });
         await waitForWebviewTextIncludes("#effects-warning", "Settings restored from E2E bundle", 30000);
-        await waitForWebviewTextIncludes("#editor-background-file", visualCase.expected.editorBackgroundOriginalName, 30000);
-        await waitForWebviewTextIncludes("#empty-editor-logo-file", visualCase.expected.emptyEditorLogoOriginalName, 30000);
+        await waitForVisualSettingsState(visualCase);
 
         assert.equal(await getWebviewInputValue("#theme-variant"), "dark");
         assert.equal(await getWebviewInputValue("#editor-background-opacity"), visualCase.expected.editorBackgroundOpacity);
@@ -725,8 +769,7 @@ async function applyVisualSettingsThroughUiAndEffects(visualCase, screenshotName
             ? DSTGROUP_VISUAL_CASE
             : ALTERNATE_VISUAL_CASE;
         await postWebviewE2EMessage({ type: "e2e-apply-settings-bundle", bundle: preseedVisualCase.bundle });
-        await waitForWebviewTextIncludes("#editor-background-file", preseedVisualCase.expected.editorBackgroundOriginalName, 30000);
-        await waitForWebviewTextIncludes("#empty-editor-logo-file", preseedVisualCase.expected.emptyEditorLogoOriginalName, 30000);
+        await waitForVisualSettingsState(preseedVisualCase);
 
         await postWebviewE2EMessage({
             type: "e2e-set-test-fixtures",
@@ -739,7 +782,7 @@ async function applyVisualSettingsThroughUiAndEffects(visualCase, screenshotName
         await clickWebviewCss("#editor-background-upload");
         await waitForWebviewTextIncludes("#editor-background-file", visualCase.expected.editorBackgroundOriginalName, 30000);
         await clickWebviewCss("#empty-editor-logo-upload");
-        await waitForWebviewTextIncludes("#empty-editor-logo-file", visualCase.expected.emptyEditorLogoOriginalName, 30000);
+        await waitForVisualAssetState(visualCase);
 
         await setWebviewInputValue("#editor-background-opacity", visualCase.expected.editorBackgroundOpacity);
         await waitForWebviewInputValue("#editor-background-opacity", visualCase.expected.editorBackgroundOpacity, 20000);
@@ -756,6 +799,33 @@ async function applyVisualSettingsThroughUiAndEffects(visualCase, screenshotName
 
         await setVisualControlsAndApply(visualCase);
     });
+}
+
+async function waitForVisualAssetState(visualCase) {
+    await waitForWebviewE2EState((state) => {
+        const editorBackground = state.editorBackground || {};
+        const emptyEditorLogo = state.emptyEditorLogo || {};
+
+        return editorBackground.hasImage === true
+            && editorBackground.originalName === visualCase.expected.editorBackgroundOriginalName
+            && emptyEditorLogo.hasImage === true
+            && emptyEditorLogo.originalName === visualCase.expected.emptyEditorLogoOriginalName;
+    }, `Expected settings webview state to contain ${visualCase.id} visual image assets`, 30000);
+}
+
+async function waitForVisualSettingsState(visualCase) {
+    await waitForWebviewE2EState((state) => {
+        const editorBackground = state.editorBackground || {};
+        const emptyEditorLogo = state.emptyEditorLogo || {};
+
+        return editorBackground.hasImage === true
+            && editorBackground.originalName === visualCase.expected.editorBackgroundOriginalName
+            && emptyEditorLogo.hasImage === true
+            && emptyEditorLogo.originalName === visualCase.expected.emptyEditorLogoOriginalName
+            && String(editorBackground.opacity) === visualCase.expected.editorBackgroundOpacity
+            && editorBackground.fit === visualCase.expected.editorBackgroundFit
+            && String(emptyEditorLogo.opacity) === visualCase.expected.emptyEditorLogoOpacity;
+    }, `Expected settings webview state to contain ${visualCase.id} visual assets`, 30000);
 }
 
 async function setVisualControlsAndApply(visualCase) {
@@ -820,7 +890,8 @@ function findDisposableWorkbenchPatchPaths() {
         const resolvedPaths = resolveWorkbenchPatchPaths(candidate);
         if (resolvedPaths) {
             assertInsideDisposableStorage(resolvedPaths.htmlFile);
-            assertInsideDisposableStorage(resolvedPaths.templateFile);
+            assertInsideDisposableStorage(resolvedPaths.scriptFile);
+            assertInsideDisposableStorage(resolvedPaths.styleFile);
             return resolvedPaths;
         }
     }
@@ -830,17 +901,36 @@ function findDisposableWorkbenchPatchPaths() {
 
 function ensureCleanWorkbenchBaseline(paths) {
     const initialSnapshot = readPatchSnapshot(paths);
+    let runtimeReloadRequired = initialSnapshot.patchEnabled || initialSnapshot.scriptExists || initialSnapshot.styleExists;
 
-    if (!initialSnapshot.patchEnabled) {
-        return initialSnapshot;
+    if (initialSnapshot.patchEnabled) {
+        const cleanHtml = removeWorkbenchPatchScriptTag(initialSnapshot.html);
+        fs.writeFileSync(paths.htmlFile, cleanHtml, "utf-8");
     }
 
-    const cleanHtml = removeWorkbenchPatchScriptTag(initialSnapshot.html);
-    fs.writeFileSync(paths.htmlFile, cleanHtml, "utf-8");
+    for (const assetPath of [paths.scriptFile, paths.styleFile, path.join(path.dirname(paths.htmlFile), "neondreams.js")]) {
+        assertInsideDisposableStorage(assetPath);
+
+        if (fs.existsSync(assetPath)) {
+            fs.unlinkSync(assetPath);
+            runtimeReloadRequired = true;
+        }
+    }
 
     const cleanSnapshot = readPatchSnapshot(paths);
     assert.equal(cleanSnapshot.patchEnabled, false, "Expected pre-test cleanup to remove existing Kawaii UI patch");
-    return cleanSnapshot;
+    return {
+        ...cleanSnapshot,
+        runtimeReloadRequired
+    };
+}
+
+async function reloadWorkbenchAfterBaselineCleanup() {
+    await VSBrowser.instance.driver.switchTo().defaultContent();
+    await VSBrowser.instance.driver.executeScript("window.location.reload();");
+    await VSBrowser.instance.waitForWorkbench(60000);
+    await sleep(2000);
+    await clearTransientWorkbenchNotifications();
 }
 
 async function waitForPatchSnapshot(paths, predicate, message, timeoutMs = 30000) {
@@ -860,61 +950,76 @@ async function waitForPatchSnapshot(paths, predicate, message, timeoutMs = 30000
         htmlHash: latestSnapshot.htmlHash,
         patchEnabled: latestSnapshot.patchEnabled,
         scriptTagCount: latestSnapshot.scriptTagCount,
-        templateExists: latestSnapshot.templateExists
+        scriptExists: latestSnapshot.scriptExists,
+        styleExists: latestSnapshot.styleExists
     })}`);
 }
 
 function readPatchSnapshot(paths) {
     const html = fs.readFileSync(paths.htmlFile, "utf-8");
-    const templateExists = fs.existsSync(paths.templateFile);
-    const template = templateExists ? fs.readFileSync(paths.templateFile, "utf-8") : "";
+    const scriptExists = fs.existsSync(paths.scriptFile);
+    const script = scriptExists ? fs.readFileSync(paths.scriptFile, "utf-8") : "";
+    const styleExists = fs.existsSync(paths.styleFile);
+    const style = styleExists ? fs.readFileSync(paths.styleFile, "utf-8") : "";
 
     return {
         html,
         htmlHash: sha256(html),
         patchEnabled: isWorkbenchPatchEnabled(html),
         scriptTagCount: (html.match(/<!-- KAWAII VSCODE COLORS UI -->/g) || []).length,
-        template,
-        templateExists,
-        templateHash: templateExists ? sha256(template) : ""
+        script,
+        scriptExists,
+        scriptHash: scriptExists ? sha256(script) : "",
+        style,
+        styleExists,
+        styleHash: styleExists ? sha256(style) : "",
+        template: script,
+        templateExists: scriptExists,
+        templateHash: scriptExists ? sha256(script) : ""
     };
 }
 
-function assertAppliedTemplateUsesEditorTokens(template) {
-    assert.match(template, /kawaii_synthwave-chrome-styles/);
-    assert.match(template, /kawaii_synthwave-theme-styles/);
-    assert.match(template, /var\(--vscode-editor-background/);
-    assert.match(template, /var\(--vscode-tab-activeBorder/);
-    assert.doesNotMatch(template, /\[(?:CHROME_STYLES|DISABLE_GLOW|NEON_BRIGHTNESS)\]/);
+function assertAppliedRuntimeScriptUsesAdditiveAssets(script) {
+    assert.match(script, /kawaii-vscode-colors-ui-stylesheet/);
+    assert.match(script, /kawaii-vscode-colors-ui-token-styles/);
+    assert.match(script, /document\.documentElement/);
+    assert.doesNotMatch(script, /kawaii_synthwave-(?:chrome|theme)-styles/);
+    assert.doesNotMatch(script, /\[(?:CHROME_STYLES|DISABLE_GLOW|NEON_BRIGHTNESS|KAWAII_UI_STYLE_VERSION)\]/);
 }
 
-function assertAppliedTemplateIncludesVisualEffects(template, visualCase) {
-    assert.ok(
-        template.includes(visualCase.expected.editorBackgroundDataUrl),
-        `Expected ${visualCase.id} editor background image data URL in generated Kawaii UI script`
-    );
-    assert.ok(
-        template.includes(visualCase.expected.emptyEditorLogoDataUrl),
-        `Expected ${visualCase.id} empty editor logo data URL in generated Kawaii UI script`
-    );
-    assert.ok(
-        template.includes(`--kawaii-editor-background-image: url("${visualCase.expected.editorBackgroundDataUrl}`),
-        `Expected ${visualCase.id} editor background image declaration in generated Kawaii UI script`
-    );
-    assert.match(template, new RegExp(`--kawaii-editor-background-image-opacity:\\s*${escapeRegExp(visualCase.expected.editorBackgroundOpacity)}`));
-    assertAppliedTemplateIncludesEditorBackgroundFitArea(template, visualCase);
-    assert.ok(
-        template.includes(`background-image: url("${visualCase.expected.emptyEditorLogoDataUrl}`),
-        `Expected ${visualCase.id} empty editor logo background declaration in generated Kawaii UI script`
-    );
-    assert.match(template, new RegExp(`opacity:\\s*${escapeRegExp(visualCase.expected.emptyEditorLogoOpacity)}`));
-    assert.doesNotMatch(template, /\[(?:EDITOR_BACKGROUND_IMAGE|EDITOR_BACKGROUND_IMAGE_OPACITY|EDITOR_BACKGROUND_IMAGE_POSITION|EDITOR_BACKGROUND_IMAGE_SIZE|EDITOR_BACKGROUND_IMAGE_REPEAT|EDITOR_BACKGROUND_AREA_TOP|EDITOR_BACKGROUND_AREA_RIGHT|EDITOR_BACKGROUND_AREA_BOTTOM|EDITOR_BACKGROUND_AREA_LEFT|EDITOR_BACKGROUND_AREA_WIDTH|EDITOR_BACKGROUND_AREA_HEIGHT|EMPTY_EDITOR_LOGO_STYLES)\]/);
+function assertAppliedStyleUsesEditorTokens(style) {
+    assert.match(style, /\.kawaii-vscode-colors-ui/);
+    assert.match(style, /var\(--vscode-editor-background/);
+    assert.match(style, /var\(--vscode-tab-activeBorder/);
 }
 
-function assertAppliedTemplateIncludesEditorBackgroundFitArea(template, visualCase) {
+function assertAppliedStyleIncludesVisualEffects(style, visualCase) {
+    assert.ok(
+        style.includes(visualCase.expected.editorBackgroundDataUrl),
+        `Expected ${visualCase.id} editor background image data URL in generated Kawaii UI CSS`
+    );
+    assert.ok(
+        style.includes(visualCase.expected.emptyEditorLogoDataUrl),
+        `Expected ${visualCase.id} empty editor logo data URL in generated Kawaii UI CSS`
+    );
+    assert.ok(
+        style.includes(`--kawaii-editor-background-image: url("${visualCase.expected.editorBackgroundDataUrl}`),
+        `Expected ${visualCase.id} editor background image declaration in generated Kawaii UI CSS`
+    );
+    assert.match(style, new RegExp(`--kawaii-editor-background-image-opacity:\\s*${escapeRegExp(visualCase.expected.editorBackgroundOpacity)}`));
+    assertAppliedStyleIncludesEditorBackgroundFitArea(style, visualCase);
+    assert.ok(
+        style.includes(`background-image: url("${visualCase.expected.emptyEditorLogoDataUrl}`),
+        `Expected ${visualCase.id} empty editor logo background declaration in generated Kawaii UI CSS`
+    );
+    assert.match(style, new RegExp(`opacity:\\s*${escapeRegExp(visualCase.expected.emptyEditorLogoOpacity)}`));
+    assert.doesNotMatch(style, /\[(?:EDITOR_BACKGROUND_IMAGE|EDITOR_BACKGROUND_IMAGE_OPACITY|EDITOR_BACKGROUND_IMAGE_POSITION|EDITOR_BACKGROUND_IMAGE_SIZE|EDITOR_BACKGROUND_IMAGE_REPEAT|EDITOR_BACKGROUND_AREA_TOP|EDITOR_BACKGROUND_AREA_RIGHT|EDITOR_BACKGROUND_AREA_BOTTOM|EDITOR_BACKGROUND_AREA_LEFT|EDITOR_BACKGROUND_AREA_WIDTH|EDITOR_BACKGROUND_AREA_HEIGHT|EMPTY_EDITOR_LOGO_STYLES)\]/);
+}
+
+function assertAppliedStyleIncludesEditorBackgroundFitArea(style, visualCase) {
     for (const [propertyName, expectedValue] of Object.entries(visualCase.expected.editorBackgroundFitArea)) {
         assert.match(
-            template,
+            style,
             new RegExp(`--kawaii-editor-background-area-${propertyName}:\\s*${escapeRegExp(expectedValue)}`),
             `Expected ${visualCase.id} editor background ${propertyName} area to be ${expectedValue}`
         );
@@ -962,10 +1067,12 @@ async function getRuntimeNeonState(visualCase, options = {}) {
             '[class~="vs"][class*="kawaii-vscode-color-generated-color-theme-light-json"]'
         ];
         const themeWrapper = document.querySelector(themeSelectors.join(', '));
-        const chromeStyles = document.querySelector('#kawaii_synthwave-chrome-styles');
-        const themeStyles = document.querySelector('#kawaii_synthwave-theme-styles');
+        const uiRoot = document.querySelector('.kawaii-vscode-colors-ui');
+        const originalTokenStyles = document.querySelector('.vscode-tokens-styles');
+        const linkedStyles = document.querySelector('#kawaii-vscode-colors-ui-stylesheet');
+        const themeStyles = document.querySelector('#kawaii-vscode-colors-ui-token-styles');
         const themeWrapperStyles = themeWrapper ? window.getComputedStyle(themeWrapper) : null;
-        const chromeText = chromeStyles ? chromeStyles.textContent || '' : '';
+        const chromeText = getLinkedStylesheetText(linkedStyles);
         const themeText = themeStyles ? themeStyles.textContent || '' : '';
         const injectedText = chromeText + themeText;
         const editorBackgroundFitAreaValues = {};
@@ -1029,7 +1136,15 @@ async function getRuntimeNeonState(visualCase, options = {}) {
             viewportWidth: window.innerWidth,
             viewportHeight: window.innerHeight,
             devicePixelRatio: window.devicePixelRatio || 1,
-            hasChromeStyles: Boolean(chromeStyles),
+            hasUiRoot: Boolean(uiRoot),
+            uiRootTagName: uiRoot ? uiRoot.tagName.toLowerCase() : '',
+            hasDarkInnerWrapper: Boolean(uiRoot && uiRoot.classList.contains('dark-pink-kawaii')),
+            hasLightInnerWrapper: Boolean(uiRoot && uiRoot.classList.contains('light-pink-pastel-kawaii')),
+            hasOriginalTokenStyles: Boolean(originalTokenStyles),
+            hasLinkedStyles: Boolean(linkedStyles),
+            hasScopedTokenStyles: Boolean(themeStyles),
+            scopedTokenText: themeText,
+            hasChromeStyles: Boolean(linkedStyles),
             hasThemeStyles: Boolean(themeStyles),
             hasKawaiiThemeWrapper: Boolean(themeWrapper),
             hasThemeWrapperClass: Boolean(themeWrapper && /kawaii/i.test(themeWrapper.className || '')),
@@ -1066,6 +1181,24 @@ async function getRuntimeNeonState(visualCase, options = {}) {
             hasExpectedEditorBackgroundPseudoOpacity: Boolean(editorTargetStyles && editorTargetStyles.opacity === expectedEditorBackgroundOpacity),
             hasExpectedEmptyEditorLogoOpacity: Boolean(logoTargetStyles && logoTargetStyles.opacity === expectedEmptyEditorLogoOpacity)
         };
+
+        function getLinkedStylesheetText(linkElement) {
+            if (!linkElement) {
+                return '';
+            }
+
+            const styleSheet = Array.from(document.styleSheets).find((candidate) => candidate.ownerNode === linkElement);
+
+            if (!styleSheet) {
+                return '';
+            }
+
+            try {
+                return Array.from(styleSheet.cssRules || []).map((rule) => rule.cssText || '').join('');
+            } catch (error) {
+                return '';
+            }
+        }
     `,
         visualCase.expected.editorBackgroundDataUrl,
         visualCase.expected.emptyEditorLogoDataUrl,
@@ -1543,7 +1676,8 @@ function restoreBaselineIfNeeded(state) {
 
 function assertStateMatchesPatchPaths(state, patchPaths) {
     assert.equal(path.resolve(state.htmlFile), path.resolve(patchPaths.htmlFile));
-    assert.equal(path.resolve(state.templateFile), path.resolve(patchPaths.templateFile));
+    assert.equal(path.resolve(state.scriptFile), path.resolve(patchPaths.scriptFile));
+    assert.equal(path.resolve(state.styleFile), path.resolve(patchPaths.styleFile));
 }
 
 function assertInsideDisposableStorage(filePath) {

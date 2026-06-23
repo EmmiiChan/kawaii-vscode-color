@@ -28,18 +28,42 @@ export const RENDERER_TOKEN_REPLACEMENT_SETS: readonly RendererTokenReplacementM
   LIGHT_RENDERER_TOKEN_REPLACEMENTS
 ];
 
-export const KAWAII_THEME_WRAPPER_SELECTORS: readonly string[] = [
-  '[class~="vs-dark"][class*="kawaii_synthwave-generated-color-theme-json"]',
-  '[class~="vs-dark"][class*="kawaii-synthwave-generated-color-theme-json"]',
-  '[class~="vs-dark"][class*="kawaii-vscode-color-generated-color-theme-json"]',
-  '[class~="vs"][class*="kawaii_synthwave-generated-color-theme-light-json"]',
-  '[class~="vs"][class*="kawaii-synthwave-generated-color-theme-light-json"]',
-  '[class~="vs"][class*="kawaii-vscode-color-generated-color-theme-light-json"]'
+export interface RendererInnerThemeConfig {
+  readonly id: "dark" | "light";
+  readonly wrapperClass: string;
+  readonly selectors: readonly string[];
+}
+
+export const RENDERER_INNER_THEME_CONFIGS: readonly RendererInnerThemeConfig[] = [
+  {
+    id: "dark",
+    wrapperClass: "dark-pink-kawaii",
+    selectors: [
+      '[class~="vs-dark"][class*="kawaii_synthwave-generated-color-theme-json"]',
+      '[class~="vs-dark"][class*="kawaii-synthwave-generated-color-theme-json"]',
+      '[class~="vs-dark"][class*="kawaii-vscode-color-generated-color-theme-json"]'
+    ]
+  },
+  {
+    id: "light",
+    wrapperClass: "light-pink-pastel-kawaii",
+    selectors: [
+      '[class~="vs"][class*="kawaii_synthwave-generated-color-theme-light-json"]',
+      '[class~="vs"][class*="kawaii-synthwave-generated-color-theme-light-json"]',
+      '[class~="vs"][class*="kawaii-vscode-color-generated-color-theme-light-json"]'
+    ]
+  }
 ];
 
+export const RENDERER_INNER_THEME_WRAPPER_CLASSES: readonly string[] = RENDERER_INNER_THEME_CONFIGS.map((innerTheme) => innerTheme.wrapperClass);
+export const KAWAII_THEME_WRAPPER_SELECTORS: readonly string[] = RENDERER_INNER_THEME_CONFIGS.flatMap((innerTheme) => innerTheme.selectors);
+
+export const RENDERER_UI_ROOT_CLASS = "kawaii-vscode-colors-ui";
+export const RENDERER_STYLESHEET_HREF = "kawaii-vscode-colors-ui.min.css?v=[KAWAII_UI_STYLE_VERSION]";
+
 export const RENDERER_STYLE_IDS = {
-  chrome: "kawaii_synthwave-chrome-styles",
-  theme: "kawaii_synthwave-theme-styles"
+  stylesheet: "kawaii-vscode-colors-ui-stylesheet",
+  token: "kawaii-vscode-colors-ui-token-styles"
 } as const;
 
 export function normalizeRendererTokenColor(color: string): string {
@@ -119,6 +143,43 @@ export function replaceRendererTokenColors(
     /color\s*:\s*#([0-9a-f]{6}(?:[0-9a-f]{2})?)\s*;/gi,
     (match, color: string) => getRendererTokenColorReplacement(color, replacementSets) || match
   );
+}
+
+export function createScopedRendererTokenRule(
+  selector: string,
+  replacement: string,
+  innerTheme: RendererInnerThemeConfig
+): string {
+  return `.${RENDERER_UI_ROOT_CLASS}.${innerTheme.wrapperClass} ${selector.trim()} {${replacement}}`;
+}
+
+export function createScopedRendererTokenRules(
+  styles: string,
+  replacementSets: readonly RendererTokenReplacementMap[],
+  innerTheme: RendererInnerThemeConfig
+): string {
+  const scopedRules: string[] = [];
+
+  styles.replace(
+    /([^{}]+)\{[^{}]*?color\s*:\s*#([0-9a-f]{6}(?:[0-9a-f]{2})?)\s*;[^{}]*\}/gi,
+    (match, selectorList: string, color: string) => {
+      const replacement = getRendererTokenColorReplacement(color, replacementSets);
+
+      if (!replacement) {
+        return match;
+      }
+
+      selectorList
+        .split(",")
+        .map((selector) => selector.trim())
+        .filter(Boolean)
+        .forEach((selector) => scopedRules.push(createScopedRendererTokenRule(selector, replacement, innerTheme)));
+
+      return match;
+    }
+  );
+
+  return scopedRules.join("");
 }
 
 export function getRendererTokenStylesSignature(styles: string, disableGlow: boolean): string {

@@ -35,27 +35,60 @@ async function assertCommandAvailable(commandLabel = SETTINGS_COMMAND_LABEL) {
 async function runCommand(commandLabel = SETTINGS_COMMAND_LABEL) {
     const driver = VSBrowser.instance.driver;
     const input = await openCommandPromptWithKeyboard();
+    const commandText = `>${commandLabel}`;
 
-    await input.click();
-    await driver.actions().sendKeys(`>${commandLabel}`, Key.ENTER).perform();
+    await setQuickInputValue(input, commandText);
+    await selectCommandQuickPick(commandLabel);
 }
 
 async function openCommandPromptWithKeyboard() {
     const driver = VSBrowser.instance.driver;
     const inputLocator = By.css(".quick-input-widget input");
 
-    await driver.actions()
-        .keyDown(Workbench.ctlKey)
-        .keyDown(Key.SHIFT)
-        .sendKeys("p")
-        .keyUp(Key.SHIFT)
-        .keyUp(Workbench.ctlKey)
-        .perform();
+    await driver.actions().sendKeys(Key.F1).perform();
 
     const input = await driver.wait(until.elementLocated(inputLocator), 10000);
     await driver.wait(until.elementIsVisible(input), 10000);
 
     return input;
+}
+
+async function setQuickInputValue(input, value) {
+    await VSBrowser.instance.driver.executeScript(`
+        const input = arguments[0];
+        const value = arguments[1];
+        const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+
+        input.focus();
+        if (descriptor && typeof descriptor.set === 'function') {
+            descriptor.set.call(input, value);
+        } else {
+            input.value = value;
+        }
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+    `, input, value);
+}
+
+async function selectCommandQuickPick(commandLabel) {
+    const driver = VSBrowser.instance.driver;
+
+    await driver.wait(async () => {
+        return driver.executeScript(`
+            const commandLabel = arguments[0];
+            const rows = Array.from(document.querySelectorAll('.quick-input-list .monaco-list-row'));
+            const row = rows.find((candidate) => (candidate.textContent || '').includes(commandLabel));
+
+            if (!row) {
+                return false;
+            }
+
+            row.scrollIntoView({ block: 'nearest' });
+            row.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+            row.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
+            row.click();
+            return true;
+        `, commandLabel);
+    }, 10000, `Expected command quick pick to be visible: ${commandLabel}`);
 }
 
 async function openSettingsWebview() {
@@ -67,6 +100,11 @@ async function openSettingsWebview() {
     await waitForWebviewElement(By.css(".app"));
 
     return webview;
+}
+
+async function closeAllEditors() {
+    await VSBrowser.instance.driver.switchTo().defaultContent();
+    await new Workbench().getEditorView().closeAllEditors();
 }
 
 async function waitForSettingsEditor(timeout = 30000) {
@@ -222,6 +260,25 @@ async function postWebviewE2EMessage(message) {
     assert.equal(posted, true, "Expected E2E postMessage hook to be available");
 }
 
+async function getWebviewE2EState() {
+    return VSBrowser.instance.driver.executeScript(`
+        const getState = window.kawaiiVsCodeColorE2EGetState;
+        if (typeof getState !== 'function') {
+            return null;
+        }
+        return getState();
+    `);
+}
+
+async function waitForWebviewE2EState(predicate, message, timeout = 10000) {
+    const driver = VSBrowser.instance.driver;
+
+    return driver.wait(async () => {
+        const state = await getWebviewE2EState().catch(() => null);
+        return Boolean(state && predicate(state));
+    }, timeout, message);
+}
+
 async function getWebviewText(css) {
     const element = await waitForWebviewCss(css);
     const text = await element.getText();
@@ -349,9 +406,11 @@ module.exports = {
     assertWebviewPageVisible,
     assertWebviewTextIncludes,
     clearTransientWorkbenchNotifications,
+    closeAllEditors,
     clickWebviewCss,
     getWebviewElementAttribute,
     getWebviewElementCount,
+    getWebviewE2EState,
     getWebviewInputValue,
     getWebviewText,
     openSettingsWebview,
@@ -362,6 +421,7 @@ module.exports = {
     takeE2EScreenshot,
     takeWebviewElementScreenshot,
     waitForWebviewCss,
+    waitForWebviewE2EState,
     waitForWebviewElement,
     waitForWebviewInputValue,
     waitForWebviewTextIncludes,

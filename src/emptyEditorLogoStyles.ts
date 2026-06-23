@@ -1,3 +1,5 @@
+import { KAWAII_THEME_VARIANTS, KAWAII_UI_ROOT_CLASS } from "./shared/models/theme";
+
 export interface EmptyEditorLogoFallbackVersionCase {
   readonly id: string;
   readonly selector: string;
@@ -14,6 +16,7 @@ export const EMPTY_EDITOR_LOGO_FALLBACK_VERSION_CASES: readonly EmptyEditorLogoF
   }
 ];
 export const EMPTY_EDITOR_LOGO_LETTERPRESS_SELECTORS: readonly string[] = EMPTY_EDITOR_LOGO_FALLBACK_VERSION_CASES.map((fallbackCase) => fallbackCase.selector);
+export const EMPTY_EDITOR_LOGO_WRAPPER_SELECTORS: readonly string[] = KAWAII_THEME_VARIANTS.map((themeVariant) => `.${KAWAII_UI_ROOT_CLASS}.${themeVariant.wrapperClass}`);
 
 /**
  * Builds CSS rules for replacing the empty editor watermark logo.
@@ -24,9 +27,12 @@ export const EMPTY_EDITOR_LOGO_LETTERPRESS_SELECTORS: readonly string[] = EMPTY_
  */
 export function createEmptyEditorLogoStyles(dataUri: string, opacity: number | string): string {
   const escapedDataUri = String(dataUri).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  const scopedSelectors = EMPTY_EDITOR_LOGO_WRAPPER_SELECTORS.flatMap((wrapperSelector) => (
+    EMPTY_EDITOR_LOGO_LETTERPRESS_SELECTORS.map((selector) => `${wrapperSelector} ${selector}`)
+  ));
 
   return `
-${EMPTY_EDITOR_LOGO_LETTERPRESS_SELECTORS.join(",\n")} {
+${scopedSelectors.join(",\n")} {
 \tbackground-image: url("${escapedDataUri}") !important;
 \tbackground-position: center !important;
 \tbackground-size: contain !important;

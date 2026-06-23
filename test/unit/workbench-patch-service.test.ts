@@ -23,10 +23,11 @@ function requireOut<TModule>(...segments: readonly string[]): TModule {
   return require(path.join(process.cwd(), "out", "src", ...segments)) as TModule;
 }
 
-test("WorkbenchPatchService writes the Kawaii UI script and patches the workbench HTML", () => {
+test("WorkbenchPatchService writes the Kawaii UI assets and patches the workbench HTML", () => {
   const base = path.normalize("C:/fake/app/out/vs/code");
   const htmlFile = path.join(base, "electron-sandbox", "workbench", "workbench.esm.html");
   const scriptFile = path.join(base, "electron-sandbox", "workbench", "kawaii-vscode-colors-ui.js");
+  const styleFile = path.join(base, "electron-sandbox", "workbench", "kawaii-vscode-colors-ui.min.css");
   const files = new Map<string, string>([[htmlFile, "<html><body>Workbench</body></html>\n"]]);
   const writes: MemoryWrite[] = [];
   const service = createWorkbenchPatchService({
@@ -34,35 +35,47 @@ test("WorkbenchPatchService writes the Kawaii UI script and patches the workbenc
     versionToken: () => "step04"
   });
 
-  const result = service.applyScriptTag(base, "compiled neon script");
+  const result = service.applyAssets(base, {
+    scriptContent: "compiled neon script [KAWAII_UI_STYLE_VERSION]",
+    styleContent: "compiled neon styles"
+  });
 
   assert.equal(result.status, "activated");
-  assert.deepEqual(result.paths, { htmlFile, templateFile: scriptFile });
-  assert.equal(files.get(scriptFile), "compiled neon script");
+  assert.deepEqual(result.paths, { htmlFile, scriptFile, styleFile });
+  assert.equal(files.get(styleFile), "compiled neon styles");
+  assert.equal(files.get(scriptFile), "compiled neon script step04");
   assert.match(files.get(htmlFile) || "", /kawaii-vscode-colors-ui\.js\?v=step04/);
-  assert.equal(writes.length, 2);
+  assert.deepEqual(writes.map((write) => write.filePath), [styleFile, scriptFile, htmlFile]);
 });
 
 test("WorkbenchPatchService reports reactivation without duplicating the marker", () => {
   const base = path.normalize("C:/fake/app/out/vs/code");
   const htmlFile = path.join(base, "electron-browser", "workbench", "workbench.html");
   const scriptFile = path.join(base, "electron-browser", "workbench", "kawaii-vscode-colors-ui.js");
+  const styleFile = path.join(base, "electron-browser", "workbench", "kawaii-vscode-colors-ui.min.css");
   const files = new Map<string, string>([[htmlFile, "<html></html>\n"]]);
   const service = createWorkbenchPatchService({
     fileSystem: createMemoryFileSystem(files),
     versionToken: () => "one"
   });
 
-  service.applyScriptTag(base, "first script");
+  service.applyAssets(base, {
+    scriptContent: "first script",
+    styleContent: "first styles"
+  });
   const reactivatedService = createWorkbenchPatchService({
     fileSystem: createMemoryFileSystem(files),
     versionToken: () => "two"
   });
 
-  const result = reactivatedService.applyScriptTag(base, "second script");
+  const result = reactivatedService.applyAssets(base, {
+    scriptContent: "second script",
+    styleContent: "second styles"
+  });
 
   assert.equal(result.status, "reactivated");
-  assert.deepEqual(result.paths, { htmlFile, templateFile: scriptFile });
+  assert.deepEqual(result.paths, { htmlFile, scriptFile, styleFile });
+  assert.equal(files.get(styleFile), "second styles");
   assert.equal(files.get(scriptFile), "second script");
   const patchedHtml = files.get(htmlFile) || "";
   assert.equal((patchedHtml.match(/<!-- KAWAII VSCODE COLORS UI -->/g) || []).length, 1);
@@ -79,7 +92,10 @@ test("WorkbenchPatchService removes an active patch and reports absent patches",
     versionToken: () => "remove"
   });
 
-  service.applyScriptTag(base, "script");
+  service.applyAssets(base, {
+    scriptContent: "script",
+    styleContent: "styles"
+  });
   const removed = service.removeScriptTag(base);
   const removedAgain = service.removeScriptTag(base);
 
@@ -93,7 +109,10 @@ test("WorkbenchPatchService returns workbench-not-found when no supported HTML f
     fileSystem: createMemoryFileSystem(new Map())
   });
 
-  assert.deepEqual(service.applyScriptTag(path.normalize("C:/missing"), "script"), {
+  assert.deepEqual(service.applyAssets(path.normalize("C:/missing"), {
+    scriptContent: "script",
+    styleContent: "styles"
+  }), {
     status: "workbench-not-found",
     paths: null
   });

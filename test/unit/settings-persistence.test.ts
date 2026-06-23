@@ -8,8 +8,10 @@ const {
   ensurePlainObject,
   findMatchingTokenRuleIndex,
   getTextMateRules,
+  getThemeCustomizationBlockFromObject,
   getThemeCustomizationBlocksExportFromObject,
   getThemeCustomizationKey,
+  getThemeCustomizationKeys,
   normalizeHexColor,
   removeThemeCustomizationBlockFromObject,
   resetTokenColorBlock,
@@ -20,8 +22,8 @@ const {
   writeThemeCustomizationBlock
 } = requireOut<typeof import("../../src/settingsPersistence")>("settingsPersistence");
 
-const darkVariant = { id: "dark", label: "Kawaii VS Code Color" };
-const lightVariant = { id: "light", label: "Kawaii VS Code Color Light" };
+const darkVariant = { id: "dark", label: "Dark Pink Kawaii", legacyLabels: ["Kawaii VS Code Color"] };
+const lightVariant = { id: "light", label: "Light Pink-Pastel Kawaii", legacyLabels: ["Kawaii VS Code Color Light"] };
 type ThemeCustomizationBlocks = Record<string, Record<string, unknown>>;
 type TokenCustomizationBlocks = Record<string, { textMateRules: unknown[] }>;
 
@@ -43,8 +45,12 @@ test("normalizeHexColor rejects invalid color values with existing messages", ()
 });
 
 test("getThemeCustomizationKey returns theme-specific VS Code customization keys", () => {
-  assert.equal(getThemeCustomizationKey(darkVariant), "[Kawaii VS Code Color]");
-  assert.equal(getThemeCustomizationKey(lightVariant), "[Kawaii VS Code Color Light]");
+  assert.equal(getThemeCustomizationKey(darkVariant), "[Dark Pink Kawaii]");
+  assert.equal(getThemeCustomizationKey(lightVariant), "[Light Pink-Pastel Kawaii]");
+  assert.deepEqual(getThemeCustomizationKeys(darkVariant), [
+    "[Dark Pink Kawaii]",
+    "[Kawaii VS Code Color]"
+  ]);
 });
 
 test("clonePlainObject and ensurePlainObject return safe plain objects", () => {
@@ -66,6 +72,7 @@ test("clonePlainObject and ensurePlainObject return safe plain objects", () => {
 
 test("writeThemeCustomizationBlock writes non-empty blocks and deletes empty blocks", () => {
   const customizations = {
+    "[Kawaii VS Code Color]": { "sideBar.background": "#111111" },
     "[Unrelated Theme]": { "editor.background": "#000000" }
   };
 
@@ -73,7 +80,7 @@ test("writeThemeCustomizationBlock writes non-empty blocks and deletes empty blo
 
   assert.deepEqual(customizations, {
     "[Unrelated Theme]": { "editor.background": "#000000" },
-    "[Kawaii VS Code Color]": { "editor.background": "#112233" }
+    "[Dark Pink Kawaii]": { "editor.background": "#112233" }
   });
 
   writeThemeCustomizationBlock(customizations, {}, darkVariant);
@@ -81,6 +88,23 @@ test("writeThemeCustomizationBlock writes non-empty blocks and deletes empty blo
   assert.deepEqual(customizations, {
     "[Unrelated Theme]": { "editor.background": "#000000" }
   });
+});
+
+test("theme customization block reads canonical keys before legacy aliases", () => {
+  assert.deepEqual(
+    getThemeCustomizationBlockFromObject({
+      "[Dark Pink Kawaii]": { "editor.background": "#31202b" },
+      "[Kawaii VS Code Color]": { "editor.background": "#000000" }
+    }, darkVariant),
+    { "editor.background": "#31202b" }
+  );
+
+  assert.deepEqual(
+    getThemeCustomizationBlockFromObject({
+      "[Kawaii VS Code Color]": { "editor.background": "#000000" }
+    }, darkVariant),
+    { "editor.background": "#000000" }
+  );
 });
 
 test("getTextMateRules filters invalid textMateRules entries", () => {
@@ -130,12 +154,13 @@ test("workbench block update and reset preserve unrelated theme blocks", () => {
   };
 
   const updated = updateWorkbenchColorBlock(customizations, "editor.background", "#31202b", darkVariant) as ThemeCustomizationBlocks;
-  assert.equal(updated["[Kawaii VS Code Color]"]!["editor.background"], "#31202b");
+  assert.equal(updated["[Dark Pink Kawaii]"]!["editor.background"], "#31202b");
+  assert.equal(updated["[Kawaii VS Code Color]"], undefined);
   assert.deepEqual(updated["[Unrelated Theme]"], { "editor.background": "#222222" });
   assert.equal(customizations["[Kawaii VS Code Color]"]["editor.background"], "#000000");
 
   const reset = resetWorkbenchColorBlock(updated, "editor.background", darkVariant);
-  assert.deepEqual(reset["[Kawaii VS Code Color]"], { "sideBar.background": "#111111" });
+  assert.deepEqual(reset["[Dark Pink Kawaii]"], { "sideBar.background": "#111111" });
   assert.deepEqual(reset["[Unrelated Theme]"], { "editor.background": "#222222" });
 });
 
@@ -156,14 +181,15 @@ test("token block update replaces matching scope and appends missing scope", () 
     darkVariant
   ) as TokenCustomizationBlocks;
 
-  assert.deepEqual(replaced["[Kawaii VS Code Color]"]!.textMateRules, [
+  assert.deepEqual(replaced["[Dark Pink Kawaii]"]!.textMateRules, [
     { scope: "comment", settings: { foreground: "#848bbd" } },
     { scope: "source.js, keyword", settings: { foreground: "#ffffff" } }
   ]);
+  assert.equal(replaced["[Kawaii VS Code Color]"], undefined);
 
   const appended = updateTokenColorBlock(replaced, { scope: "string" }, "#ff8b39", darkVariant) as TokenCustomizationBlocks;
 
-  assert.deepEqual(appended["[Kawaii VS Code Color]"]!.textMateRules[2], {
+  assert.deepEqual(appended["[Dark Pink Kawaii]"]!.textMateRules[2], {
     scope: "string",
     settings: { foreground: "#ff8b39" }
   });
@@ -180,7 +206,7 @@ test("token reset removes matching rules and deletes empty textMateRules", () =>
   };
 
   const withOneRule = resetTokenColorBlock(customizations, { scope: "comment" }, darkVariant) as TokenCustomizationBlocks;
-  assert.deepEqual(withOneRule["[Kawaii VS Code Color]"]!.textMateRules, [
+  assert.deepEqual(withOneRule["[Dark Pink Kawaii]"]!.textMateRules, [
     { scope: "string", settings: { foreground: "#ff8b39" } }
   ]);
 
@@ -191,7 +217,7 @@ test("token reset removes matching rules and deletes empty textMateRules", () =>
 test("theme customization export and removal handle supported variants only", () => {
   const customizations = {
     "[Kawaii VS Code Color]": { "editor.background": "#31202b" },
-    "[Kawaii VS Code Color Light]": { "editor.background": "#ffffff" },
+    "[Light Pink-Pastel Kawaii]": { "editor.background": "#ffffff" },
     "[Unrelated Theme]": { "editor.background": "#000000" }
   };
 
@@ -203,7 +229,7 @@ test("theme customization export and removal handle supported variants only", ()
   const removed = removeThemeCustomizationBlockFromObject(customizations, darkVariant);
 
   assert.deepEqual(removed, {
-    "[Kawaii VS Code Color Light]": { "editor.background": "#ffffff" },
+    "[Light Pink-Pastel Kawaii]": { "editor.background": "#ffffff" },
     "[Unrelated Theme]": { "editor.background": "#000000" }
   });
   assert.ok(Object.prototype.hasOwnProperty.call(customizations, "[Kawaii VS Code Color]"));

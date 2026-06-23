@@ -18,7 +18,7 @@ function requireOut<TModule>(...segments: readonly string[]): TModule {
 test("NeonEffectController exposes settings actions that delegate to the service", async () => {
   const calls: unknown[][] = [];
   const controller = createNeonEffectController({
-    getActiveColorThemeLabel: () => "Kawaii VS Code Color",
+    getActiveColorThemeLabel: () => "Dark Pink Kawaii",
     getNeonConfiguration: () => ({ brightness: 0.3, disableGlow: true }),
     neonEffectService: {
       buildCustomChromeStyles: (chromeStyles) => chromeStyles,
@@ -49,9 +49,9 @@ test("NeonEffectController exposes settings actions that delegate to the service
 
 test("NeonEffectController regenerates Neon only when switching between Kawaii themes while active", async () => {
   const labels = [
-    "Kawaii VS Code Color",
-    "Kawaii VS Code Color Light",
-    "Kawaii VS Code Color",
+    "Dark Pink Kawaii",
+    "Light Pink-Pastel Kawaii",
+    "Dark Pink Kawaii",
     "Default Dark+"
   ];
   const calls: unknown[][] = [];
@@ -83,6 +83,39 @@ test("NeonEffectController regenerates Neon only when switching between Kawaii t
     ["enable", { brightness: 0.4, disableGlow: false }],
     ["isEnabled"],
     ["enable", { brightness: 0.4, disableGlow: false }]
+  ]);
+});
+
+test("NeonEffectController still treats legacy Kawaii labels as the same theme family", async () => {
+  const labels = [
+    "Kawaii VS Code Color",
+    "Kawaii VS Code Color Light"
+  ];
+  const calls: unknown[][] = [];
+  const controller = createNeonEffectController({
+    getActiveColorThemeLabel: () => labels.shift() || "",
+    getNeonConfiguration: () => ({ brightness: 0.5, disableGlow: false }),
+    neonEffectService: {
+      buildCustomChromeStyles: (chromeStyles) => chromeStyles,
+      enable: async (configuration) => {
+        calls.push(["enable", configuration]);
+      },
+      disable: async () => {
+        calls.push(["disable"]);
+      },
+      isEnabled: () => {
+        calls.push(["isEnabled"]);
+        return true;
+      }
+    }
+  });
+
+  controller.handleConfigurationChange(createConfigurationEvent(COLOR_THEME_SETTING));
+  await Promise.resolve();
+
+  assert.deepEqual(calls, [
+    ["isEnabled"],
+    ["enable", { brightness: 0.5, disableGlow: false }]
   ]);
 });
 

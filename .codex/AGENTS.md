@@ -15,7 +15,7 @@ Current tooling state:
 | Build step | `npm run build:theme` merges protected base themes and editable overrides into the generated themes loaded by VS Code. `npm run build:local` compiles script wrappers, bumps the patch version, then builds the themes and local VSIX through the TypeScript-backed package script. `npm run build:clean` removes generated test artifacts before running the local VSIX build. |
 | Automated tests | The lightweight gate starts with TypeScript no-emit checks, the Codex docs drift guard, and Node syntax checks, then the regular layers cover Node unit tests, `jsdom` DOM UI tests, VS Code Extension Development Host integration tests, and ExTester/WebDriver real VS Code UI E2E tests. A separate gated Neon E2E patches only a disposable `.vscode-test` install. |
 | TypeScript | Strict TypeScript mode is active with `allowJs` disabled. `package.json.main` points to compiled `./out/src/extension.js`; the runtime entry, Settings webview source, extracted Neon and Settings host controllers/services/adapters, shared contracts, pure settings/workbench helpers, settings webview contracts, and renderer helper contracts listed below are TypeScript. |
-| npm dependencies | No runtime dependencies. Dev-only tooling/test dependencies are `typescript@^6.0.3`, `@types/node@^26.0.0`, `@types/vscode@^1.33.0`, `jsdom@29.1.1`, `@vscode/test-cli@0.0.12`, `@vscode/test-electron@3.0.0`, `vscode-extension-tester@8.23.0`, and `mocha@11.7.6`. |
+| npm dependencies | No runtime dependencies. Dev-only tooling/test dependencies are `typescript@^6.0.3`, `@types/node@^26.0.0`, `@types/vscode@^1.33.0`, `jsdom@29.1.1`, `@vscode/test-cli@0.0.12`, `@vscode/test-electron@3.0.0`, `vscode-extension-tester@8.23.0`, `mocha@11.7.6`, and `sass@^1.93.3`. |
 | Packaging tool | Not installed permanently in this repo. Use `@vscode/vsce` through the existing npm scripts when packaging. |
 | Runtime entry | `package.json.main` points to `./out/src/extension.js`; run `npm run compile` before extension-host, E2E, or package validation. |
 | Extension id | `ITEM-PIXEL.kawaii-vscode-color` from `publisher + name`. |
@@ -53,6 +53,7 @@ Expected result:
 - `npm run test:package` should compile script wrappers and create a local VSIX through `scripts/package-local-vsix.ts` without incrementing `package.json.version`.
 - `npm run test:e2e` should compile, package the extension, open disposable VS Code `1.111.0` through ExTester/WebDriver, navigate the real settings webview, avoid all real Neon patch actions, cover safe fixture-backed upload/import/export/download and Random Neko flows without native dialogs or network, write safe Settings visual screenshots plus PNG analysis under `test-results/e2e`, and update `test-results/e2e/kawaii-last-run.json`.
 - `npm run test:e2e:current` should compile and run the same safe E2E suite in `.vscode-test/extest-current` using ExTester's `max` version by default; use `KAWAII_E2E_CURRENT_CODE_VERSION=<version>` when probing a specific VS Code stable build.
+- `npm run test:e2e:neon` should remove stale marked Kawaii/legacy workbench script tags and generated UI assets from the disposable `.vscode-test/extest-111-neon` workbench before launching the first apply phase, so the baseline screenshot starts from an unpatched renderer.
 - `npm run build:theme` should regenerate the generated theme files from protected bases and overrides without unexpected diffs.
 
 `npm test` runs the unit, DOM, and VS Code integration layers in sequence. `npm run test:package` validates local VSIX packaging without a version bump. `npm run test:all` runs static checks, unit, DOM, VS Code integration, local package, and safe real VS Code E2E layers in sequence, then prints a final pass/fail/skipped summary for launch-terminal readability. It is the safe local gate and must not include `npm run test:e2e:neon`. There is no lint command in the current project.
@@ -92,7 +93,7 @@ Use this when changing `package.json`, `themes`, or any visual theme behavior.
 3. Press `F5`, or run the existing `.vscode/launch.json` configuration named `Extension`.
 4. In the Extension Development Host window, open the Command Palette.
 5. Run `Preferences: Color Theme`.
-6. Select `Kawaii VS Code Color` or `Kawaii VS Code Color Light`.
+6. Select `Dark Pink Kawaii` or `Light Pink-Pastel Kawaii`.
 7. Open representative files, for example JavaScript, CSS, Markdown, JSON, and any language whose token rules were changed.
 8. Use `Developer: Inspect Editor Tokens and Scopes` to verify TextMate scopes before changing `tokenColors`.
 9. Run `Kawaii VS Code Color: Settings`, confirm the side menu exposes `Home`, `Settings`, `Color Settings`, `Neon Effect`, `Image Customization`, `Sync/Files`, and `Help`; edit and reset a workbench color and a syntax color if relevant.
@@ -103,7 +104,7 @@ This validates the public VS Code theme contribution without installing the exte
 
 Live testing is possible, but it is risky because the Neon Effect setup action modifies the VS Code installation used by the Extension Development Host. The automated integration tests intentionally do not execute `Enable Neon Effect`.
 
-Use live Neon testing only when testing `src/extension.ts`, `src/extensionHost`, `src/workbenchPatch.ts`, `src/js/theme_template.js`, or `src/css/editor_chrome.css`.
+Use live Neon testing only when testing `src/extension.ts`, `src/extensionHost`, `src/workbenchPatch.ts`, `src/js/theme_template.js`, `src/css/kawaii-vscode-colors-ui.min.css`, `src/scss/kawaii-vscode-colors-ui.scss`, or the legacy bridge input `src/css/editor_chrome.css`.
 
 Preferred automated path:
 
@@ -112,14 +113,14 @@ $env:KAWAII_E2E_ALLOW_NEON_PATCH = "1"
 npm run test:e2e:neon
 ```
 
-This command is intentionally separate from `npm test`, `npm run test:all`, and `npm run test:e2e`. It uses `.vscode-test/extest-111-neon`, refuses to run without `KAWAII_E2E_ALLOW_NEON_PATCH=1`, validates before/apply/remove states, and opens VS Code five times so applied, alternate, reverted, and restored checks happen after full process restarts. It also verifies UI-backed fixture image/logo payload replacement, no-tab logos, active no-page logo fallback selector matching, real editor-page background screenshots, `.monaco-editor::before` background application, editor background fit area CSS variables, and runtime CSS that keeps using editor-provided `--vscode-*` tokens instead of a separate hardcoded palette.
+This command is intentionally separate from `npm test`, `npm run test:all`, and `npm run test:e2e`. It uses `.vscode-test/extest-111-neon`, refuses to run without `KAWAII_E2E_ALLOW_NEON_PATCH=1`, removes stale marked Kawaii/legacy script tags and generated UI assets from the disposable workbench before the first launch, validates before/apply/remove states, and opens VS Code five times so applied, alternate, reverted, and restored checks happen after full process restarts. It also verifies UI-backed fixture image/logo payload replacement, no-tab logos, active no-page logo fallback selector matching, real editor-page background screenshots, `.monaco-editor::before` background application, editor background fit area CSS variables, and runtime CSS that keeps using editor-provided `--vscode-*` tokens instead of a separate hardcoded palette.
 
 Recommended safe approach:
 
 1. Use a disposable VS Code installation or VS Code Insiders. An isolated profile can reduce settings and extension noise, but it does not protect installed VS Code workbench files from being patched.
 2. Open this repo.
 3. Press `F5` to launch the Extension Development Host.
-4. In the Extension Development Host, select the `Kawaii VS Code Color` color theme.
+4. In the Extension Development Host, select the `Dark Pink Kawaii` color theme.
 5. Run `Kawaii VS Code Color: Settings`, open `Neon Effect`, and select `Enable Neon Effect`.
 6. Accept the reload prompt.
 7. After reload, inspect whether glow and chrome changes appear.
@@ -128,7 +129,7 @@ Recommended safe approach:
 
 Important cautions:
 
-- The enable action writes `kawaii-vscode-colors-ui.js` into VS Code's workbench folder.
+- The enable action writes `kawaii-vscode-colors-ui.js` and `kawaii-vscode-colors-ui.min.css` into VS Code's workbench folder.
 - The enable action patches the workbench HTML with a marked script tag.
 - VS Code may show an unsupported/corruption warning after the patch.
 - VS Code updates can overwrite the patch; users need to re-enable the glow after updates.
@@ -166,7 +167,10 @@ The package loads compiled runtime JavaScript from `out/` and still ships source
 - `src/webview/settings` contains typed settings webview contracts for the view model, HTML/CSP adapter, page ids, style token names, and client `postMessage` types used by the compatibility renderer.
 - `src/workbenchPatch.ts` contains pure workbench path and HTML patch helpers covered by unit tests.
 - `src/js/theme_template.js` is read as a template and written as generated `kawaii-vscode-colors-ui.js`.
-- `src/css/editor_chrome.css` is injected into the generated renderer script.
+- `src/scss/kawaii-vscode-colors-ui.scss` owns the additive `.kawaii-vscode-colors-ui` wrapper and imports the generated bridge partial.
+- `src/scss/generated/_editor-chrome.generated.scss` is generated by `scripts/build-ui-css.ts` from the legacy bridge input.
+- `src/css/kawaii-vscode-colors-ui.min.css` is generated by `npm run build:ui-css`, written next to the workbench HTML, and linked by the injected runtime script.
+- `src/css/editor_chrome.css` remains the legacy bridge input for static workbench chrome rules during the Sass migration.
 - `src/shared` contains TypeScript contracts, models, and runtime guards used as typed boundaries for external inputs.
 
 ## Test Architecture

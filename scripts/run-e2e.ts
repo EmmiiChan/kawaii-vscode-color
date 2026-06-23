@@ -1,4 +1,5 @@
 import path = require("node:path");
+import fs = require("node:fs");
 import { spawnSync } from "node:child_process";
 import {
     createE2ELastRunRecord,
@@ -40,8 +41,10 @@ interface E2ERunnerConfigOptions {
 }
 
 interface E2ERunnerDependencies {
+    readonly cleanupPhase?: typeof cleanupE2EPhase;
     readonly console?: Pick<Console, "error" | "log">;
     readonly now?: () => string;
+    readonly preparePhase?: typeof prepareE2EPhase;
     readonly readExTesterLastRun?: typeof readExTesterLastRun;
     readonly spawnSync?: typeof spawnSync;
     readonly writeE2ELastRunRecord?: typeof writeE2ELastRunRecord;
@@ -53,8 +56,18 @@ const CURRENT_CODE_VERSION_FALLBACK = "max";
 const CODE_SETTINGS = "test/e2e/settings.json";
 const OPEN_RESOURCE = "test/fixtures/workspace";
 const SAFE_MOCHA_CONFIG = "test/e2e/.mocharc.js";
+const NEON_APPLY_PHASE_NAME = "neon apply";
+const WORKBENCH_PATCH_SCRIPT_TAG_PATTERNS: readonly RegExp[] = [
+    /^.*<!-- KAWAII VSCODE COLORS UI --><script src="kawaii-vscode-colors-ui\.js(?:\?v=[^"]+)?"><\/script><!-- \/KAWAII VSCODE COLORS UI -->.*\r?\n?/mg,
+    /^.*<!-- KAWAII SYNTHWAVE --><script src="neondreams\.js(?:\?v=[^"]+)?"><\/script><!-- NEON DREAMS -->.*\r?\n?/mg
+];
+const WORKBENCH_PATCH_ASSET_FILE_NAMES: readonly string[] = [
+    "kawaii-vscode-colors-ui.js",
+    "kawaii-vscode-colors-ui.min.css",
+    "neondreams.js"
+];
 const NEON_PHASES: readonly E2EPhase[] = [
-    { name: "neon apply", mochaConfig: "test/e2e/.mocharc.neon-apply.js" },
+    { name: NEON_APPLY_PHASE_NAME, mochaConfig: "test/e2e/.mocharc.neon-apply.js" },
     { name: "neon applied after full restart", mochaConfig: "test/e2e/.mocharc.neon-applied.js" },
     { name: "neon alternate after full restart", mochaConfig: "test/e2e/.mocharc.neon-alternate.js" },
     { name: "neon dstgroup reverted after full restart", mochaConfig: "test/e2e/.mocharc.neon-reverted.js" },
@@ -198,6 +211,127 @@ function finalizeAndWriteRunRecord(
     writeE2ELastRunRecordImpl(record, { workspaceRoot: config.workspaceRoot });
 }
 
+function prepareE2EPhase(config: E2ERunnerConfig, phase: E2EPhase): void {
+    if (config.mode !== "neon" || phase.name !== NEON_APPLY_PHASE_NAME) {
+        return;
+    }
+
+    removeDisposableNeonWorkbenchPatch(config);
+}
+
+function cleanupE2EPhase(config: E2ERunnerConfig, _phase: E2EPhase): void {
+    if (!config.isWindows) {
+        return;
+    }
+
+    const storageRoot = path.resolve(config.workspaceRoot, config.storage);
+    const command = [
+        `$storage = ${toPowerShellString(storageRoot)}`,
+        "for ($attempt = 0; $attempt -lt 20; $attempt++) {",
+        "$processes = Get-CimInstance Win32_Process -Filter \"name = 'Code.exe'\"",
+        "| Where-Object {",
+        "($_.ExecutablePath -and $_.ExecutablePath.StartsWith($storage, [System.StringComparison]::OrdinalIgnoreCase))",
+        "-or ($_.CommandLine -and $_.CommandLine.IndexOf($storage, [System.StringComparison]::OrdinalIgnoreCase) -ge 0)",
+        "};",
+        "if (-not $processes) { break }",
+        "$processes | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }",
+        "Start-Sleep -Milliseconds 500",
+        "}",
+        "Start-Sleep -Milliseconds 1000"
+    ].join(" ");
+
+    spawnSync("powershell.exe", [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        command
+    ], {
+        stdio: "ignore"
+    });
+}
+
+function shouldCleanupBeforePhase(config: E2ERunnerConfig, phase: E2EPhase): boolean {
+    return config.mode !== "neon" || phase.name === NEON_APPLY_PHASE_NAME;
+}
+
+function shouldCleanupAfterPhase(config: E2ERunnerConfig, phase: E2EPhase): boolean {
+    return config.mode !== "neon" || phase.name !== NEON_APPLY_PHASE_NAME;
+}
+
+function toPowerShellString(value: string): string {
+    return `'${value.replace(/'/g, "''")}'`;
+}
+
+function removeDisposableNeonWorkbenchPatch(config: E2ERunnerConfig): void {
+    const htmlFile = findDisposableNeonWorkbenchHtml(config);
+
+    if (!htmlFile) {
+        return;
+    }
+
+    const html = fs.readFileSync(htmlFile, "utf8");
+    const cleanHtml = removeMarkedWorkbenchPatchScriptTags(html);
+
+    if (cleanHtml !== html) {
+        fs.writeFileSync(htmlFile, cleanHtml, "utf8");
+    }
+
+    removeDisposableNeonWorkbenchAssets(config, path.dirname(htmlFile));
+}
+
+function findDisposableNeonWorkbenchHtml(config: E2ERunnerConfig): string | undefined {
+    const storageRoot = path.resolve(config.workspaceRoot, config.storage);
+    const archiveRoot = path.join(storageRoot, "VSCode-win32-x64-archive");
+    const baseCandidates = [path.join(archiveRoot, "resources", "app", "out", "vs", "code")];
+
+    if (fs.existsSync(archiveRoot)) {
+        for (const entry of fs.readdirSync(archiveRoot, { withFileTypes: true })) {
+            if (entry.isDirectory()) {
+                baseCandidates.push(path.join(archiveRoot, entry.name, "resources", "app", "out", "vs", "code"));
+            }
+        }
+    }
+
+    for (const baseCandidate of baseCandidates) {
+        for (const electronBase of ["electron-browser", "electron-sandbox"]) {
+            for (const htmlFileName of ["workbench.esm.html", "workbench.html"]) {
+                const htmlFile = path.join(baseCandidate, electronBase, "workbench", htmlFileName);
+
+                if (isInsideDisposableNeonStorage(config, htmlFile) && fs.existsSync(htmlFile)) {
+                    return htmlFile;
+                }
+            }
+        }
+    }
+
+    return undefined;
+}
+
+function isInsideDisposableNeonStorage(config: E2ERunnerConfig, filePath: string): boolean {
+    const storageRoot = path.resolve(config.workspaceRoot, ".vscode-test", "extest-111-neon");
+    const resolvedPath = path.resolve(filePath);
+
+    return resolvedPath === storageRoot || resolvedPath.startsWith(`${storageRoot}${path.sep}`);
+}
+
+function removeDisposableNeonWorkbenchAssets(config: E2ERunnerConfig, workbenchDirectory: string): void {
+    for (const fileName of WORKBENCH_PATCH_ASSET_FILE_NAMES) {
+        const assetPath = path.join(workbenchDirectory, fileName);
+
+        if (isInsideDisposableNeonStorage(config, assetPath) && fs.existsSync(assetPath)) {
+            fs.unlinkSync(assetPath);
+        }
+    }
+}
+
+function removeMarkedWorkbenchPatchScriptTags(html: string): string {
+    return WORKBENCH_PATCH_SCRIPT_TAG_PATTERNS.reduce(
+        (output, pattern) => output.replace(pattern, ""),
+        String(html || "")
+    );
+}
+
 /**
  * Runs the safe, current, or gated Neon ExTester suite and writes the project-owned last-run marker.
  *
@@ -208,7 +342,9 @@ function runE2E(): number {
 }
 
 function runE2EWithConfig(config: E2ERunnerConfig, dependencies: E2ERunnerDependencies = {}): number {
+    const cleanupPhase = dependencies.cleanupPhase || cleanupE2EPhase;
     const consoleImpl = dependencies.console || console;
+    const preparePhase = dependencies.preparePhase || prepareE2EPhase;
     const spawnSyncImpl = dependencies.spawnSync || spawnSync;
     const writeE2ELastRunRecordImpl = dependencies.writeE2ELastRunRecord || writeE2ELastRunRecord;
     const now = dependencies.now || (() => new Date().toISOString());
@@ -236,6 +372,10 @@ function runE2EWithConfig(config: E2ERunnerConfig, dependencies: E2ERunnerDepend
             startedAt: now()
         });
         writeE2ELastRunRecordImpl(runRecord, { workspaceRoot: config.workspaceRoot });
+        if (shouldCleanupBeforePhase(config, phase)) {
+            cleanupPhase(config, phase);
+        }
+        preparePhase(config, phase);
 
         const result = spawnSyncImpl(config.extestBinary, [
             "setup-and-run",
@@ -257,6 +397,9 @@ function runE2EWithConfig(config: E2ERunnerConfig, dependencies: E2ERunnerDepend
             shell: config.isWindows,
             stdio: "inherit"
         });
+        if (shouldCleanupAfterPhase(config, phase)) {
+            cleanupPhase(config, phase);
+        }
 
         if (result.error) {
             updateE2ELastRunPhase(runRecord, phase.name, {
@@ -309,6 +452,7 @@ if (require.main === module) {
 }
 
 export {
+    cleanupE2EPhase,
     createE2ERunnerConfig,
     runCli,
     runE2E,

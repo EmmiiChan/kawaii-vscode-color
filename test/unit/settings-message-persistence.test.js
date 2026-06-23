@@ -27,7 +27,7 @@ function createSettingsHarness(options = {}) {
   const errorMessages = [];
   const openExternalCalls = [];
   const configurationValues = new Map([
-    ["workbench.colorTheme", "Kawaii VS Code Color"],
+    ["workbench.colorTheme", "Dark Pink Kawaii"],
     ["workbench.colorCustomizations", {}],
     ["editor.tokenColorCustomizations", {}],
     ["kawaii_synthwave.brightness", 0.45],
@@ -254,7 +254,7 @@ test("settings webview messages reach persistence services without touching real
     });
 
     assert.equal(
-      harness.configurationValues.get("workbench.colorCustomizations")["[Kawaii VS Code Color]"]["editor.background"],
+      harness.configurationValues.get("workbench.colorCustomizations")["[Dark Pink Kawaii]"]["editor.background"],
       "#123456"
     );
     assert.equal(harness.postedMessages.at(-1).type, "state");
@@ -284,7 +284,7 @@ test("settings webview messages reach persistence services without touching real
       type: "change-theme-variant",
       themeVariantId: "light"
     });
-    assert.equal(harness.configurationValues.get("workbench.colorTheme"), "Kawaii VS Code Color Light");
+    assert.equal(harness.configurationValues.get("workbench.colorTheme"), "Light Pink-Pastel Kawaii");
 
     await messageHandler({ type: "save-settings-to-vssync" });
     const syncedBundle = harness.globalStateValues.get("kawaii_synthwave.syncedSettingsBundle");
@@ -355,9 +355,9 @@ test("settings E2E bundle hook is rejected by default and applies fixture only w
 
     assert.equal(harness.configurationValues.get("kawaii_synthwave.brightness"), 0.72);
     assert.equal(harness.configurationValues.get("kawaii_synthwave.disableGlow"), true);
-    assert.equal(harness.configurationValues.get("workbench.colorTheme"), "Kawaii VS Code Color Light");
+    assert.equal(harness.configurationValues.get("workbench.colorTheme"), "Light Pink-Pastel Kawaii");
     assert.equal(
-      harness.configurationValues.get("workbench.colorCustomizations")["[Kawaii VS Code Color]"]["editor.background"],
+      harness.configurationValues.get("workbench.colorCustomizations")["[Dark Pink Kawaii]"]["editor.background"],
       "#101820"
     );
     assert.equal(harness.globalStateValues.get("kawaii_synthwave.editorBackgroundOpacity"), 0.23);
@@ -443,7 +443,7 @@ test("settings E2E fixtures drive dialogs and random image flows without native 
     });
     await messageHandler({ type: "import-settings" });
     assert.equal(
-      harness.configurationValues.get("workbench.colorCustomizations")["[Kawaii VS Code Color]"]["editor.background"],
+      harness.configurationValues.get("workbench.colorCustomizations")["[Dark Pink Kawaii]"]["editor.background"],
       "#121212"
     );
 
@@ -523,9 +523,9 @@ test("settings webview sync and file messages restore saved state after chained 
       emptyEditorLogoOpacity: 0.82
     });
 
-    assert.equal(harness.configurationValues.get("workbench.colorTheme"), "Kawaii VS Code Color Light");
+    assert.equal(harness.configurationValues.get("workbench.colorTheme"), "Light Pink-Pastel Kawaii");
     assert.equal(
-      harness.configurationValues.get("workbench.colorCustomizations")["[Kawaii VS Code Color Light]"]["editor.background"],
+      harness.configurationValues.get("workbench.colorCustomizations")["[Light Pink-Pastel Kawaii]"]["editor.background"],
       "#222222"
     );
     assert.equal(harness.globalStateValues.get("kawaii_synthwave.editorBackgroundFit"), "bottom-left");
@@ -534,12 +534,12 @@ test("settings webview sync and file messages restore saved state after chained 
 
     assert.equal(harness.configurationValues.get("kawaii_synthwave.brightness"), 0.31);
     assert.equal(harness.configurationValues.get("kawaii_synthwave.disableGlow"), false);
-    assert.equal(harness.configurationValues.get("workbench.colorTheme"), "Kawaii VS Code Color");
+    assert.equal(harness.configurationValues.get("workbench.colorTheme"), "Dark Pink Kawaii");
     assert.equal(
-      harness.configurationValues.get("workbench.colorCustomizations")["[Kawaii VS Code Color]"]["editor.background"],
+      harness.configurationValues.get("workbench.colorCustomizations")["[Dark Pink Kawaii]"]["editor.background"],
       "#111111"
     );
-    assert.equal(harness.configurationValues.get("workbench.colorCustomizations")["[Kawaii VS Code Color Light]"], undefined);
+    assert.equal(harness.configurationValues.get("workbench.colorCustomizations")["[Light Pink-Pastel Kawaii]"], undefined);
     assert.equal(harness.globalStateValues.get("kawaii_synthwave.editorBackgroundOpacity"), 0.12);
     assert.equal(harness.globalStateValues.get("kawaii_synthwave.editorBackgroundFit"), "top");
     assert.equal(harness.globalStateValues.get("kawaii_synthwave.emptyEditorLogoOpacity"), 0.52);
@@ -578,12 +578,12 @@ test("settings webview sync and file messages restore saved state after chained 
 
     assert.equal(harness.configurationValues.get("kawaii_synthwave.brightness"), 0.31);
     assert.equal(harness.configurationValues.get("kawaii_synthwave.disableGlow"), false);
-    assert.equal(harness.configurationValues.get("workbench.colorTheme"), "Kawaii VS Code Color");
+    assert.equal(harness.configurationValues.get("workbench.colorTheme"), "Dark Pink Kawaii");
     assert.equal(
-      harness.configurationValues.get("workbench.colorCustomizations")["[Kawaii VS Code Color]"]["editor.background"],
+      harness.configurationValues.get("workbench.colorCustomizations")["[Dark Pink Kawaii]"]["editor.background"],
       "#111111"
     );
-    assert.equal(harness.configurationValues.get("workbench.colorCustomizations")["[Kawaii VS Code Color Light]"], undefined);
+    assert.equal(harness.configurationValues.get("workbench.colorCustomizations")["[Light Pink-Pastel Kawaii]"], undefined);
     assert.equal(harness.globalStateValues.get("kawaii_synthwave.editorBackgroundOpacity"), 0.12);
     assert.equal(harness.globalStateValues.get("kawaii_synthwave.editorBackgroundFit"), "top");
     assert.equal(harness.globalStateValues.get("kawaii_synthwave.emptyEditorLogoOpacity"), 0.52);

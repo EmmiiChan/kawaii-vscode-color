@@ -75,6 +75,41 @@ test("createE2ERunnerConfig isolates current and neon modes", () => {
     ]);
 });
 
+test("Neon Mocha phase greps match exact phase tags only", () => {
+    const phaseCases = [
+        {
+            mochaConfig: "test/e2e/.mocharc.neon-apply.js",
+            matchingTitle: "captures before state @neon-real-apply",
+            rejectedTitles: [
+                "validates applied state @neon-real-applied",
+                "validates alternate state @neon-real-alternate",
+                "validates reverted state @neon-real-reverted",
+                "validates restored state @neon-real-restored"
+            ]
+        },
+        {
+            mochaConfig: "test/e2e/.mocharc.neon-applied.js",
+            matchingTitle: "validates applied state @neon-real-applied",
+            rejectedTitles: [
+                "captures before state @neon-real-apply",
+                "validates alternate state @neon-real-alternate"
+            ]
+        }
+    ];
+
+    for (const phaseCase of phaseCases) {
+        assert.equal(matchesMochaGrep(phaseCase.mochaConfig, phaseCase.matchingTitle), true);
+
+        for (const rejectedTitle of phaseCase.rejectedTitles) {
+            assert.equal(
+                matchesMochaGrep(phaseCase.mochaConfig, rejectedTitle),
+                false,
+                `${phaseCase.mochaConfig} should not match ${rejectedTitle}`
+            );
+        }
+    }
+});
+
 test("runE2EWithConfig records a passing safe phase and spawn arguments", (t) => {
     const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), "kawaii-e2e-pass-"));
     t.after(() => {
@@ -121,6 +156,67 @@ test("runE2EWithConfig records a passing safe phase and spawn arguments", (t) =>
     assert.deepEqual(marker.phases.map((phase) => phase.status), ["passed"]);
 });
 
+test("runE2EWithConfig removes stale Neon patch before launching the apply phase", (t) => {
+    const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), "kawaii-e2e-neon-clean-"));
+    const workbenchDir = path.join(
+        workspaceRoot,
+        ".vscode-test",
+        "extest-111-neon",
+        "VSCode-win32-x64-archive",
+        "ce099c1ed2",
+        "resources",
+        "app",
+        "out",
+        "vs",
+        "code",
+        "electron-browser",
+        "workbench"
+    );
+    const htmlFile = path.join(workbenchDir, "workbench.html");
+    const patchedHtml = [
+        "<html>",
+        "\t<!-- KAWAII VSCODE COLORS UI --><script src=\"kawaii-vscode-colors-ui.js?v=old\"></script><!-- /KAWAII VSCODE COLORS UI -->",
+        "</html>",
+        ""
+    ].join("\n");
+    const scriptFile = path.join(workbenchDir, "kawaii-vscode-colors-ui.js");
+    const styleFile = path.join(workbenchDir, "kawaii-vscode-colors-ui.min.css");
+    const legacyScriptFile = path.join(workbenchDir, "neondreams.js");
+    t.after(() => {
+        fs.rmSync(workspaceRoot, { force: true, recursive: true });
+    });
+    fs.mkdirSync(workbenchDir, { recursive: true });
+    fs.writeFileSync(htmlFile, patchedHtml, "utf8");
+    fs.writeFileSync(scriptFile, "stale script", "utf8");
+    fs.writeFileSync(styleFile, "stale style", "utf8");
+    fs.writeFileSync(legacyScriptFile, "stale legacy script", "utf8");
+
+    let htmlAtSpawn = "";
+    const config = createE2ERunnerConfig({
+        argv: ["node", "scripts/run-e2e.js", "neon"],
+        env: {
+            KAWAII_E2E_ALLOW_NEON_PATCH: "1"
+        },
+        platform: "linux",
+        workspaceRoot
+    });
+
+    const exitCode = runE2EWithConfig(config, {
+        spawnSync() {
+            htmlAtSpawn = fs.readFileSync(htmlFile, "utf8");
+            return { status: 2 };
+        },
+        console: createSilentConsole()
+    });
+
+    assert.equal(exitCode, 2);
+    assert.doesNotMatch(htmlAtSpawn, /KAWAII VSCODE COLORS UI/);
+    assert.doesNotMatch(fs.readFileSync(htmlFile, "utf8"), /kawaii-vscode-colors-ui\.js/);
+    assert.equal(fs.existsSync(scriptFile), false);
+    assert.equal(fs.existsSync(styleFile), false);
+    assert.equal(fs.existsSync(legacyScriptFile), false);
+});
+
 test("runE2EWithConfig fails fast on a non-zero phase status", (t) => {
     const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), "kawaii-e2e-fail-"));
     t.after(() => {
@@ -156,6 +252,41 @@ test("runE2EWithConfig fails fast on a non-zero phase status", (t) => {
         "pending"
     ]);
     assert.equal(marker.phases[1].exitCode, 2);
+});
+
+test("runE2EWithConfig cleans disposable VS Code processes without interrupting the initial Neon restart", (t) => {
+    const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), "kawaii-e2e-cleanup-"));
+    t.after(() => {
+        fs.rmSync(workspaceRoot, { force: true, recursive: true });
+    });
+    const calls = [];
+    const config = createE2ERunnerConfig({
+        argv: ["node", "scripts/run-e2e.js", "neon"],
+        env: {
+            KAWAII_E2E_ALLOW_NEON_PATCH: "1"
+        },
+        platform: "win32",
+        workspaceRoot
+    });
+
+    const exitCode = runE2EWithConfig(config, {
+        cleanupPhase(_config, phase) {
+            calls.push(`cleanup:${phase.name}`);
+        },
+        spawnSync(_command, args) {
+            calls.push(`spawn:${args[args.length - 1]}`);
+            return { status: calls.filter((call) => call.startsWith("spawn:")).length === 1 ? 0 : 2 };
+        },
+        console: createSilentConsole()
+    });
+
+    assert.equal(exitCode, 2);
+    assert.deepEqual(calls, [
+        "cleanup:neon apply",
+        "spawn:test/e2e/.mocharc.neon-apply.js",
+        "spawn:test/e2e/.mocharc.neon-applied.js",
+        "cleanup:neon applied after full restart"
+    ]);
 });
 
 test("runE2EWithConfig records spawn errors", (t) => {
@@ -216,6 +347,18 @@ test("runE2EWithConfig rejects invalid Neon options before spawning", (t) => {
 
 function readMarker(workspaceRoot) {
     return JSON.parse(fs.readFileSync(path.join(workspaceRoot, "test-results", "e2e", "kawaii-last-run.json"), "utf8"));
+}
+
+function matchesMochaGrep(mochaConfigPath, title) {
+    const mochaConfig = require(path.join(__dirname, "..", mochaConfigPath));
+    const grep = mochaConfig.grep;
+
+    if (grep instanceof RegExp) {
+        grep.lastIndex = 0;
+        return grep.test(title);
+    }
+
+    return new RegExp(String(grep)).test(title);
 }
 
 function createSilentConsole() {

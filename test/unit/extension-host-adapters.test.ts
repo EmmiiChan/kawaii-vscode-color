@@ -85,8 +85,12 @@ test("VscodeExtensionStorage reads global state and resolves storage path fallba
   );
 });
 
-test("VscodeNotificationService forwards messages and reload commands", async () => {
+test("VscodeNotificationService forwards messages and reload commands after notification action selection", async () => {
   const calls: NotificationCall[] = [];
+  let resolveReloadNotification: (selection: { readonly title: string } | undefined) => void = () => undefined;
+  const reloadNotification = new Promise<{ readonly title: string } | undefined>((resolve) => {
+    resolveReloadNotification = resolve;
+  });
   const service = createVscodeNotificationService({
     commands: {
       async executeCommand(command: string): Promise<void> {
@@ -97,8 +101,11 @@ test("VscodeNotificationService forwards messages and reload commands", async ()
       async showErrorMessage(message: string): Promise<void> {
         calls.push({ method: "error", message });
       },
-      async showInformationMessage(message: string, item?: { readonly title: string }): Promise<void> {
+      async showInformationMessage(message: string, item?: { readonly title: string }): Promise<unknown> {
         calls.push({ method: "info", message, actionTitle: item ? item.title : undefined });
+        if (item) {
+          return reloadNotification;
+        }
       }
     }
   });
@@ -106,6 +113,15 @@ test("VscodeNotificationService forwards messages and reload commands", async ()
   await service.showErrorMessage("broken");
   await service.showInformationMessage("saved");
   await service.requestWorkbenchReload("reload now", "Reload");
+
+  assert.deepEqual(calls, [
+    { method: "error", message: "broken" },
+    { method: "info", message: "saved", actionTitle: undefined },
+    { method: "info", message: "reload now", actionTitle: "Reload" }
+  ]);
+
+  resolveReloadNotification({ title: "Reload" });
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
 
   assert.deepEqual(calls, [
     { method: "error", message: "broken" },

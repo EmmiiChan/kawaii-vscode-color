@@ -146,18 +146,20 @@ class DefaultNeonEffectService implements NeonEffectService {
     }
 
     try {
-      const chromeStyles = this.buildCustomChromeStyles(
-        this.dependencies.fileSystem.readTextFile(path.join(this.dependencies.extensionRoot, "src", "css", "editor_chrome.css"))
+      const uiStyles = this.buildCustomChromeStyles(
+        this.dependencies.fileSystem.readTextFile(path.join(this.dependencies.extensionRoot, "src", "css", "kawaii-vscode-colors-ui.min.css"))
       );
       const jsTemplate = this.dependencies.fileSystem.readTextFile(
         path.join(this.dependencies.extensionRoot, "src", "js", "theme_template.js")
       );
-      const finalTheme = replaceRendererPlaceholders(jsTemplate, {
-        CHROME_STYLES: chromeStyles,
+      const scriptContent = replaceRendererPlaceholders(jsTemplate, {
         DISABLE_GLOW: String(normalizedConfiguration.disableGlow),
         NEON_BRIGHTNESS: normalizedConfiguration.neonBrightness
       });
-      const result = this.dependencies.workbenchPatchService.applyScriptTag(basePath, finalTheme);
+      const result = this.dependencies.workbenchPatchService.applyAssets(basePath, {
+        scriptContent,
+        styleContent: uiStyles
+      });
 
       if (result.status === "workbench-not-found") {
         await this.dependencies.notifications.showErrorMessage(NEON_EFFECT_MESSAGES.ERROR_WORKBENCH_NOT_FOUND);

@@ -56,7 +56,7 @@ Enable the theme:
 
 1. Open the Command Palette.
 2. Run `Preferences: Color Theme`.
-3. Select `Kawaii VS Code Color` or `Kawaii VS Code Color Light`.
+3. Select `Dark Pink Kawaii` or `Light Pink-Pastel Kawaii`.
 
 Open the extension settings:
 
@@ -83,8 +83,9 @@ The settings webview must use the active editor theme for its own UI. Its CSS co
 
 The `Color Settings` page edits local user overrides for the selected theme mode.
 
-- Dark edits are written to `[Kawaii VS Code Color]`.
-- Light edits are written to `[Kawaii VS Code Color Light]`.
+- Dark edits are written to `[Dark Pink Kawaii]`.
+- Light edits are written to `[Light Pink-Pastel Kawaii]`.
+- Existing settings under `[Kawaii VS Code Color]` and `[Kawaii VS Code Color Light]` are read as legacy aliases and migrated on the next write.
 - Workbench colors are stored in `workbench.colorCustomizations`.
 - Syntax colors are stored in `editor.tokenColorCustomizations`.
 - Packaged theme source files are not modified.
@@ -140,7 +141,9 @@ VS Code Settings Sync must be enabled in VS Code for `Save to VSSync` / `Import 
 
 VS Code color themes do not natively support text glow, editor background images, no-tab logo replacement, or arbitrary editor CSS. Those effects are provided by the optional Neon Effect path.
 
-The Neon Effect modifies VS Code workbench files by adding a generated `kawaii-vscode-colors-ui.js` script reference with a refresh key. Use it with caution:
+The Neon Effect modifies VS Code workbench files by adding one marked `kawaii-vscode-colors-ui.js` script reference with a refresh key. That script adds the `.kawaii-vscode-colors-ui` class to the highest workbench root, links the generated `kawaii-vscode-colors-ui.min.css` stylesheet, and emits scoped token glow rules. The original VS Code token/style tags are not edited in place; the effect is additive and wrapper-conditioned.
+
+Use it with caution:
 
 - Administrator permissions may be required on Windows.
 - VS Code may show an unsupported or corrupted installation warning.
@@ -291,7 +294,7 @@ code-insiders --install-extension .\dist\kawaii-vscode-color-<version>.vsix --fo
 1. Open this repository in VS Code.
 2. Run `npm run build:theme`.
 3. Press `F5` to launch the Extension Development Host.
-4. Select `Kawaii VS Code Color` or `Kawaii VS Code Color Light`.
+4. Select `Dark Pink Kawaii` or `Light Pink-Pastel Kawaii`.
 5. Inspect representative files and use `Developer: Inspect Editor Tokens and Scopes` for token rules.
 
 Live Neon Effect testing is possible from the Extension Development Host, but it patches the VS Code installation used by that host. Prefer a disposable VS Code installation or VS Code Insiders.
@@ -310,7 +313,7 @@ Before publishing:
 
 Kawaii VS Code Color is based on [SynthWave '84](https://github.com/robb0wen/synthwave-vscode). The original theme, glow concept, and much of the historical implementation came from Robb Owen's project.
 
-Kawaii VS Code Color Light is inspired by [Sakura Theme](https://github.com/mhiratani/theme-sakura), a soft pastel VS Code theme by [mhiratani](https://github.com/mhiratani). Sakura Theme is released under the [MIT License](https://github.com/mhiratani/theme-sakura/blob/main/LICENSE).
+Light Pink-Pastel Kawaii is inspired by [Sakura Theme](https://github.com/mhiratani/theme-sakura), a soft pastel VS Code theme by [mhiratani](https://github.com/mhiratani). Sakura Theme is released under the [MIT License](https://github.com/mhiratani/theme-sakura/blob/main/LICENSE).
 
 The Random Neko image flow was inspired by [NyarchLinux/CatgirlDownloader](https://github.com/NyarchLinux/CatgirlDownloader), which uses Nekos.moe as one of its image sources.
 

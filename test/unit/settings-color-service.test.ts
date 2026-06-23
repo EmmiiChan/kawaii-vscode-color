@@ -7,8 +7,8 @@ const { createSettingsColorService } = requireOut<typeof import("../../src/setti
 const WORKBENCH_SETTING = "workbench.colorCustomizations";
 const TOKEN_SETTING = "editor.tokenColorCustomizations";
 const COLOR_THEME_SETTING = "workbench.colorTheme";
-const darkVariant = { id: "dark", label: "Kawaii VS Code Color" };
-const lightVariant = { id: "light", label: "Kawaii VS Code Color Light" };
+const darkVariant = { id: "dark", label: "Dark Pink Kawaii", legacyLabels: ["Kawaii VS Code Color"] };
+const lightVariant = { id: "light", label: "Light Pink-Pastel Kawaii", legacyLabels: ["Kawaii VS Code Color Light"] };
 const themeVariants = { dark: darkVariant, light: lightVariant };
 
 type PlainRecord = Record<string, any>;
@@ -136,7 +136,7 @@ test("updateColorCustomization writes a validated workbench color to the global 
 
   assert.deepEqual(globalSettings[WORKBENCH_SETTING], {
     "[Unrelated Theme]": { "editor.background": "#000000" },
-    "[Kawaii VS Code Color]": { "editor.background": "#abc" }
+    "[Dark Pink Kawaii]": { "editor.background": "#abc" }
   });
   assert.deepEqual(updates, [
     {
@@ -153,7 +153,7 @@ test("updateColorCustomization accepts supported hex formats and rejects invalid
 
   for (const value of ["#abc", "#abcd", "#aabbcc", "#aabbccdd"]) {
     await service.updateColorCustomization("workbench", "editor.background", value, "dark");
-    assert.equal(globalSettings[WORKBENCH_SETTING]["[Kawaii VS Code Color]"]["editor.background"], value);
+    assert.equal(globalSettings[WORKBENCH_SETTING]["[Dark Pink Kawaii]"]["editor.background"], value);
   }
 
   const updateCountBeforeInvalidValue = updates.length;
@@ -174,8 +174,8 @@ test("updateColorCustomization keeps dark and light customizations isolated", as
   await service.updateColorCustomization("workbench", "editor.background", "#f7f1ff", "light");
 
   assert.deepEqual(globalSettings[WORKBENCH_SETTING], {
-    "[Kawaii VS Code Color]": { "editor.background": "#101820" },
-    "[Kawaii VS Code Color Light]": { "editor.background": "#f7f1ff" }
+    "[Dark Pink Kawaii]": { "editor.background": "#101820" },
+    "[Light Pink-Pastel Kawaii]": { "editor.background": "#f7f1ff" }
   });
 });
 
@@ -185,7 +185,7 @@ test("updateColorCustomization rejects unknown workbench colors without writing 
 
   await assert.rejects(
     service.updateColorCustomization("workbench", "unknown.color", "#ffffff", "dark"),
-    /Unknown Kawaii VS Code Color workbench color: unknown\.color/
+    /Unknown Dark Pink Kawaii workbench color: unknown\.color/
   );
 
   assert.deepEqual(updates, []);
@@ -208,10 +208,11 @@ test("updateColorCustomization writes token colors by replacing matching scopes 
   await service.updateColorCustomization("token", 1, "#ffffff", "dark");
   await service.updateColorCustomization("token", 0, "#101010", "dark");
 
-  assert.deepEqual(globalSettings[TOKEN_SETTING]["[Kawaii VS Code Color]"].textMateRules, [
+  assert.deepEqual(globalSettings[TOKEN_SETTING]["[Dark Pink Kawaii]"].textMateRules, [
     { scope: ["source.js", "keyword"], settings: { foreground: "#ffffff" } },
     { scope: "comment", settings: { foreground: "#101010" } }
   ]);
+  assert.equal(globalSettings[TOKEN_SETTING]["[Kawaii VS Code Color]"], undefined);
 });
 
 test("updateColorCustomization rejects unknown token indexes and unsupported sections without writing settings", async () => {
@@ -220,7 +221,7 @@ test("updateColorCustomization rejects unknown token indexes and unsupported sec
 
   await assert.rejects(
     service.updateColorCustomization("token", 10, "#ffffff", "dark"),
-    /Unknown Kawaii VS Code Color token color index: 10/
+    /Unknown Dark Pink Kawaii token color index: 10/
   );
   await assert.rejects(
     service.updateColorCustomization("unknown", "editor.background", "#ffffff", "dark"),
@@ -254,7 +255,7 @@ test("resetColorCustomization removes workbench colors from global and workspace
   await service.resetColorCustomization("workbench", "editor.background", "dark");
 
   assert.deepEqual(globalSettings[WORKBENCH_SETTING], {
-    "[Kawaii VS Code Color]": { "sideBar.background": "#111111" }
+    "[Dark Pink Kawaii]": { "sideBar.background": "#111111" }
   });
   assert.equal(workspaceSettings[WORKBENCH_SETTING], undefined);
   assert.equal(updates.length, 2);
@@ -329,11 +330,11 @@ test("changeThemeVariant writes the selected color theme label globally", async 
 
   await service.changeThemeVariant("light");
 
-  assert.equal(globalSettings[COLOR_THEME_SETTING], "Kawaii VS Code Color Light");
+  assert.equal(globalSettings[COLOR_THEME_SETTING], "Light Pink-Pastel Kawaii");
   assert.deepEqual(updates, [
     {
       settingName: COLOR_THEME_SETTING,
-      value: "Kawaii VS Code Color Light",
+      value: "Light Pink-Pastel Kawaii",
       target: true
     }
   ]);

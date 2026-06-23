@@ -14,6 +14,7 @@ const effectsPersistence = require("./settingsEffectsPersistence");
 const { resolveExtensionAssetPath } = require("./extensionRoot");
 const { createSettingsStore } = require("./settingsStore");
 const { createSettingsWebviewHtml } = require("./settingsWebview");
+const { KAWAII_THEME_VARIANTS } = require("./shared/models/theme");
 const {
   ensurePlainObject,
   findMatchingTokenRuleIndex,
@@ -24,20 +25,12 @@ const {
 const packageManifest = JSON.parse(fs.readFileSync(resolveExtensionAssetPath(__dirname, "package.json"), "utf8"));
 
 const PANEL_VIEW_TYPE = "kawaiiVsCodeColor.settings";
-const THEME_VARIANTS = [
-  {
-    id: "dark",
-    label: "Kawaii VS Code Color",
-    modeLabel: "Dark",
-    generatedThemePath: resolveExtensionAssetPath(__dirname, "themes", "kawaii_synthwave-generated-color-theme.json")
-  },
-  {
-    id: "light",
-    label: "Kawaii VS Code Color Light",
-    modeLabel: "Light",
-    generatedThemePath: resolveExtensionAssetPath(__dirname, "themes", "kawaii_synthwave-generated-color-theme-light.json")
-  }
-];
+const THEME_VARIANTS = KAWAII_THEME_VARIANTS.map(function mapThemeVariant(themeVariant) {
+  return {
+    ...themeVariant,
+    generatedThemePath: resolveExtensionAssetPath(__dirname, ...themeVariant.generatedThemePath.split("/"))
+  };
+});
 const DEFAULT_THEME_VARIANT_ID = "dark";
 const COLOR_THEME_SETTING = "workbench.colorTheme";
 const WORKBENCH_CUSTOMIZATIONS_SETTING = "workbench.colorCustomizations";
@@ -2144,7 +2137,10 @@ function getGeneratedTokenRule(tokenIndex, themeVariant) {
 function getActiveThemeVariant() {
   const activeThemeLabel = vscode.workspace.getConfiguration().get(COLOR_THEME_SETTING);
   const matchingThemeVariant = THEME_VARIANTS.find(function matchThemeVariant(themeVariant) {
-    return themeVariant.label === activeThemeLabel;
+    return (
+      themeVariant.label === activeThemeLabel
+      || themeVariant.legacyLabels.includes(activeThemeLabel)
+    );
   });
 
   return matchingThemeVariant || getThemeVariantById(DEFAULT_THEME_VARIANT_ID);

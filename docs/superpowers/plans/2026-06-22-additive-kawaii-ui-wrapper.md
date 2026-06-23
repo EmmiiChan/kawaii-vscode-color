@@ -89,7 +89,7 @@ Modify:
 
 ## Detailed Step Packs
 
-Each implementation task has an isolated execution pack under `docs/superpowers/plans/2026-06-22-additive-kawaii-ui-wrapper/stepdetails/`.
+Each implementation task has an isolated execution pack under `.codex/.temp/additive-kawaii-ui-wrapper-plan/stepdetails/`.
 
 Each task folder contains:
 

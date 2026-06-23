@@ -1,11 +1,7 @@
 import type { NeonEffectConfiguration, NeonEffectService } from "../services/NeonEffectService";
+import { isThemeName } from "../../shared/models/theme";
 
 export const COLOR_THEME_SETTING = "workbench.colorTheme";
-
-const KAWAII_VSCODE_COLOR_THEME_LABELS = [
-  "Kawaii VS Code Color",
-  "Kawaii VS Code Color Light"
-] as const;
 
 export interface NeonEffectActions {
   enableNeon(): Promise<void>;
@@ -85,5 +81,5 @@ class DefaultNeonEffectController implements NeonEffectController {
 }
 
 function isKawaiiVsCodeColorTheme(themeLabel: string): boolean {
-  return KAWAII_VSCODE_COLOR_THEME_LABELS.includes(themeLabel as typeof KAWAII_VSCODE_COLOR_THEME_LABELS[number]);
+  return isThemeName(themeLabel);
 }
