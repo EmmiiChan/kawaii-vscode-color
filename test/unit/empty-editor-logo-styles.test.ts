@@ -21,6 +21,8 @@ test("createEmptyEditorLogoStyles includes old and wrapper watermark selectors",
   const css = createEmptyEditorLogoStyles("data:image/png;base64,abc123", 0.42);
 
   for (const wrapperSelector of EMPTY_EDITOR_LOGO_WRAPPER_SELECTORS) {
+    assert.match(wrapperSelector, /\.kawaii-effect-no-page-logo/);
+
     for (const selector of EMPTY_EDITOR_LOGO_LETTERPRESS_SELECTORS) {
       assert.match(css, new RegExp(escapeRegExp(`${wrapperSelector} ${selector}`)));
     }

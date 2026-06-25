@@ -94,6 +94,18 @@ test("SettingsMessageController dispatches host messages and preserves legacy pa
     editorBackgroundFit: "left",
     emptyEditorLogoOpacity: 0.7
   });
+  await controller.handleMessage({
+    type: "apply-effects",
+    features: {
+      foundation: true,
+      editorBackground: false,
+      noPageLogo: true,
+      glow: false
+    },
+    editorBackgroundOpacity: 0.3,
+    editorBackgroundFit: "right",
+    emptyEditorLogoOpacity: 0.8
+  });
 
   assert.deepEqual(calls, [
     ["state"],
@@ -104,7 +116,39 @@ test("SettingsMessageController dispatches host messages and preserves legacy pa
     ["state"],
     ["applyNeonCustomizations", 0.2, "left", 0.7],
     ["applyAllEffects"],
+    ["state"],
+    ["applyEffects", 0.3, "right", 0.8, {
+      foundation: true,
+      editorBackground: false,
+      noPageLogo: true,
+      glow: false
+    }],
     ["state"]
+  ]);
+});
+
+test("SettingsMessageController persists effect feature switches without posting stale state", async () => {
+  const calls: Calls = [];
+  const controller = createSettingsMessageController({
+    handlers: createHandlers(calls),
+    isNeonE2ETestHookEnabled: () => false,
+    isSettingsE2ETestHookEnabled: () => false,
+    reportError: async (error) => {
+      record(calls, "error", error.message);
+    },
+    logError: () => {}
+  });
+  const features = {
+    foundation: true,
+    editorBackground: false,
+    noPageLogo: true,
+    glow: false
+  };
+
+  await controller.handleMessage({ type: "update-effect-features", features });
+
+  assert.deepEqual(calls, [
+    ["effectFeatures", features]
   ]);
 });
 
@@ -314,6 +358,16 @@ function createHandlers(calls: Calls) {
     async applyAllEffects() {
       record(calls, "applyAllEffects");
     },
+    async applyEffects(message: TestMessage) {
+      record(
+        calls,
+        "applyEffects",
+        message.editorBackgroundOpacity,
+        message.editorBackgroundFit,
+        message.emptyEditorLogoOpacity,
+        message.features
+      );
+    },
     async applyNeonCustomizations(message: TestMessage) {
       record(
         calls,
@@ -409,6 +463,9 @@ function createHandlers(calls: Calls) {
     },
     async updateEmptyEditorLogoOpacity(opacity: unknown) {
       record(calls, "logoOpacity", opacity);
+    },
+    async updateEffectFeatures(features: unknown) {
+      record(calls, "effectFeatures", features);
     }
   };
 }

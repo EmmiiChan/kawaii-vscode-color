@@ -124,6 +124,106 @@ test("NeonEffectService generates the runtime script with typed configuration an
   }]);
 });
 
+test("NeonEffectService applies only selected effect modules and removes disabled module assets", async () => {
+  const extensionRoot = path.normalize("C:/extension");
+  const appRoot = path.normalize("C:/VSCode/resources/app");
+  const storageRoot = path.join(extensionRoot, ".storage");
+  const workbenchBase = path.normalize("C:/VSCode/resources/app/out/vs/code");
+  const htmlFile = path.join(workbenchBase, "electron-sandbox", "workbench", "workbench.esm.html");
+  const scriptFile = path.join(workbenchBase, "electron-sandbox", "workbench", "kawaii-vscode-colors-ui.js");
+  const styleFile = path.join(workbenchBase, "electron-sandbox", "workbench", "kawaii-vscode-colors-ui.min.css");
+  const workbenchDir = path.dirname(htmlFile);
+  const editorAssetFile = path.join(workbenchDir, "kawaii-vscode-colors-editor-background-image.png");
+  const logoAssetFile = path.join(workbenchDir, "kawaii-vscode-colors-empty-editor-logo-image.svg");
+  const files = new Map<string, MemoryFileValue>([
+    [path.join(extensionRoot, "src", "css", "kawaii-vscode-colors-ui.min.css"), [
+      "classes=[EFFECT_ROOT_CLASSES]",
+      "image=[EDITOR_BACKGROUND_IMAGE]",
+      "logo=[EMPTY_EDITOR_LOGO_STYLES]"
+    ].join("\n")],
+    [path.join(extensionRoot, "src", "js", "theme_template.js"), "classes=[EFFECT_ROOT_CLASSES];brightness=[NEON_BRIGHTNESS];glow=[DISABLE_GLOW]"],
+    [htmlFile, "<html><body>Workbench</body></html>\n"],
+    [path.join(storageRoot, "editor-background-image.png"), Buffer.from("editor image")],
+    [path.join(storageRoot, "empty-editor-logo-image.svg"), Buffer.from("<svg></svg>")],
+    [editorAssetFile, Buffer.from("old editor image")],
+    [logoAssetFile, Buffer.from("old logo")]
+  ]);
+  const notificationCalls: NotificationCall[] = [];
+  const service = createNeonEffectService({
+    appRoot,
+    extensionRoot,
+    fileSystem: createMemoryFileSystem(files),
+    storage: createStorage(storageRoot, new Map<string, unknown>([
+      ["kawaii_synthwave.editorBackgroundImage", {
+        fileName: "editor-background-image.png",
+        mimeType: "image/png"
+      }],
+      ["kawaii_synthwave.emptyEditorLogoImage", {
+        fileName: "empty-editor-logo-image.svg",
+        mimeType: "image/svg+xml"
+      }]
+    ])),
+    notifications: createNotificationService(notificationCalls),
+    workbenchPatchService: createWorkbenchPatchService({
+      fileSystem: createMemoryFileSystem(files),
+      versionToken: () => "modules"
+    })
+  });
+
+  await service.enable({
+    brightness: 0.5,
+    disableGlow: false,
+    features: {
+      foundation: true,
+      editorBackground: false,
+      noPageLogo: false,
+      glow: false
+    }
+  });
+
+  const script = String(files.get(scriptFile) || "");
+  const styles = String(files.get(styleFile) || "");
+
+  assert.match(script, /classes=kawaii-effect-foundation/);
+  assert.doesNotMatch(script, /kawaii-effect-editor-background/);
+  assert.doesNotMatch(script, /kawaii-effect-no-page-logo/);
+  assert.doesNotMatch(script, /kawaii-effect-glow/);
+  assert.match(styles, /classes=kawaii-effect-foundation/);
+  assert.match(styles, /image=none/);
+  assert.doesNotMatch(styles, /kawaii-vscode-colors-editor-background-image/);
+  assert.doesNotMatch(styles, /kawaii-vscode-colors-empty-editor-logo-image/);
+  assert.equal(files.has(editorAssetFile), false);
+  assert.equal(files.has(logoAssetFile), false);
+  assert.doesNotMatch(styles, /\[(?:EFFECT_ROOT_CLASSES|EDITOR_BACKGROUND_IMAGE|EMPTY_EDITOR_LOGO_STYLES)\]/);
+});
+
+test("NeonEffectService treats a disabled foundation module as full patch removal", async () => {
+  const harness = createMinimalServiceHarness("<html></html>\n");
+  const generatedAssetPaths = getGeneratedPatchAssetPaths();
+
+  await harness.service.enable({ brightness: 0.4, disableGlow: false });
+  assert.equal(harness.files.has(generatedAssetPaths.scriptFile), true);
+  assert.equal(harness.files.has(generatedAssetPaths.styleFile), true);
+
+  await harness.service.enable({
+    brightness: 0.4,
+    disableGlow: false,
+    features: {
+      foundation: false,
+      editorBackground: true,
+      noPageLogo: true,
+      glow: true
+    }
+  });
+
+  assert.equal(harness.files.has(generatedAssetPaths.scriptFile), false);
+  assert.equal(harness.files.has(generatedAssetPaths.styleFile), false);
+  assert.deepEqual(harness.notificationCalls.map((call) => call.message), [
+    "Kawaii VS Code Color UI effects enabled. VS code must reload for this change to take effect. Code may display a warning that it is corrupted, this is normal. You can dismiss this message by choosing 'Don't show this again' on the notification.",
+    "Kawaii VS Code Color UI effects disabled. VS code must reload for this change to take effect"
+  ]);
+});
+
 test("NeonEffectService disables active patches and reports inactive patches", async () => {
   const harness = createMinimalServiceHarness("<html></html>\n");
   const generatedAssetPaths = getGeneratedPatchAssetPaths();

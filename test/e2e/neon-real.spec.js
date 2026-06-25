@@ -12,6 +12,7 @@ const {
     clickWebviewCss,
     getWebviewInputValue,
     postWebviewE2EMessage,
+    runCommand,
     setWebviewInputValue,
     takeE2EScreenshot,
     waitForWebviewE2EState,
@@ -28,11 +29,17 @@ const {
     EMPTY_EDITOR_LOGO_FALLBACK_VERSION_CASES,
     EMPTY_EDITOR_LOGO_LETTERPRESS_SELECTORS
 } = require("../../out/src/emptyEditorLogoStyles");
+const {
+    EFFECT_ROOT_CLASS_BY_FEATURE,
+    getEffectFeatureCombinationMatrix,
+    getEnabledEffectRootClasses
+} = require("../../out/src/shared/models/effects");
 
 const WORKSPACE_ROOT = path.resolve(__dirname, "..", "..");
 const DISPOSABLE_TEST_ROOT = path.join(WORKSPACE_ROOT, ".vscode-test");
 const E2E_RESULTS_DIR = path.join(WORKSPACE_ROOT, "test-results", "e2e");
 const NEON_STATE_FILE = path.join(E2E_RESULTS_DIR, "neon-real-state.json");
+const EFFECTS_MATRIX_REPORT_FILE = path.join(E2E_RESULTS_DIR, "neon-effects-combination-matrix.json");
 const BASE_SETTINGS_FIXTURE = JSON.parse(fs.readFileSync(
     path.join(WORKSPACE_ROOT, "test", "fixtures", "settings", "settings-dark-light-customized.json"),
     "utf8"
@@ -64,9 +71,13 @@ const NEON_STORAGE = path.resolve(
     process.env.KAWAII_E2E_STORAGE || path.join(DISPOSABLE_TEST_ROOT, "extest-111-neon")
 );
 const REQUIRED_NEON_FLAG = "1";
+const WORKBENCH_IMAGE_ASSET_EXTENSIONS = ["png", "jpg", "jpeg", "webp", "svg"];
+const EDITOR_BACKGROUND_WORKBENCH_ASSET_PREFIX = "kawaii-vscode-colors-editor-background-image";
+const EMPTY_EDITOR_LOGO_WORKBENCH_ASSET_PREFIX = "kawaii-vscode-colors-empty-editor-logo-image";
+const RELOAD_WINDOW_COMMAND_LABEL = "Developer: Reload Window";
 
 describe("Neon real gated E2E @neon-real", function () {
-    this.timeout(180000);
+    this.timeout(900000);
 
     before(function () {
         if (process.env.KAWAII_E2E_ALLOW_NEON_PATCH !== REQUIRED_NEON_FLAG) {
@@ -95,7 +106,7 @@ describe("Neon real gated E2E @neon-real", function () {
         restoreBaselineIfNeeded(state);
     });
 
-    it("captures before state and applies Neon Effect patch @neon-real-apply", async function () {
+    it("captures before state and applies Kawaii Neon patch @neon-real-apply", async function () {
         const patchPaths = findDisposableWorkbenchPatchPaths();
         const baselineSnapshot = ensureCleanWorkbenchBaseline(patchPaths);
         if (baselineSnapshot.runtimeReloadRequired) {
@@ -120,13 +131,8 @@ describe("Neon real gated E2E @neon-real", function () {
             baselineLogoState
         });
 
-        await applyVisualSettingsThroughUiAndEffects(DSTGROUP_VISUAL_CASE, "neon-real-before-apply-dstgroup");
-
-        const appliedSnapshot = await waitForPatchSnapshot(
-            patchPaths,
-            (snapshot) => snapshot.patchEnabled && snapshot.templateExists,
-            "Expected Kawaii UI patch and generated template after applying effects"
-        );
+        const matrixReport = await validateEffectsFeatureCombinationMatrix(DSTGROUP_VISUAL_CASE, patchPaths);
+        const appliedSnapshot = readPatchSnapshot(patchPaths);
 
         assert.notEqual(appliedSnapshot.htmlHash, baselineSnapshot.htmlHash, "Expected workbench HTML to change after applying effects");
         assert.equal(appliedSnapshot.scriptTagCount, 1, "Expected exactly one Kawaii UI script tag after applying effects");
@@ -136,9 +142,11 @@ describe("Neon real gated E2E @neon-real", function () {
         assertAppliedStyleIncludesVisualEffects(appliedSnapshot.style, DSTGROUP_VISUAL_CASE);
 
         updateState({
+            effectsMatrixReportPath: matrixReport.reportPath,
             dstgroupHtmlHash: appliedSnapshot.htmlHash,
             dstgroupTemplateHash: appliedSnapshot.templateHash,
-            dstgroupStyleHash: appliedSnapshot.styleHash
+            dstgroupStyleHash: appliedSnapshot.styleHash,
+            dstgroupStyleStableHash: appliedSnapshot.styleStableHash
         });
     });
 
@@ -181,12 +189,12 @@ describe("Neon real gated E2E @neon-real", function () {
             patchPaths,
             (snapshot) => snapshot.patchEnabled
                 && snapshot.styleExists
-                && snapshot.styleHash !== state.dstgroupStyleHash,
+                && snapshot.styleStableHash !== state.dstgroupStyleStableHash,
             "Expected alternate image settings to regenerate the Kawaii UI CSS"
         );
 
         assert.equal(alternateSnapshot.scriptTagCount, 1, "Expected exactly one Kawaii UI script tag after applying alternate image");
-        assert.notEqual(alternateSnapshot.styleHash, state.dstgroupStyleHash, "Expected alternate image to change generated Kawaii UI CSS content");
+        assert.notEqual(alternateSnapshot.styleStableHash, state.dstgroupStyleStableHash, "Expected alternate image to change generated Kawaii UI CSS content");
         assertAppliedRuntimeScriptUsesAdditiveAssets(alternateSnapshot.script);
         assertAppliedStyleUsesEditorTokens(alternateSnapshot.style);
         assertAppliedStyleIncludesVisualEffects(alternateSnapshot.style, ALTERNATE_VISUAL_CASE);
@@ -196,7 +204,8 @@ describe("Neon real gated E2E @neon-real", function () {
             dstgroupEditorBackgroundState,
             alternateHtmlHash: alternateSnapshot.htmlHash,
             alternateTemplateHash: alternateSnapshot.templateHash,
-            alternateStyleHash: alternateSnapshot.styleHash
+            alternateStyleHash: alternateSnapshot.styleHash,
+            alternateStyleStableHash: alternateSnapshot.styleStableHash
         });
     });
 
@@ -252,12 +261,13 @@ describe("Neon real gated E2E @neon-real", function () {
             patchPaths,
             (snapshot) => snapshot.patchEnabled
                 && snapshot.styleExists
-                && snapshot.styleHash !== state.alternateStyleHash,
+                && snapshot.styleHash !== state.alternateStyleHash
+                && snapshot.styleStableHash === state.dstgroupStyleStableHash,
             "Expected dstgroup settings to regenerate the Kawaii UI CSS after alternate image"
         );
 
         assert.equal(revertedDstgroupSnapshot.scriptTagCount, 1, "Expected exactly one Kawaii UI script tag after reverting to dstgroup");
-        assert.equal(revertedDstgroupSnapshot.styleHash, state.dstgroupStyleHash, "Expected reverting to dstgroup to restore the original generated Kawaii UI CSS content");
+        assert.equal(revertedDstgroupSnapshot.styleStableHash, state.dstgroupStyleStableHash, "Expected reverting to dstgroup to restore the original generated Kawaii UI CSS content");
         assertAppliedRuntimeScriptUsesAdditiveAssets(revertedDstgroupSnapshot.script);
         assertAppliedStyleUsesEditorTokens(revertedDstgroupSnapshot.style);
         assertAppliedStyleIncludesVisualEffects(revertedDstgroupSnapshot.style, DSTGROUP_VISUAL_CASE);
@@ -268,11 +278,12 @@ describe("Neon real gated E2E @neon-real", function () {
             alternateEditorBackgroundFitMatrixState,
             revertedDstgroupHtmlHash: revertedDstgroupSnapshot.htmlHash,
             revertedDstgroupTemplateHash: revertedDstgroupSnapshot.templateHash,
-            revertedDstgroupStyleHash: revertedDstgroupSnapshot.styleHash
+            revertedDstgroupStyleHash: revertedDstgroupSnapshot.styleHash,
+            revertedDstgroupStyleStableHash: revertedDstgroupSnapshot.styleStableHash
         });
     });
 
-    it("validates dstgroup restoration after full VS Code restart and disables Neon Effect @neon-real-reverted", async function () {
+    it("validates dstgroup restoration after full VS Code restart and disables Kawaii Neon @neon-real-reverted", async function () {
         const state = readRequiredState();
         const patchPaths = findDisposableWorkbenchPatchPaths();
         const revertedDstgroupSnapshot = readPatchSnapshot(patchPaths);
@@ -283,7 +294,7 @@ describe("Neon real gated E2E @neon-real", function () {
         assert.equal(revertedDstgroupSnapshot.htmlHash, state.revertedDstgroupHtmlHash, "Expected reverted dstgroup HTML hash to persist across restart");
         assert.equal(revertedDstgroupSnapshot.templateHash, state.revertedDstgroupTemplateHash, "Expected reverted dstgroup Kawaii UI script to persist across restart");
         assert.equal(revertedDstgroupSnapshot.styleHash, state.revertedDstgroupStyleHash, "Expected reverted dstgroup Kawaii UI CSS to persist across restart");
-        assert.equal(revertedDstgroupSnapshot.styleHash, state.dstgroupStyleHash, "Expected reverted dstgroup Kawaii UI CSS to match the original dstgroup CSS");
+        assert.equal(revertedDstgroupSnapshot.styleStableHash, state.dstgroupStyleStableHash, "Expected reverted dstgroup Kawaii UI CSS to match the original dstgroup CSS");
         assertAppliedRuntimeScriptUsesAdditiveAssets(revertedDstgroupSnapshot.script);
         assertAppliedStyleUsesEditorTokens(revertedDstgroupSnapshot.style);
         assertAppliedStyleIncludesVisualEffects(revertedDstgroupSnapshot.style, DSTGROUP_VISUAL_CASE);
@@ -344,7 +355,7 @@ describe("Neon real gated E2E @neon-real", function () {
 
         const runtimeRestoredState = await waitForRuntimeNeonState(
             (runtimeState) => !runtimeState.hasUiRoot && !runtimeState.hasLinkedStyles && !runtimeState.hasScopedTokenStyles,
-            "Expected Neon runtime CSS to be gone after full VS Code restart"
+            "Expected Kawaii Neon runtime CSS to be gone after full VS Code restart"
         );
 
         assert.equal(runtimeRestoredState.hasOwnPaletteOnly, false, "Expected restored workbench to have no injected Neon palette");
@@ -531,7 +542,7 @@ async function captureAppliedEditorBackgroundVisualState(visualCase, screenshotN
                 && state.hasLinkedStyles
                 && state.hasThemeStyles
                 && state.hasScopedTokenStyles
-                && /\.kawaii-vscode-colors-ui\.dark-pink-kawaii\s+\.mtk/.test(state.scopedTokenText)
+                && /\.kawaii-vscode-colors-ui\.kawaii-effect-glow\.dark-pink-kawaii\s+\.mtk/.test(state.scopedTokenText)
                 && !/\.kawaii-vscode-colors-ui\s+\.mtk/.test(state.scopedTokenText)
                 && state.hasKawaiiThemeWrapper
                 && state.hasThemeWrapperClass
@@ -740,7 +751,348 @@ async function openUntitledTextEditorPage() {
         .perform();
 }
 
-async function applyVisualSettingsBundleAndEffects(visualCase, screenshotName) {
+async function validateEffectsFeatureCombinationMatrix(visualCase, patchPaths) {
+    const combinations = getEffectFeatureCombinationMatrix();
+    const results = [];
+    const report = {
+        generatedAt: new Date().toISOString(),
+        visualCaseId: visualCase.id,
+        combinationCount: combinations.length,
+        combinations: results
+    };
+
+    writeEffectsMatrixReport(report);
+
+    for (const [index, combination] of combinations.entries()) {
+        const screenshotPrefix = `neon-effects-matrix-${String(index + 1).padStart(2, "0")}-${combination.id}`;
+
+        await closeAllEditors().catch(() => undefined);
+        await sleep(750);
+        await clearTransientWorkbenchNotifications();
+        const beforeScreenshotPath = await takeE2EScreenshot(`${screenshotPrefix}-before`);
+
+        const applyEvidence = await applyVisualSettingsBundleAndEffects(
+            visualCase,
+            `${screenshotPrefix}-settings-before-apply`,
+            combination.features
+        );
+
+        const snapshot = await waitForPatchSnapshot(
+            patchPaths,
+            (candidate) => doesPatchSnapshotMatchFeatureCombination(candidate, combination, visualCase, patchPaths),
+            `Expected generated patch files to match Effects combination ${combination.id}`,
+            45000
+        );
+        const fileValidation = assertPatchSnapshotMatchesFeatureCombination(snapshot, combination, visualCase, patchPaths);
+
+        await reloadWorkbenchAfterBaselineCleanup();
+        const snapshotAfterReload = readPatchSnapshot(patchPaths);
+        const fileValidationAfterReload = assertPatchSnapshotMatchesFeatureCombination(
+            snapshotAfterReload,
+            combination,
+            visualCase,
+            patchPaths
+        );
+        const runtimeValidation = await captureRuntimeStateForEffectCombination(
+            visualCase,
+            combination,
+            screenshotPrefix,
+            snapshotAfterReload
+        );
+        const result = {
+            id: combination.id,
+            features: combination.features,
+            beforeScreenshotPath,
+            settingsScreenshotPath: applyEvidence.settingsScreenshotPath,
+            fileValidation,
+            fileValidationAfterReload,
+            runtimeValidation,
+            snapshot: {
+                htmlHash: snapshotAfterReload.htmlHash,
+                scriptHash: snapshotAfterReload.scriptHash,
+                styleHash: snapshotAfterReload.styleHash,
+                styleStableHash: snapshotAfterReload.styleStableHash,
+                patchEnabled: snapshotAfterReload.patchEnabled,
+                scriptExists: snapshotAfterReload.scriptExists,
+                styleExists: snapshotAfterReload.styleExists
+            },
+            status: "passed"
+        };
+
+        results.push(result);
+        writeEffectsMatrixReport(report);
+    }
+
+    assert.equal(results.length, 16, "Expected the gated Effects matrix to validate every feature switch combination");
+
+    return {
+        reportPath: EFFECTS_MATRIX_REPORT_FILE,
+        results
+    };
+}
+
+function writeEffectsMatrixReport(report) {
+    fs.mkdirSync(E2E_RESULTS_DIR, { recursive: true });
+    fs.writeFileSync(EFFECTS_MATRIX_REPORT_FILE, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+}
+
+function doesPatchSnapshotMatchFeatureCombination(snapshot, combination, visualCase, patchPaths) {
+    try {
+        assertPatchSnapshotMatchesFeatureCombination(snapshot, combination, visualCase, patchPaths);
+        return true;
+    } catch (error) {
+        return false;
+    }
+}
+
+function assertPatchSnapshotMatchesFeatureCombination(snapshot, combination, visualCase, patchPaths) {
+    const features = combination.features;
+    const expectedRootClasses = getEnabledEffectRootClasses(features);
+    const editorBackgroundAssetFileNames = getWorkbenchImageAssetFileNames(EDITOR_BACKGROUND_WORKBENCH_ASSET_PREFIX);
+    const emptyEditorLogoAssetFileNames = getWorkbenchImageAssetFileNames(EMPTY_EDITOR_LOGO_WORKBENCH_ASSET_PREFIX);
+
+    if (!features.foundation) {
+        assert.equal(snapshot.patchEnabled, false, `Expected ${combination.id} to remove the workbench patch`);
+        assert.equal(snapshot.scriptTagCount, 0, `Expected ${combination.id} to remove the workbench script tag`);
+        assert.equal(snapshot.scriptExists, false, `Expected ${combination.id} to remove generated runtime JS`);
+        assert.equal(snapshot.styleExists, false, `Expected ${combination.id} to remove generated runtime CSS`);
+        assertWorkbenchImageAssetsMatchState(patchPaths, editorBackgroundAssetFileNames, false, combination.id);
+        assertWorkbenchImageAssetsMatchState(patchPaths, emptyEditorLogoAssetFileNames, false, combination.id);
+
+        return {
+            expectedRootClasses,
+            enabledRootClasses: [],
+            editorBackgroundAsset: false,
+            emptyEditorLogoAsset: false
+        };
+    }
+
+    assert.equal(snapshot.patchEnabled, true, `Expected ${combination.id} to keep the workbench patch enabled`);
+    assert.equal(snapshot.scriptTagCount, 1, `Expected ${combination.id} to keep exactly one workbench script tag`);
+    assert.equal(snapshot.scriptExists, true, `Expected ${combination.id} to write generated runtime JS`);
+    assert.equal(snapshot.styleExists, true, `Expected ${combination.id} to write generated runtime CSS`);
+    assertAppliedRuntimeScriptUsesAdditiveAssets(snapshot.script);
+    assertAppliedStyleUsesEditorTokens(snapshot.style);
+    assert.doesNotMatch(snapshot.script, /\[(?:EFFECT_ROOT_CLASSES|DISABLE_GLOW|NEON_BRIGHTNESS|KAWAII_UI_STYLE_VERSION)\]/);
+    assert.doesNotMatch(snapshot.style, /\[(?:EFFECT_ROOT_CLASSES|EDITOR_BACKGROUND_IMAGE|EDITOR_BACKGROUND_IMAGE_OPACITY|EDITOR_BACKGROUND_IMAGE_POSITION|EDITOR_BACKGROUND_IMAGE_SIZE|EDITOR_BACKGROUND_IMAGE_REPEAT|EDITOR_BACKGROUND_AREA_TOP|EDITOR_BACKGROUND_AREA_RIGHT|EDITOR_BACKGROUND_AREA_BOTTOM|EDITOR_BACKGROUND_AREA_LEFT|EDITOR_BACKGROUND_AREA_WIDTH|EDITOR_BACKGROUND_AREA_HEIGHT|EMPTY_EDITOR_LOGO_STYLES)\]/);
+
+    const enabledRootClasses = extractEnabledEffectRootClassesFromScript(snapshot.script);
+    assert.deepEqual(
+        enabledRootClasses,
+        expectedRootClasses,
+        `Expected ${combination.id} generated runtime root classes to match the selected feature stack`
+    );
+    assert.equal(
+        snapshot.script.includes(`initKawaiiVsCodeColorsUi(${features.glow ? "false" : "true"})`),
+        true,
+        `Expected ${combination.id} generated runtime glow flag to match Glow Effects switch`
+    );
+
+    assertWorkbenchImageAssetsMatchState(
+        patchPaths,
+        editorBackgroundAssetFileNames,
+        features.editorBackground,
+        combination.id,
+        visualCase.expected.editorBackgroundAssetFileName
+    );
+    assertWorkbenchImageAssetsMatchState(
+        patchPaths,
+        emptyEditorLogoAssetFileNames,
+        features.noPageLogo,
+        combination.id,
+        visualCase.expected.emptyEditorLogoAssetFileName
+    );
+
+    if (features.editorBackground) {
+        assert.ok(
+            snapshot.style.includes(`${visualCase.expected.editorBackgroundAssetFileName}?v=`),
+            `Expected ${combination.id} generated CSS to reference the selected editor background asset`
+        );
+        assert.match(snapshot.style, new RegExp(`--kawaii-editor-background-image-opacity:\\s*${escapeRegExp(visualCase.expected.editorBackgroundOpacity)}`));
+        assertAppliedStyleIncludesEditorBackgroundFitArea(snapshot.style, visualCase);
+    } else {
+        assert.equal(
+            snapshot.style.includes(`${EDITOR_BACKGROUND_WORKBENCH_ASSET_PREFIX}.`),
+            false,
+            `Expected ${combination.id} generated CSS not to reference editor background assets`
+        );
+    }
+
+    if (features.noPageLogo) {
+        assert.ok(
+            snapshot.style.includes(`${visualCase.expected.emptyEditorLogoAssetFileName}?v=`),
+            `Expected ${combination.id} generated CSS to reference the selected no-page logo asset`
+        );
+        assert.match(snapshot.style, new RegExp(`opacity:\\s*${escapeRegExp(visualCase.expected.emptyEditorLogoOpacity)}`));
+    } else {
+        assert.equal(
+            snapshot.style.includes(`${EMPTY_EDITOR_LOGO_WORKBENCH_ASSET_PREFIX}.`),
+            false,
+            `Expected ${combination.id} generated CSS not to reference no-page logo assets`
+        );
+    }
+
+    return {
+        expectedRootClasses,
+        enabledRootClasses,
+        editorBackgroundAsset: features.editorBackground,
+        emptyEditorLogoAsset: features.noPageLogo
+    };
+}
+
+function extractEnabledEffectRootClassesFromScript(script) {
+    const match = script.match(/const enabledEffectRootClasses = '([^']*)'\s*\.split/);
+
+    assert.ok(match, "Expected generated runtime script to include the enabled effect class literal");
+
+    return match[1].split(/\s+/).map((className) => className.trim()).filter(Boolean);
+}
+
+function assertWorkbenchImageAssetsMatchState(patchPaths, fileNames, expectedPresent, combinationId, expectedFileName) {
+    const workbenchDir = path.dirname(patchPaths.htmlFile);
+    const existingFileNames = fileNames.filter((fileName) => fs.existsSync(path.join(workbenchDir, fileName)));
+
+    if (expectedPresent) {
+        assert.deepEqual(
+            existingFileNames,
+            [expectedFileName],
+            `Expected ${combinationId} to keep only the selected image asset`
+        );
+        return;
+    }
+
+    assert.deepEqual(existingFileNames, [], `Expected ${combinationId} to remove stale generated image assets`);
+}
+
+function getWorkbenchImageAssetFileNames(prefix) {
+    return WORKBENCH_IMAGE_ASSET_EXTENSIONS.map((extension) => `${prefix}.${extension}`);
+}
+
+async function captureRuntimeStateForEffectCombination(visualCase, combination, screenshotPrefix, snapshotAfterReload) {
+    const features = combination.features;
+    const expectedVersionToken = getPatchScriptVersionToken(snapshotAfterReload.html);
+
+    if (!features.foundation) {
+        await closeAllEditors().catch(() => undefined);
+        await sleep(1000);
+        await clearTransientWorkbenchNotifications();
+        const runtimeState = await waitForRuntimeNeonState(
+            (state) => !state.hasUiRoot && !state.hasLinkedStyles && !state.hasScopedTokenStyles && !state.runtimeScriptSource,
+            `Expected ${combination.id} to have no Kawaii Neon runtime after reload`,
+            visualCase
+        );
+        const screenshotPath = await takeE2EScreenshot(`${screenshotPrefix}-after-removed`);
+
+        return {
+            screenshots: [screenshotPath],
+            states: [{ surface: "removed", runtimeState }],
+            status: "removed"
+        };
+    }
+
+    const states = [];
+    const screenshots = [];
+
+    if (features.noPageLogo || (!features.editorBackground && !features.glow)) {
+        await closeAllEditors().catch(() => undefined);
+        await sleep(1000);
+        await clearTransientWorkbenchNotifications();
+        const runtimeState = await waitForRuntimeNeonState(
+            (state) => runtimeStateMatchesEffectCombination(state, features, "no-page", expectedVersionToken),
+            `Expected ${combination.id} no-page runtime state to match selected Effects modules`,
+            visualCase
+        );
+        const screenshotPath = await takeE2EScreenshot(`${screenshotPrefix}-after-no-page`);
+
+        screenshots.push(screenshotPath);
+        states.push({ surface: "no-page", runtimeState });
+    }
+
+    if (features.editorBackground || features.glow || !features.noPageLogo) {
+        await openUntitledTextEditorPage();
+        await sleep(1000);
+        await clearTransientWorkbenchNotifications();
+        const runtimeState = await waitForRuntimeNeonState(
+            (state) => runtimeStateMatchesEffectCombination(state, features, "editor", expectedVersionToken),
+            `Expected ${combination.id} editor runtime state to match selected Effects modules`,
+            visualCase
+        );
+        const screenshotPath = await takeE2EScreenshot(`${screenshotPrefix}-after-editor`);
+
+        screenshots.push(screenshotPath);
+        states.push({ surface: "editor", runtimeState });
+        await closeAllEditors().catch(() => undefined);
+    }
+
+    return {
+        screenshots,
+        states: states.map((state) => ({
+            surface: state.surface,
+            runtimeState: summarizeRuntimeStateForReport(state.runtimeState)
+        })),
+        status: "active"
+    };
+}
+
+function runtimeStateMatchesEffectCombination(state, features, surface, expectedVersionToken) {
+    return state.hasUiRoot
+        && state.uiRootTagName === "html"
+        && state.hasLinkedStyles
+        && state.runtimeScriptSource.includes(`?v=${expectedVersionToken}`)
+        && state.linkedStylesHref.includes(`?v=${expectedVersionToken}`)
+        && state.hasKawaiiThemeWrapper
+        && state.hasThemeWrapperClass
+        && state.hasDarkInnerWrapper
+        && !state.hasLightInnerWrapper
+        && state.usesEditorTokens
+        && !state.hasOwnPaletteOnly
+        && effectRootClassesMatchFeatures(state, features)
+        && (features.glow
+            ? state.hasScopedTokenStyles && /\.kawaii-vscode-colors-ui\.kawaii-effect-glow\.dark-pink-kawaii\s+\.mtk/.test(state.scopedTokenText)
+            : !state.hasScopedTokenStyles)
+        && (surface !== "editor" || (
+            features.editorBackground
+                ? state.hasExpectedEditorBackgroundImageOnEditor
+                    && state.hasExpectedEditorBackgroundPseudoOpacity
+                    && state.hasExpectedEditorBackgroundFit
+                    && state.editorBackgroundRect
+                    && state.editorBackgroundRect.width > 100
+                    && state.editorBackgroundRect.height > 100
+                : !state.hasExpectedEditorBackgroundImageOnEditor
+        ))
+        && (surface !== "no-page" || (
+            features.noPageLogo
+                ? state.hasExpectedEmptyEditorLogoImage
+                    && state.hasExpectedEmptyEditorLogoOpacity
+                    && state.emptyEditorLogoActiveFallbackId
+                : !state.hasExpectedEmptyEditorLogoImage
+        ));
+}
+
+function effectRootClassesMatchFeatures(state, features) {
+    return Object.entries(EFFECT_ROOT_CLASS_BY_FEATURE).every(([featureId]) =>
+        Boolean(state.effectRootClasses && state.effectRootClasses[featureId]) === Boolean(features.foundation && features[featureId])
+    );
+}
+
+function summarizeRuntimeStateForReport(runtimeState) {
+    return {
+        hasUiRoot: runtimeState.hasUiRoot,
+        hasLinkedStyles: runtimeState.hasLinkedStyles,
+        linkedStylesHref: runtimeState.linkedStylesHref,
+        runtimeScriptSource: runtimeState.runtimeScriptSource,
+        hasScopedTokenStyles: runtimeState.hasScopedTokenStyles,
+        effectRootClasses: runtimeState.effectRootClasses,
+        hasExpectedEditorBackgroundImageOnEditor: runtimeState.hasExpectedEditorBackgroundImageOnEditor,
+        hasExpectedEmptyEditorLogoImage: runtimeState.hasExpectedEmptyEditorLogoImage,
+        editorBackgroundRect: runtimeState.editorBackgroundRect,
+        emptyEditorLogoRect: runtimeState.emptyEditorLogoRect
+    };
+}
+
+async function applyVisualSettingsBundleAndEffects(visualCase, screenshotName, features) {
+    let settingsScreenshotPath = "";
+
     await withSettingsWebview(async () => {
         await clickWebviewCss('.nav-button[data-page="color-settings"]');
         await assertWebviewPageVisible("color-settings-page");
@@ -755,12 +1107,22 @@ async function applyVisualSettingsBundleAndEffects(visualCase, screenshotName) {
         assert.equal(await getWebviewInputValue("#editor-background-fit"), visualCase.expected.editorBackgroundFit);
         assert.equal(await getWebviewInputValue("#empty-editor-logo-opacity"), visualCase.expected.emptyEditorLogoOpacity);
 
-        if (screenshotName) {
-            await takeE2EScreenshot(screenshotName);
+        if (features) {
+            await clickWebviewCss('.nav-button[data-page="neon-effect"]');
+            await assertWebviewPageVisible("neon-effect-page");
+            await setEffectFeatureSwitches(features);
+            await clickWebviewCss('.nav-button[data-page="color-settings"]');
+            await assertWebviewPageVisible("color-settings-page");
         }
 
-        await clickWebviewCss("#apply-effects");
+        if (screenshotName) {
+            settingsScreenshotPath = await takeE2EScreenshot(screenshotName);
+        }
+
+        await setVisualControlsAndApply(visualCase, features);
     });
+
+    return { settingsScreenshotPath };
 }
 
 async function applyVisualSettingsThroughUiAndEffects(visualCase, screenshotName) {
@@ -832,7 +1194,31 @@ async function waitForVisualSettingsState(visualCase) {
     }, `Expected settings webview state to contain ${visualCase.id} visual assets`, 30000);
 }
 
-async function setVisualControlsAndApply(visualCase) {
+async function setEffectFeatureSwitches(features) {
+    const applied = await VSBrowser.instance.driver.executeScript(`
+        const features = arguments[0];
+        const inputs = Array.from(document.querySelectorAll('[data-effect-feature]'));
+
+        for (const input of inputs) {
+            const featureId = input.dataset.effectFeature;
+            const checked = features[featureId] !== false;
+
+            if (input.checked !== checked) {
+                input.checked = checked;
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }
+
+        return inputs.reduce((state, input) => {
+            state[input.dataset.effectFeature] = Boolean(input.checked);
+            return state;
+        }, {});
+    `, features);
+
+    assert.deepEqual(applied, features, "Expected Effects feature switches to match the requested combination");
+}
+
+async function setVisualControlsAndApply(visualCase, features) {
     const applied = await VSBrowser.instance.driver.executeScript(`
         const editorBackgroundOpacity = document.querySelector('#editor-background-opacity');
         const editorBackgroundFit = document.querySelector('#editor-background-fit');
@@ -840,7 +1226,7 @@ async function setVisualControlsAndApply(visualCase) {
         const applyEffects = document.querySelector('#apply-effects');
 
         if (!editorBackgroundOpacity || !editorBackgroundFit || !emptyEditorLogoOpacity || !applyEffects) {
-            return false;
+            return { ready: false };
         }
 
         editorBackgroundOpacity.value = arguments[0];
@@ -849,22 +1235,53 @@ async function setVisualControlsAndApply(visualCase) {
         editorBackgroundOpacity.dispatchEvent(new Event('input', { bubbles: true }));
         editorBackgroundFit.dispatchEvent(new Event('change', { bubbles: true }));
         emptyEditorLogoOpacity.dispatchEvent(new Event('input', { bubbles: true }));
-        applyEffects.click();
-        return true;
+        if (arguments[3]) {
+            for (const input of Array.from(document.querySelectorAll('[data-effect-feature]'))) {
+                const featureId = input.dataset.effectFeature;
+                input.checked = arguments[3][featureId] !== false;
+            }
+        }
+
+        return {
+            ready: true,
+            features: Array.from(document.querySelectorAll('[data-effect-feature]')).reduce((state, input) => {
+                state[input.dataset.effectFeature] = Boolean(input.checked);
+                return state;
+            }, {})
+        };
     `,
         visualCase.expected.editorBackgroundOpacity,
         visualCase.expected.editorBackgroundFit,
-        visualCase.expected.emptyEditorLogoOpacity
+        visualCase.expected.emptyEditorLogoOpacity,
+        features || null
     );
 
-    assert.equal(applied, true, "Expected visual controls to be set before Apply Effects");
+    assert.equal(applied.ready, true, "Expected visual controls to be set before Apply Effects");
+    if (features) {
+        assert.deepEqual(applied.features, features, "Expected hidden Effects controls to match before Apply Effects");
+    }
+    await clickWebviewCss("#apply-effects");
+    await waitForWebviewDomTextIncludes("#neon-status", "Effects apply request sent", 15000);
+}
+
+async function waitForWebviewDomTextIncludes(css, expectedText, timeout = 10000) {
+    const driver = VSBrowser.instance.driver;
+
+    await driver.wait(async () => {
+        const text = await driver.executeScript(`
+            const element = document.querySelector(arguments[0]);
+            return element ? element.textContent || '' : '';
+        `, css).catch(() => "");
+
+        return String(text).includes(expectedText);
+    }, timeout, `Expected ${css} text to include ${expectedText}`);
 }
 
 async function clickNeonAction(buttonCss, screenshotName) {
     await withSettingsWebview(async () => {
         await clickWebviewCss('.nav-button[data-page="neon-effect"]');
         await assertWebviewPageVisible("neon-effect-page");
-        await waitForWebviewTextIncludes("#neon-effect-page", "Enable Neon Effect");
+        await waitForWebviewTextIncludes("#neon-effect-page", "Enable Effects");
 
         if (screenshotName) {
             await takeE2EScreenshot(screenshotName);
@@ -931,10 +1348,22 @@ function ensureCleanWorkbenchBaseline(paths) {
 
 async function reloadWorkbenchAfterBaselineCleanup() {
     await VSBrowser.instance.driver.switchTo().defaultContent();
-    await VSBrowser.instance.driver.executeScript("window.location.reload();");
+    await runCommand(RELOAD_WINDOW_COMMAND_LABEL);
     await VSBrowser.instance.waitForWorkbench(60000);
+    await waitForWorkbenchDocumentReady();
     await sleep(2000);
     await clearTransientWorkbenchNotifications();
+}
+
+async function waitForWorkbenchDocumentReady(timeoutMs = 60000) {
+    const driver = VSBrowser.instance.driver;
+
+    await driver.wait(async () => {
+        return driver.executeScript(`
+            return document.readyState === 'complete'
+                && Boolean(document.querySelector('.monaco-workbench'));
+        `).catch(() => false);
+    }, timeoutMs, "Expected VS Code workbench DOM to be ready after reload");
 }
 
 async function waitForPatchSnapshot(paths, predicate, message, timeoutMs = 30000) {
@@ -977,10 +1406,20 @@ function readPatchSnapshot(paths) {
         style,
         styleExists,
         styleHash: styleExists ? sha256(style) : "",
+        styleStableHash: styleExists ? sha256(normalizePatchStyleForStableComparison(style)) : "",
         template: script,
         templateExists: scriptExists,
         templateHash: scriptExists ? sha256(script) : ""
     };
+}
+
+function normalizePatchStyleForStableComparison(style) {
+    return String(style || "").replace(/\?v=\d+/g, "?v=<version>");
+}
+
+function getPatchScriptVersionToken(html) {
+    const match = String(html || "").match(/kawaii-vscode-colors-ui\.js\?v=([^"]+)/);
+    return match ? match[1] : "";
 }
 
 function assertAppliedRuntimeScriptUsesAdditiveAssets(script) {
@@ -1065,6 +1504,7 @@ async function getRuntimeNeonState(visualCase, options = {}) {
         const emptyEditorLogoFallbackCases = arguments[6];
         const allowRuntimeEditorBackgroundFitOverride = arguments[7];
         const allowRuntimeEditorBackgroundOpacityOverride = arguments[8];
+        const effectRootClassByFeature = arguments[9];
         const editorBackgroundFitProperties = ['top', 'right', 'bottom', 'left', 'width', 'height'];
         const themeSelectors = [
             '[class~="vs-dark"][class*="kawaii_synthwave-generated-color-theme-json"]',
@@ -1076,6 +1516,11 @@ async function getRuntimeNeonState(visualCase, options = {}) {
         ];
         const themeWrapper = document.querySelector(themeSelectors.join(', '));
         const uiRoot = document.querySelector('.kawaii-vscode-colors-ui');
+        const runtimeScript = document.querySelector('script[src*="kawaii-vscode-colors-ui.js"]');
+        const effectRootClasses = Object.keys(effectRootClassByFeature).reduce((state, featureId) => {
+            state[featureId] = Boolean(uiRoot && uiRoot.classList.contains(effectRootClassByFeature[featureId]));
+            return state;
+        }, {});
         const originalTokenStyles = document.querySelector('.vscode-tokens-styles');
         const linkedStyles = document.querySelector('#kawaii-vscode-colors-ui-stylesheet');
         const themeStyles = document.querySelector('#kawaii-vscode-colors-ui-token-styles');
@@ -1146,10 +1591,13 @@ async function getRuntimeNeonState(visualCase, options = {}) {
             devicePixelRatio: window.devicePixelRatio || 1,
             hasUiRoot: Boolean(uiRoot),
             uiRootTagName: uiRoot ? uiRoot.tagName.toLowerCase() : '',
+            runtimeScriptSource: runtimeScript ? runtimeScript.getAttribute('src') || '' : '',
+            effectRootClasses,
             hasDarkInnerWrapper: Boolean(uiRoot && uiRoot.classList.contains('dark-pink-kawaii')),
             hasLightInnerWrapper: Boolean(uiRoot && uiRoot.classList.contains('light-pink-pastel-kawaii')),
             hasOriginalTokenStyles: Boolean(originalTokenStyles),
             hasLinkedStyles: Boolean(linkedStyles),
+            linkedStylesHref: linkedStyles ? linkedStyles.getAttribute('href') || '' : '',
             hasScopedTokenStyles: Boolean(themeStyles),
             scopedTokenText: themeText,
             hasChromeStyles: Boolean(linkedStyles),
@@ -1216,7 +1664,8 @@ async function getRuntimeNeonState(visualCase, options = {}) {
         EMPTY_EDITOR_LOGO_LETTERPRESS_SELECTORS,
         EMPTY_EDITOR_LOGO_FALLBACK_VERSION_CASES,
         Boolean(options.allowRuntimeEditorBackgroundFitOverride),
-        Boolean(options.allowRuntimeEditorBackgroundOpacityOverride)
+        Boolean(options.allowRuntimeEditorBackgroundOpacityOverride),
+        EFFECT_ROOT_CLASS_BY_FEATURE
     );
 }
 

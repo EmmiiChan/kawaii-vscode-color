@@ -15,6 +15,14 @@ test("generateScopedCssBridge scopes root theme selectors with Sass parent selec
     "  background: transparent;",
     "}",
     "",
+    ".monaco-workbench .active-item-indicator {",
+    "  display: none;",
+    "}",
+    "",
+    ".codicon-lightbulb:before {",
+    "  filter: drop-shadow(0 0 5px #03edf9);",
+    "}",
+    "",
     "[class~=\"vs-dark\"][class*=\"kawaii-vscode-color-generated-color-theme-json\"],",
     "[class~=\"vs\"][class*=\"kawaii-vscode-color-generated-color-theme-light-json\"] {",
     "  --kawaii-active-glow: #fc28a825;",
@@ -25,7 +33,9 @@ test("generateScopedCssBridge scopes root theme selectors with Sass parent selec
 
   const generatedScss = generateScopedCssBridge(sourceCss);
 
-  assert.match(generatedScss, /\.monaco-editor \{/);
+  assert.match(generatedScss, /&\.kawaii-effect-editor-background \.monaco-editor \{/);
+  assert.match(generatedScss, /&\.kawaii-effect-glow \.monaco-workbench \.active-item-indicator \{/);
+  assert.match(generatedScss, /&\.kawaii-effect-glow \.codicon-lightbulb:before \{/);
   assert.match(generatedScss, /&\[class~="vs-dark"\]\[class\*="kawaii-vscode-color-generated-color-theme-json"\]/);
   assert.match(generatedScss, /\n\s+\[class~="vs-dark"\]\[class\*="kawaii-vscode-color-generated-color-theme-json"\]/);
   assert.match(generatedScss, /&\[class~="vs"\]\[class\*="kawaii-vscode-color-generated-color-theme-light-json"\]/);
@@ -48,6 +58,10 @@ test("buildKawaiiUiCss generates the bridge partial and minified wrapped css", (
     "",
     ".monaco-editor {",
     "  background: transparent;",
+    "}",
+    "",
+    ".monaco-workbench .active-item-indicator {",
+    "  display: none;",
     "}",
     "",
     "[EMPTY_EDITOR_LOGO_STYLES]"
@@ -79,8 +93,9 @@ test("buildKawaiiUiCss generates the bridge partial and minified wrapped css", (
   assert.match(generatedScss, /&\[class~="vs-dark"\]/);
   assert.match(outputCss, /\.kawaii-vscode-colors-ui\.dark-pink-kawaii\[class~=vs-dark\]/);
   assert.match(outputCss, /\.kawaii-vscode-colors-ui\.dark-pink-kawaii \[class~=vs-dark\]/);
-  assert.match(outputCss, /\.kawaii-vscode-colors-ui\.dark-pink-kawaii \.monaco-editor/);
-  assert.match(outputCss, /\.kawaii-vscode-colors-ui\.light-pink-pastel-kawaii \.monaco-editor/);
+  assert.match(outputCss, /\.kawaii-vscode-colors-ui\.dark-pink-kawaii\.kawaii-effect-editor-background \.monaco-editor/);
+  assert.match(outputCss, /\.kawaii-vscode-colors-ui\.light-pink-pastel-kawaii\.kawaii-effect-editor-background \.monaco-editor/);
+  assert.match(outputCss, /\.kawaii-vscode-colors-ui\.dark-pink-kawaii\.kawaii-effect-glow \.monaco-workbench/);
   assert.doesNotMatch(outputCss, /\.kawaii-vscode-colors-ui \.monaco-editor/);
   assert.match(outputCss, /\[EMPTY_EDITOR_LOGO_STYLES\]/);
 });

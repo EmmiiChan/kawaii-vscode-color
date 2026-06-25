@@ -23,5 +23,7 @@ export const SETTINGS_CLIENT_POST_MESSAGE_TYPES: readonly string[] = [
   "open-link",
   "update-color",
   "reset-color",
+  "update-effect-features",
+  "apply-effects",
   "apply-neon-customizations"
 ];

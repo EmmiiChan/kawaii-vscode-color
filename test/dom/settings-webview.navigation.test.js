@@ -19,7 +19,7 @@ function getButtonByText(document, selector, text) {
   return button;
 }
 
-test("settings webview posts ready and can request Neon Effect actions", async () => {
+test("settings webview posts ready and can request effect actions", async () => {
   const { document, postedMessages } = await renderWebview();
 
   assert.equal(postedMessages[0].type, "ready");
@@ -39,7 +39,7 @@ test("settings webview exposes app-specific navigation and help links", async ()
   assert.deepEqual(navLabels, [
     "Home",
     "Color Settings",
-    "Neon Effect",
+    "Effects",
     "Image Customization",
     "Sync / Files",
     "Help"

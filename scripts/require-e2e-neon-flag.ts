@@ -1,5 +1,5 @@
 const REQUIRED_NEON_FLAG = "1";
-const REFUSAL_MESSAGE = "Refusing to run real Neon Effect E2E. Set KAWAII_E2E_ALLOW_NEON_PATCH=1 to acknowledge the patch risk.";
+const REFUSAL_MESSAGE = "Refusing to run real Kawaii Neon E2E. Set KAWAII_E2E_ALLOW_NEON_PATCH=1 to acknowledge the patch risk.";
 
 function isNeonPatchAcknowledged(env: NodeJS.ProcessEnv = process.env): boolean {
     return env.KAWAII_E2E_ALLOW_NEON_PATCH === REQUIRED_NEON_FLAG;

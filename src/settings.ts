@@ -16,6 +16,10 @@ const { createSettingsStore } = require("./settingsStore");
 const { createSettingsWebviewHtml } = require("./settingsWebview");
 const { KAWAII_THEME_VARIANTS } = require("./shared/models/theme");
 const {
+  DEFAULT_EFFECT_FEATURE_SETTINGS,
+  normalizeEffectFeatureSettings
+} = require("./shared/models/effects");
+const {
   ensurePlainObject,
   findMatchingTokenRuleIndex,
   getTextMateRules,
@@ -129,6 +133,7 @@ const EMPTY_EDITOR_LOGO_IMAGE_FILE_PREFIX = "empty-editor-logo-image";
 const EMPTY_EDITOR_LOGO_MIN_OPACITY = 0;
 const EMPTY_EDITOR_LOGO_MAX_OPACITY = 1;
 const EMPTY_EDITOR_LOGO_OPACITY_STEP = 0.01;
+const EFFECT_FEATURE_SETTINGS_STATE_KEY = "kawaii_synthwave.effectFeatureSettings";
 const MARKDOWN_CODE_FENCE_CHARACTER = "`";
 const TOKEN_DESCRIPTION_RULES = [
   {
@@ -440,8 +445,8 @@ async function handleSettingsMessage(panel, message, context) {
  */
 function createSettingsMessageHandlers(panel, context) {
   const settingsEffectsService = createSettingsEffectsService({
-    applyAllEffects() {
-      return applyAllEffects(panel);
+    applyAllEffects(configuration) {
+      return applyAllEffects(panel, configuration);
     },
     downloadEditorBackgroundImage,
     downloadEmptyEditorLogoImage,
@@ -459,6 +464,14 @@ function createSettingsMessageHandlers(panel, context) {
   return {
     applyAllEffects() {
       return settingsEffectsService.applyAllEffects();
+    },
+    async applyEffects(message) {
+      const features = normalizeEffectFeatureSettings(message.features);
+      await settingsEffectsService.updateEditorBackgroundOpacity(context, message.editorBackgroundOpacity);
+      await settingsEffectsService.updateEditorBackgroundFit(context, message.editorBackgroundFit);
+      await settingsEffectsService.updateEmptyEditorLogoOpacity(context, message.emptyEditorLogoOpacity);
+      await updateEffectFeatures(context, features);
+      await settingsEffectsService.applyAllEffects({ features });
     },
     async applyNeonCustomizations(message) {
       await settingsEffectsService.updateEditorBackgroundOpacity(context, message.editorBackgroundOpacity);
@@ -533,12 +546,15 @@ function createSettingsMessageHandlers(panel, context) {
     },
     updateEmptyEditorLogoOpacity(opacity) {
       return settingsEffectsService.updateEmptyEditorLogoOpacity(context, opacity);
+    },
+    updateEffectFeatures(features) {
+      return updateEffectFeatures(context, features);
     }
   };
 }
 
 /**
- * Normalizes optional Neon Effect actions passed by the extension host.
+ * Normalizes optional Effects actions passed by the extension host.
  *
  * @param {unknown} actions - Action handlers from the extension entry point.
  * @returns {Record<string, Function>} Normalized action handlers.
@@ -591,34 +607,34 @@ function getProjectLinksFromManifest(manifest) {
 }
 
 /**
- * Runs one Neon Effect action.
+ * Runs one Effects action.
  *
  * @param {string} actionName - Action handler name.
  * @returns {Promise<void>} Completes when the action has been requested.
  */
-async function runNeonEffectAction(actionName) {
+async function runNeonEffectAction(actionName, configuration) {
   const action = neonEffectActions[actionName];
 
   if (typeof action !== "function") {
-    throw new Error(`Neon Effect action is unavailable: ${actionName}`);
+    throw new Error(`Effects action is unavailable: ${actionName}`);
   }
 
-  await Promise.resolve(action());
+  await Promise.resolve(action(configuration));
 }
 
 /**
- * Applies all CSS-backed Kawaii VS Code Color effects through the Neon Effect patch.
+ * Applies all CSS-backed Kawaii VS Code Color effects through the Kawaii Neon patch.
  *
  * @param {vscode.WebviewPanel} panel - Active webview panel.
  * @returns {Promise<void>} Completes when the enable action has been requested.
  */
-async function applyAllEffects(panel) {
-  await runNeonEffectAction("enableNeon");
+async function applyAllEffects(panel, configuration) {
+  await runNeonEffectAction("enableNeon", configuration);
   postNeonEffectStatus(panel, "Effects apply request sent. Follow the VS Code notification to restart the editor.");
 }
 
 /**
- * Sends a Neon Effect status message to the webview.
+ * Sends an Effects status message to the webview.
  *
  * @param {vscode.WebviewPanel} panel - Active webview panel.
  * @param {string} message - Status message.
@@ -930,6 +946,7 @@ async function importSettingsBundle(context) {
  */
 async function getEffectsExport(context) {
   return {
+    features: getStoredEffectFeatures(context),
     editorBackground: {
       opacity: getStoredEditorBackgroundOpacity(context),
       fit: getStoredEditorBackgroundFit(context),
@@ -968,6 +985,8 @@ async function getStoredImageExport(context, metadata, resolvePath) {
  * @returns {Promise<void>} Completes when effects are restored.
  */
 async function applyEffectsExport(context, effects) {
+  await updateEffectFeatures(context, effects && effects.features);
+
   return effectsPersistence.applyEffectsExport(effects, {
     updateEditorBackgroundOpacity(opacity) {
       return updateEditorBackgroundOpacity(context, opacity);
@@ -1266,6 +1285,20 @@ async function updateEditorBackgroundFit(context, fit) {
 }
 
 /**
+ * Stores the selected modular effect feature switches.
+ *
+ * @param {vscode.ExtensionContext} context - Extension context.
+ * @param {unknown} features - Candidate feature settings from the settings webview.
+ * @returns {Promise<void>} Completes when feature settings are stored.
+ */
+async function updateEffectFeatures(context, features) {
+  await context.globalState.update(
+    EFFECT_FEATURE_SETTINGS_STATE_KEY,
+    normalizeEffectFeatureSettings(features)
+  );
+}
+
+/**
  * Opens the system image picker and stores the selected empty editor logo.
  *
  * @param {vscode.ExtensionContext} context - Extension context.
@@ -1521,6 +1554,18 @@ function getStoredEditorBackgroundFit(context) {
  */
 function getStoredEmptyEditorLogoOpacity(context) {
   return normalizeEmptyEditorLogoOpacity(context.globalState.get(EMPTY_EDITOR_LOGO_OPACITY_STATE_KEY));
+}
+
+/**
+ * Reads and normalizes stored modular effect feature switches.
+ *
+ * @param {vscode.ExtensionContext} context - Extension context.
+ * @returns {Record<string, boolean>} Safe modular effect feature settings.
+ */
+function getStoredEffectFeatures(context) {
+  return normalizeEffectFeatureSettings(
+    context.globalState.get(EFFECT_FEATURE_SETTINGS_STATE_KEY) || DEFAULT_EFFECT_FEATURE_SETTINGS
+  );
 }
 
 /**
@@ -1932,6 +1977,9 @@ function createSettingsState(context, webview) {
     corruptionWarningLinks: CORRUPTION_WARNING_LINKS,
     checksumFixLink: CHECKSUM_FIX_LINK,
     e2eTestApiEnabled: isSettingsE2ETestHookEnabled(),
+    effects: {
+      features: getStoredEffectFeatures(context)
+    },
     editorBackground: getEditorBackgroundState(context, webview),
     emptyEditorLogo: getEmptyEditorLogoState(context, webview),
     workbenchColors,

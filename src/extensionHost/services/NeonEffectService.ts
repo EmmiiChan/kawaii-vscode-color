@@ -1,6 +1,11 @@
 import path = require("path");
 import { createEmptyEditorLogoStyles } from "../../emptyEditorLogoStyles";
 import { replaceRendererPlaceholders } from "../../shared/contracts/rendererPlaceholders";
+import {
+  getEnabledEffectRootClasses,
+  normalizeEffectFeatureSettings,
+  type EffectFeatureSettings
+} from "../../shared/models/effects";
 import type { ExtensionFileSystem } from "../adapters/NodeFileSystem";
 import type { ExtensionStorage } from "../adapters/VscodeExtensionStorage";
 import type { NeonNotificationService } from "../adapters/VscodeNotificationService";
@@ -67,6 +72,7 @@ const VERSIONED_STYLE_TOKEN = "[KAWAII_UI_STYLE_VERSION]";
 export interface NeonEffectConfiguration {
   readonly brightness?: unknown;
   readonly disableGlow?: unknown;
+  readonly features?: unknown;
 }
 
 export interface NeonEffectLogger {
@@ -165,6 +171,11 @@ class DefaultNeonEffectService implements NeonEffectService {
     const normalizedConfiguration = normalizeNeonEffectConfiguration(configuration);
     const basePath = resolveWorkbenchBasePath(this.dependencies.appRoot);
 
+    if (!normalizedConfiguration.features.foundation) {
+      await this.disable();
+      return;
+    }
+
     if (!this.dependencies.workbenchPatchService.resolvePatchPaths(basePath)) {
       await this.dependencies.notifications.showErrorMessage(NEON_EFFECT_MESSAGES.ERROR_WORKBENCH_NOT_FOUND);
       return;
@@ -172,13 +183,15 @@ class DefaultNeonEffectService implements NeonEffectService {
 
     try {
       const customChromeAssets = this.buildCustomChromePatchAssets(
-        this.dependencies.fileSystem.readTextFile(path.join(this.dependencies.extensionRoot, "src", "css", "kawaii-vscode-colors-ui.min.css"))
+        this.dependencies.fileSystem.readTextFile(path.join(this.dependencies.extensionRoot, "src", "css", "kawaii-vscode-colors-ui.min.css")),
+        normalizedConfiguration.features
       );
       const jsTemplate = this.dependencies.fileSystem.readTextFile(
         path.join(this.dependencies.extensionRoot, "src", "js", "theme_template.js")
       );
       const scriptContent = replaceRendererPlaceholders(jsTemplate, {
-        DISABLE_GLOW: String(normalizedConfiguration.disableGlow),
+        DISABLE_GLOW: String(normalizedConfiguration.disableGlow || !normalizedConfiguration.features.glow),
+        EFFECT_ROOT_CLASSES: getEnabledEffectRootClasses(normalizedConfiguration.features).join(" "),
         NEON_BRIGHTNESS: normalizedConfiguration.neonBrightness
       });
       const result = this.dependencies.workbenchPatchService.applyAssets(basePath, {
@@ -211,12 +224,23 @@ class DefaultNeonEffectService implements NeonEffectService {
   }
 
   buildCustomChromeStyles(chromeStyles: string): string {
-    return this.buildCustomChromePatchAssets(chromeStyles).styleContent;
+    return this.buildCustomChromePatchAssets(
+      chromeStyles,
+      normalizeEffectFeatureSettings(undefined)
+    ).styleContent;
   }
 
-  private buildCustomChromePatchAssets(chromeStyles: string): CustomChromePatchAssets {
-    const editorBackgroundCssValues = getEditorBackgroundCssValues(this.dependencies.storage, this.dependencies.fileSystem, this.dependencies.logger);
-    const emptyEditorLogoCssValues = getEmptyEditorLogoStyles(this.dependencies.storage, this.dependencies.fileSystem, this.dependencies.logger);
+  private buildCustomChromePatchAssets(chromeStyles: string, features: EffectFeatureSettings): CustomChromePatchAssets {
+    const editorBackgroundCssValues = getEditorBackgroundCssValues(
+      features.editorBackground ? this.dependencies.storage : undefined,
+      this.dependencies.fileSystem,
+      this.dependencies.logger
+    );
+    const emptyEditorLogoCssValues = getEmptyEditorLogoStyles(
+      features.noPageLogo ? this.dependencies.storage : undefined,
+      this.dependencies.fileSystem,
+      this.dependencies.logger
+    );
 
     return {
       deleteAssetFileNames: [
@@ -228,6 +252,7 @@ class DefaultNeonEffectService implements NeonEffectService {
         ...emptyEditorLogoCssValues.imageAssets
       ],
       styleContent: replaceRendererPlaceholders(chromeStyles, {
+        EFFECT_ROOT_CLASSES: getEnabledEffectRootClasses(features).join(" "),
         EDITOR_BACKGROUND_AREA_BOTTOM: editorBackgroundCssValues.areaBottom,
         EDITOR_BACKGROUND_AREA_HEIGHT: editorBackgroundCssValues.areaHeight,
         EDITOR_BACKGROUND_AREA_LEFT: editorBackgroundCssValues.areaLeft,
@@ -300,6 +325,7 @@ function resolveWorkbenchBasePath(appRoot: string): string {
 function normalizeNeonEffectConfiguration(configuration: NeonEffectConfiguration): {
   readonly brightness: number;
   readonly disableGlow: boolean;
+  readonly features: EffectFeatureSettings;
   readonly neonBrightness: string;
 } {
   let brightness = Number.parseFloat(String(configuration.brightness)) > 1
@@ -312,6 +338,7 @@ function normalizeNeonEffectConfiguration(configuration: NeonEffectConfiguration
   return {
     brightness,
     disableGlow: Boolean(configuration.disableGlow),
+    features: normalizeEffectFeatureSettings(configuration.features),
     neonBrightness: Math.floor(brightness * 255).toString(16).toUpperCase()
   };
 }

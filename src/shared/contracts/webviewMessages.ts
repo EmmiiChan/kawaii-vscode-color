@@ -1,16 +1,30 @@
 import { isColorCustomizationKey, isHexColor, type ColorCustomizationKey, type HexColor } from "../models/color";
-import { isEditorBackgroundFit, type EditorBackgroundFit, type OpacityValue } from "../models/effects";
+import {
+    isEditorBackgroundFit,
+    isEffectFeatureSettings,
+    type EditorBackgroundFit,
+    type EffectFeatureSettings,
+    type OpacityValue
+} from "../models/effects";
 import { isThemeName, type ThemeName, type ThemeVariantId } from "../models/theme";
 import { isRecord } from "../validation/guards";
 
 type LegacyColorSection = "workbench" | "token";
 type LegacyColorId = string | number;
+export type EffectsStatusTone = "info" | "success" | "warning" | "error" | "busy";
 
 export type WebviewToHostMessage =
     | { readonly type: "ready" }
     | { readonly type: "refresh" }
     | { readonly type: "enable-neon" }
     | { readonly type: "disable-neon" }
+    | {
+        readonly type: "apply-effects";
+        readonly features: EffectFeatureSettings;
+        readonly editorBackgroundFit: EditorBackgroundFit;
+        readonly editorBackgroundOpacity: OpacityValue;
+        readonly emptyEditorLogoOpacity: OpacityValue;
+    }
     | {
         readonly type: "apply-neon-customizations";
         readonly editorBackgroundFit: EditorBackgroundFit;
@@ -50,15 +64,23 @@ export type WebviewToHostMessage =
     | { readonly type: "update-editor-background-opacity"; readonly opacity: OpacityValue }
     | { readonly type: "update-empty-editor-logo-opacity"; readonly opacity: OpacityValue }
     | { readonly type: "update-editor-background-fit"; readonly fit: EditorBackgroundFit }
+    | { readonly type: "update-effect-features"; readonly features: EffectFeatureSettings }
     | { readonly type: "open-link"; readonly href: string }
     | { readonly type: "open-link"; readonly url: string }
     | { readonly type: "e2e-set-test-fixtures"; readonly fixtures: unknown }
     | { readonly type: "e2e-apply-settings-bundle"; readonly bundle: unknown };
 
 export type HostToWebviewMessage =
-    | { readonly type: "effects-pending" }
+    | {
+        readonly type: "effects-status";
+        readonly tone: EffectsStatusTone;
+        readonly title: string;
+        readonly message: string;
+        readonly dedupeKey?: string;
+    }
+    | { readonly type: "effects-pending"; readonly message?: string }
     | { readonly type: "error"; readonly message: string }
-    | { readonly type: "neon-status"; readonly enabled: boolean }
+    | { readonly type: "neon-status"; readonly enabled?: boolean; readonly message?: string }
     | { readonly type: "state"; readonly state: unknown };
 
 const PAYLOADLESS_MESSAGE_TYPES = new Set([
@@ -90,6 +112,11 @@ export function isWebviewToHostMessage(value: unknown): value is WebviewToHostMe
     }
 
     switch (value.type) {
+        case "apply-effects":
+            return hasFiniteNumber(value.editorBackgroundOpacity)
+                && isEditorBackgroundFit(value.editorBackgroundFit)
+                && hasFiniteNumber(value.emptyEditorLogoOpacity)
+                && isEffectFeatureSettings(value.features);
         case "apply-neon-customizations":
             return hasFiniteNumber(value.editorBackgroundOpacity)
                 && isEditorBackgroundFit(value.editorBackgroundFit)
@@ -119,6 +146,8 @@ export function isWebviewToHostMessage(value: unknown): value is WebviewToHostMe
             return typeof value.opacity === "number" && Number.isFinite(value.opacity);
         case "update-editor-background-fit":
             return isEditorBackgroundFit(value.fit);
+        case "update-effect-features":
+            return isEffectFeatureSettings(value.features);
         case "open-link":
             return typeof value.href === "string" || typeof value.url === "string";
         case "e2e-set-test-fixtures":
@@ -128,6 +157,47 @@ export function isWebviewToHostMessage(value: unknown): value is WebviewToHostMe
         default:
             return false;
     }
+}
+
+export function isHostToWebviewMessage(value: unknown): value is HostToWebviewMessage {
+    if (!isRecord(value) || typeof value.type !== "string") {
+        return false;
+    }
+
+    switch (value.type) {
+        case "effects-status":
+            return isEffectsStatusTone(value.tone)
+                && typeof value.title === "string"
+                && typeof value.message === "string"
+                && (
+                    value.dedupeKey === undefined
+                    || typeof value.dedupeKey === "string"
+                );
+        case "effects-pending":
+            return value.message === undefined || typeof value.message === "string";
+        case "error":
+            return typeof value.message === "string";
+        case "neon-status":
+            return (
+                value.enabled === undefined
+                || typeof value.enabled === "boolean"
+            ) && (
+                value.message === undefined
+                || typeof value.message === "string"
+            );
+        case "state":
+            return Object.prototype.hasOwnProperty.call(value, "state");
+        default:
+            return false;
+    }
+}
+
+function isEffectsStatusTone(value: unknown): value is EffectsStatusTone {
+    return value === "info"
+        || value === "success"
+        || value === "warning"
+        || value === "error"
+        || value === "busy";
 }
 
 function isThemeVariantId(value: unknown): value is ThemeVariantId {

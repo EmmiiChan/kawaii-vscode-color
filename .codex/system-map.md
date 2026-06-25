@@ -118,7 +118,7 @@ Build behavior:
 | Module | Responsibility |
 | --- | --- |
 | `src/extension.ts` -> `out/src/extension.js` | Extension activation, command registration, Settings Sync setup, and composition of typed extension-host services. |
-| `src/extensionHost` -> `out/src/extensionHost` | VS Code adapters, Neon Effect controller, Settings command/message controllers, renderer template assembly, stored image CSS values, settings host boundaries, workbench patch apply/remove orchestration, reload prompts. |
+| `src/extensionHost` -> `out/src/extensionHost` | VS Code adapters, Effects controller, Settings command/message controllers, renderer template assembly, stored image CSS values, settings host boundaries, workbench patch apply/remove orchestration, reload prompts. |
 | `src/extensionRoot.ts` -> `out/src/extensionRoot.js` | Resolves package-root asset paths from both source and compiled `out/src` runtime directories. |
 | `src/workbenchPatch.ts` -> `out/src/workbenchPatch.js` | Pure workbench path detection and marked HTML patch helpers for `kawaii-vscode-colors-ui.js` plus `kawaii-vscode-colors-ui.min.css`, with legacy marker cleanup for old `neondreams.js` wrappers. |
 | `src/settings.ts` | Settings webview lifecycle, message routing, Settings Sync/JSON orchestration, image workflows, color state composition, runtime read of `.codex/color_scheme_reference.md`. |
@@ -144,6 +144,7 @@ Build behavior:
 Webview -> extension host message types handled by `src/settings.ts`:
 
 - `apply-neon-customizations`
+- `apply-effects`
 - `change-theme-variant`
 - `disable-neon`
 - `download-editor-background-image`
@@ -170,10 +171,12 @@ Webview -> extension host message types handled by `src/settings.ts`:
 - `update-editor-background-fit`
 - `update-editor-background-opacity`
 - `update-empty-editor-logo-opacity`
+- `update-effect-features`
 
 Extension host -> webview message types:
 
 - `effects-pending`
+- `effects-status`
 - `error`
 - `neon-status`
 - `state`
@@ -183,7 +186,7 @@ Rules:
 - `ready` and `refresh` rebuild state with `createSettingsState()`.
 - Incoming settings webview messages are dispatched through `src/extensionHost/controllers/SettingsMessageController.ts`; legacy handlers in `src/settings.ts` preserve existing payload names and side effects.
 - Color messages write VS Code settings, never repository theme JSON.
-- Image and opacity messages update `globalState`/global storage and require `apply-neon-customizations` to refresh injected effects.
+- Image and opacity messages update `globalState`/global storage and require `apply-effects` to clean previous generated assets and refresh the selected modular Effects stack. `apply-neon-customizations` remains a legacy compatibility message.
 - `e2e-apply-settings-bundle` is test-only and must remain gated by `KAWAII_E2E_ALLOW_NEON_PATCH=1`.
 - `e2e-set-test-fixtures` is test-only and must remain gated by `KAWAII_E2E_TEST_HOOKS=1` or `KAWAII_E2E_ALLOW_NEON_PATCH=1`; it replaces native dialogs and Random Neko network calls with deterministic local fixture paths during E2E.
 - Host errors are surfaced to both webview `error` messages and VS Code error notifications.
@@ -199,6 +202,7 @@ VS Code settings and extension/global state keys:
 - `kawaii_synthwave.editorBackgroundOpacity`
 - `kawaii_synthwave.emptyEditorLogoImage`
 - `kawaii_synthwave.emptyEditorLogoOpacity`
+- `kawaii_synthwave.effectFeatureSettings`
 - `kawaii_synthwave.openSettings`
 - `kawaii_synthwave.syncedSettingsBundle`
 
@@ -235,6 +239,7 @@ Workbench patch marker:
 Renderer placeholders replaced by `src/extensionHost/services/NeonEffectService.ts`:
 
 - `DISABLE_GLOW`
+- `EFFECT_ROOT_CLASSES`
 - `EDITOR_BACKGROUND_AREA_BOTTOM`
 - `EDITOR_BACKGROUND_AREA_HEIGHT`
 - `EDITOR_BACKGROUND_AREA_LEFT`
@@ -254,8 +259,10 @@ Runtime DOM/CSS contract:
 
 - Workbench HTML receives only the marked `kawaii-vscode-colors-ui.js` script tag.
 - The script adds `.kawaii-vscode-colors-ui` and exactly one sanitized inner theme class, normally `.dark-pink-kawaii` or `.light-pink-pastel-kawaii`, to the highest available workbench root, normally `document.documentElement`.
+- The script also adds enabled module classes from `EFFECT_ROOT_CLASSES`: `.kawaii-effect-foundation`, `.kawaii-effect-editor-background`, `.kawaii-effect-no-page-logo`, and `.kawaii-effect-glow`.
 - Static UI CSS is linked with `#kawaii-vscode-colors-ui-stylesheet` and `kawaii-vscode-colors-ui.min.css?v=<same-token-as-script>`.
-- Dynamic token glow rules are additive and emitted into `#kawaii-vscode-colors-ui-token-styles` as `.kawaii-vscode-colors-ui.<inner-theme-wrapper> <token-selector> { ... }`.
+- Dynamic token glow rules are additive and emitted into `#kawaii-vscode-colors-ui-token-styles` as `.kawaii-vscode-colors-ui.kawaii-effect-glow.<inner-theme-wrapper> <token-selector> { ... }`.
+- Static generated CSS gates editor background selectors behind `.kawaii-effect-editor-background`, no-page logo selectors behind `.kawaii-effect-no-page-logo`, and glow chrome selectors behind `.kawaii-effect-glow`.
 - Stored editor background and no-tab logo images are copied into deterministic workbench asset files next to the generated JS/CSS, and generated CSS references those relative assets with the same cache-busting token instead of embedding image `data:` payloads.
 - Disabling the patch removes the marked HTML script tag plus generated JS, generated CSS, and known generated image asset variants.
 
@@ -277,5 +284,5 @@ The renderer code must keep using VS Code workbench/theme tokens and must not de
 | Disposable process cleanup diagnostics | `npm run test:cleanup-diagnostics` / `npm run test:cleanup-processes` | Compiles script wrappers, audits stale disposable VS Code processes and disposable test artifact roots, and optionally terminates only matching disposable VS Code processes. |
 | Safe E2E | `npm run test:e2e` | Compiles, then runs disposable VS Code UI automation without applying the real Neon patch. |
 | Current VS Code E2E | `npm run test:e2e:current` | Compiles, then runs experimental safe E2E against the latest ExTester-supported VS Code version, isolated from the stable `1.111.0` safe gate. |
-| Gated Neon E2E | `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` | Requires the flag, removes stale marked Kawaii/legacy script tags and generated UI assets from the disposable workbench before the first launch, compiles, then runs real disposable workbench patch lifecycle, screenshots, restore checks, and fit matrix. |
+| Gated Neon E2E | `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` | Requires the flag, removes stale marked Kawaii/legacy script tags and generated UI assets from the disposable workbench before the first launch, compiles, applies all 16 Effects switch combinations with before/after screenshots, validates generated HTML/JS/CSS/assets and runtime module classes, writes `test-results/e2e/neon-effects-combination-matrix.json`, then runs real disposable workbench patch lifecycle, screenshots, restore checks, and fit matrix. |
 | Safe all-tests gate | `npm run test:all` | Runs `test:check`, unit, DOM, integration, package, and safe E2E phases in sequence with fail-fast behavior and a final pass/fail/skipped summary; gated Neon E2E is excluded. |

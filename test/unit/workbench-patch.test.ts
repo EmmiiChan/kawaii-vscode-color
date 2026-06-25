@@ -35,7 +35,7 @@ test("applyWorkbenchPatchScriptTag replaces existing extension marker instead of
   assert.doesNotMatch(secondOutput, /kawaii-vscode-colors-ui\.js\?v=one/);
 });
 
-test("applyWorkbenchPatchScriptTag replaces a legacy Neon Dreams marker", () => {
+test("applyWorkbenchPatchScriptTag replaces a legacy Kawaii Neon marker", () => {
   const legacyHtml = [
     "<html>",
     '<!-- KAWAII SYNTHWAVE --><script src="neondreams.js?v=legacy"></script><!-- NEON DREAMS -->',

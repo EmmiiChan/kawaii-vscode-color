@@ -246,7 +246,7 @@ function validateE2ERunOptions(options: ValidateE2ERunOptions = {}): void {
     }
 
     if (!options.env || options.env.KAWAII_E2E_ALLOW_NEON_PATCH !== REQUIRED_NEON_FLAG) {
-        throw new Error("Refusing to run real Neon Effect E2E. Set KAWAII_E2E_ALLOW_NEON_PATCH=1 to acknowledge the patch risk.");
+        throw new Error("Refusing to run real Kawaii Neon E2E. Set KAWAII_E2E_ALLOW_NEON_PATCH=1 to acknowledge the patch risk.");
     }
 
     const workspaceRoot = path.resolve(options.workspaceRoot || process.cwd());

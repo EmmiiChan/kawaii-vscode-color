@@ -5,9 +5,12 @@ const test = require("node:test");
 const vm = require("node:vm");
 const { JSDOM } = require("jsdom");
 
-function loadTemplateSource() {
+function loadTemplateSource(options = {}) {
+  const effectRootClasses = options.effectRootClasses || "kawaii-effect-foundation kawaii-effect-editor-background kawaii-effect-no-page-logo kawaii-effect-glow";
+
   return fs.readFileSync(path.join(process.cwd(), "src", "js", "theme_template.js"), "utf8")
     .replace(/\[DISABLE_GLOW\]/g, "false")
+    .replace(/\[EFFECT_ROOT_CLASSES\]/g, effectRootClasses)
     .replace(/\[NEON_BRIGHTNESS\]/g, "73")
     .replace(/\[KAWAII_UI_STYLE_VERSION\]/g, "runtime-test");
 }
@@ -75,10 +78,25 @@ test("renderer bootstrap does not leave a broad body subtree observer active aft
 
   assert.deepEqual(activeBroadBodyObservers, []);
   assert.ok(dom.window.document.querySelector("#kawaii-vscode-colors-ui-stylesheet"));
+  assert.equal(dom.window.document.documentElement.classList.contains("kawaii-effect-glow"), true);
   assert.match(
     dom.window.document.querySelector("#kawaii-vscode-colors-ui-token-styles").textContent,
-    /\.kawaii-vscode-colors-ui\.dark-pink-kawaii \.mtk1/
+    /\.kawaii-vscode-colors-ui\.kawaii-effect-glow\.dark-pink-kawaii \.mtk1/
   );
+});
+
+test("renderer bootstrap skips token glow rules when the glow module class is disabled", () => {
+  const dom = createReadyDom();
+  installTrackingMutationObserver(dom.window);
+  dom.window.console = { log() {} };
+
+  vm.runInContext(loadTemplateSource({
+    effectRootClasses: "kawaii-effect-foundation kawaii-effect-editor-background kawaii-effect-no-page-logo"
+  }), dom.getInternalVMContext());
+
+  assert.ok(dom.window.document.querySelector("#kawaii-vscode-colors-ui-stylesheet"));
+  assert.equal(dom.window.document.documentElement.classList.contains("kawaii-effect-glow"), false);
+  assert.equal(dom.window.document.querySelector("#kawaii-vscode-colors-ui-token-styles"), null);
 });
 
 test("renderer refreshes scoped token styles through the narrow token observer", () => {
@@ -105,6 +123,6 @@ test("renderer refreshes scoped token styles through the narrow token observer",
   tokenObserver.callback([{ type: "childList", target: tokenStyle }], tokenObserver);
 
   const scopedText = dom.window.document.querySelector("#kawaii-vscode-colors-ui-token-styles").textContent;
-  assert.match(scopedText, /\.kawaii-vscode-colors-ui\.dark-pink-kawaii \.mtk2/);
+  assert.match(scopedText, /\.kawaii-vscode-colors-ui\.kawaii-effect-glow\.dark-pink-kawaii \.mtk2/);
   assert.doesNotMatch(scopedText, /\.mtk1/);
 });

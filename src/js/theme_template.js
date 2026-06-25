@@ -63,6 +63,17 @@
   ];
   const innerThemeWrapperClasses = innerThemeConfigs.map((innerTheme) => innerTheme.wrapperClass);
   const UI_ROOT_CLASS = 'kawaii-vscode-colors-ui';
+  const EFFECT_ROOT_CLASSES = {
+    foundation: 'kawaii-effect-foundation',
+    editorBackground: 'kawaii-effect-editor-background',
+    noPageLogo: 'kawaii-effect-no-page-logo',
+    glow: 'kawaii-effect-glow'
+  };
+  const allEffectRootClasses = Object.values(EFFECT_ROOT_CLASSES);
+  const enabledEffectRootClasses = '[EFFECT_ROOT_CLASSES]'
+    .split(/\s+/)
+    .map((className) => className.trim())
+    .filter(Boolean);
   const UI_STYLESHEET_ID = 'kawaii-vscode-colors-ui-stylesheet';
   const TOKEN_STYLES_ID = 'kawaii-vscode-colors-ui-token-styles';
   const UI_STYLESHEET_HREF = 'kawaii-vscode-colors-ui.min.css?v=[KAWAII_UI_STYLE_VERSION]';
@@ -175,7 +186,7 @@
    * @param {object} innerTheme active inner theme config
    * @returns {string}
    */
-  const createScopedTokenRule = (selector, replacement, innerTheme) => `.${UI_ROOT_CLASS}.${innerTheme.wrapperClass} ${selector.trim()} {${replacement}}`;
+  const createScopedTokenRule = (selector, replacement, innerTheme) => `.${UI_ROOT_CLASS}.${EFFECT_ROOT_CLASSES.glow}.${innerTheme.wrapperClass} ${selector.trim()} {${replacement}}`;
 
   /**
    * @summary Builds scoped token glow CSS without copying VS Code's original token stylesheet.
@@ -207,13 +218,19 @@
   };
 
   /**
+   * @summary Checks whether the modular glow effect is enabled for this patch.
+   * @returns {boolean}
+   */
+  const isGlowEffectEnabled = () => enabledEffectRootClasses.includes(EFFECT_ROOT_CLASSES.glow);
+
+  /**
    * @summary Builds a stable signature for the current token CSS and glow setting.
    * @param {string} styles the text content of the style tag
    * @param {boolean} disableGlow current glow disable flag
    * @param {object} innerTheme active inner theme config
    * @returns {string}
    */
-  const getTokenStylesSignature = (styles, disableGlow, innerTheme) => `${innerTheme.wrapperClass}:${disableGlow}:${styles}`;
+  const getTokenStylesSignature = (styles, disableGlow, innerTheme) => `${innerTheme.wrapperClass}:${disableGlow}:${isGlowEffectEnabled()}:${styles}`;
 
   /**
    * @summary Safely removes an injected style tag when it exists.
@@ -288,14 +305,14 @@
       return null;
     }
 
-    innerThemeWrapperClasses.forEach((wrapperClass) => root.classList.remove(wrapperClass));
+    [...innerThemeWrapperClasses, ...allEffectRootClasses].forEach((wrapperClass) => root.classList.remove(wrapperClass));
 
     if (!activeInnerTheme) {
       root.classList.remove(UI_ROOT_CLASS);
       return null;
     }
 
-    root.classList.add(UI_ROOT_CLASS, activeInnerTheme.wrapperClass);
+    root.classList.add(UI_ROOT_CLASS, activeInnerTheme.wrapperClass, ...enabledEffectRootClasses);
     return activeInnerTheme;
   };
 
@@ -355,7 +372,7 @@
     }
 
     const orderedTokenReplacements = getOrderedTokenReplacementSets(tokensEl);
-    const updatedThemeStyles = !disableGlow
+    const updatedThemeStyles = !disableGlow && isGlowEffectEnabled()
       ? createScopedTokenRules(initialThemeStyles, orderedTokenReplacements, activeInnerTheme)
       : '';
 

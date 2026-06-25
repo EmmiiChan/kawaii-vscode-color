@@ -47,6 +47,49 @@ test("NeonEffectController exposes settings actions that delegate to the service
   ]);
 });
 
+test("NeonEffectController lets Apply pass selected features without stale global state", async () => {
+  const calls: unknown[][] = [];
+  const selectedFeatures = {
+    foundation: true,
+    editorBackground: false,
+    noPageLogo: false,
+    glow: false
+  };
+  const controller = createNeonEffectController({
+    getActiveColorThemeLabel: () => "Dark Pink Kawaii",
+    getNeonConfiguration: () => ({
+      brightness: 0.3,
+      disableGlow: false,
+      features: {
+        foundation: false,
+        editorBackground: false,
+        noPageLogo: false,
+        glow: false
+      }
+    }),
+    neonEffectService: {
+      buildCustomChromeStyles: (chromeStyles) => chromeStyles,
+      enable: async (configuration) => {
+        calls.push(["enable", configuration]);
+      },
+      disable: async () => {},
+      isEnabled: () => false
+    }
+  });
+
+  await (controller.getSettingsActions().enableNeon as (configuration: unknown) => Promise<void>)({
+    features: selectedFeatures
+  });
+
+  assert.deepEqual(calls, [
+    ["enable", {
+      brightness: 0.3,
+      disableGlow: false,
+      features: selectedFeatures
+    }]
+  ]);
+});
+
 test("NeonEffectController regenerates Neon only when switching between Kawaii themes while active", async () => {
   const labels = [
     "Dark Pink Kawaii",

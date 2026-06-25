@@ -4,6 +4,8 @@ import path = require("node:path");
 const FILE_ENCODING = "utf8";
 const WORKSPACE_ROOT = resolveWorkspaceRoot(__dirname);
 const EMPTY_EDITOR_LOGO_STYLES_PLACEHOLDER = "[EMPTY_EDITOR_LOGO_STYLES]";
+const EDITOR_BACKGROUND_EFFECT_ROOT_CLASS = "kawaii-effect-editor-background";
+const GLOW_EFFECT_ROOT_CLASS = "kawaii-effect-glow";
 
 interface BuildKawaiiUiCssOptions {
   readonly workspaceRoot?: string;
@@ -29,12 +31,45 @@ function resolveWorkspaceRoot(scriptDirectory: string): string {
 function transformSelectorForWrapper(selector: string): string {
   const leadingWhitespace = selector.match(/^\s*/)?.[0] || "";
   const selectorBody = selector.slice(leadingWhitespace.length);
+  const selectorParts = splitLeadingSelectorComments(selectorBody);
 
-  if (selectorBody.startsWith("[class~=")) {
+  if (selectorParts.selector.startsWith("[class~=")) {
     return `${leadingWhitespace}&${selectorBody},\n${leadingWhitespace}${selectorBody}`;
   }
 
+  const effectRootClass = getSelectorEffectRootClass(selectorParts.selector);
+
+  if (effectRootClass) {
+    return `${leadingWhitespace}${selectorParts.prefix}&.${effectRootClass} ${selectorParts.selector}`;
+  }
+
   return selector;
+}
+
+function splitLeadingSelectorComments(selector: string): { readonly prefix: string; readonly selector: string } {
+  const match = selector.match(/^((?:\s*\/\*[\s\S]*?\*\/\s*)*)([\s\S]*)$/);
+
+  return {
+    prefix: match?.[1] || "",
+    selector: match?.[2] || selector
+  };
+}
+
+function getSelectorEffectRootClass(selector: string): string | undefined {
+  if (selector.includes(".monaco-editor")) {
+    return EDITOR_BACKGROUND_EFFECT_ROOT_CLASS;
+  }
+
+  if (
+    selector.includes(".monaco-workbench")
+    || selector.includes(".codicon-light")
+    || selector.includes(".lightbulb-glyph")
+    || selector.includes(".active-item-indicator")
+  ) {
+    return GLOW_EFFECT_ROOT_CLASS;
+  }
+
+  return undefined;
 }
 
 function stripStandaloneEmptyEditorLogoPlaceholder(css: string): string {

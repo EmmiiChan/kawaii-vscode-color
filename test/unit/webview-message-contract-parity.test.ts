@@ -32,6 +32,27 @@ test("shared webview guard accepts real inline settings webview payloads handled
       editorBackgroundOpacity: 0.2,
       editorBackgroundFit: "left",
       emptyEditorLogoOpacity: 0.7
+    },
+    {
+      type: "apply-effects",
+      features: {
+        foundation: true,
+        editorBackground: true,
+        noPageLogo: false,
+        glow: true
+      },
+      editorBackgroundOpacity: 0.2,
+      editorBackgroundFit: "left",
+      emptyEditorLogoOpacity: 0.7
+    },
+    {
+      type: "update-effect-features",
+      features: {
+        foundation: true,
+        editorBackground: false,
+        noPageLogo: true,
+        glow: false
+      }
     }
   ];
 
@@ -51,6 +72,18 @@ test("shared webview guard rejects malformed legacy settings payloads", () => {
       type: "apply-neon-customizations",
       editorBackgroundOpacity: 0.2,
       editorBackgroundFit: "bad-fit",
+      emptyEditorLogoOpacity: 0.7
+    },
+    {
+      type: "apply-effects",
+      features: {
+        foundation: "yes",
+        editorBackground: true,
+        noPageLogo: true,
+        glow: true
+      },
+      editorBackgroundOpacity: 0.2,
+      editorBackgroundFit: "left",
       emptyEditorLogoOpacity: 0.7
     }
   ];

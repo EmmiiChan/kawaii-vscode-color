@@ -32,6 +32,30 @@ test("settings webview handles neon status messages", async () => {
   assert.equal(document.getElementById("neon-status").textContent, "Neon complete");
 });
 
+test("settings webview handles structured effects status messages with dedupe keys", async () => {
+  const { document, window } = await renderWebview();
+
+  click(document, '[data-page="neon-effect"]');
+  sendWindowMessage(window, {
+    type: "effects-status",
+    tone: "busy",
+    title: "Applying Effects",
+    message: "Cleaning previous modifications",
+    dedupeKey: "effects:apply"
+  });
+  sendWindowMessage(window, {
+    type: "effects-status",
+    tone: "busy",
+    title: "Applying Effects",
+    message: "Cleaning previous modifications",
+    dedupeKey: "effects:apply"
+  });
+
+  assert.equal(document.getElementById("neon-status").textContent, "Applying Effects: Cleaning previous modifications");
+  assert.equal(document.getElementById("neon-status").dataset.tone, "busy");
+  assert.equal(document.getElementById("status").textContent, "Cleaning previous modifications");
+});
+
 test("settings webview handles error messages and clears loading", async () => {
   const { document, window } = await renderWebview();
 

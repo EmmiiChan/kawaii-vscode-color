@@ -60,6 +60,12 @@ export const KAWAII_THEME_WRAPPER_SELECTORS: readonly string[] = RENDERER_INNER_
 
 export const RENDERER_UI_ROOT_CLASS = "kawaii-vscode-colors-ui";
 export const RENDERER_STYLESHEET_HREF = "kawaii-vscode-colors-ui.min.css?v=[KAWAII_UI_STYLE_VERSION]";
+export const RENDERER_EFFECT_ROOT_CLASSES = {
+  foundation: "kawaii-effect-foundation",
+  editorBackground: "kawaii-effect-editor-background",
+  noPageLogo: "kawaii-effect-no-page-logo",
+  glow: "kawaii-effect-glow"
+} as const;
 
 export const RENDERER_STYLE_IDS = {
   stylesheet: "kawaii-vscode-colors-ui-stylesheet",
@@ -155,7 +161,7 @@ export function createScopedRendererTokenRule(
   replacement: string,
   innerTheme: RendererInnerThemeConfig
 ): string {
-  return `.${RENDERER_UI_ROOT_CLASS}.${innerTheme.wrapperClass} ${selector.trim()} {${replacement}}`;
+  return `.${RENDERER_UI_ROOT_CLASS}.${RENDERER_EFFECT_ROOT_CLASSES.glow}.${innerTheme.wrapperClass} ${selector.trim()} {${replacement}}`;
 }
 
 export function createScopedRendererTokenRules(
@@ -190,10 +196,11 @@ export function createScopedRendererTokenRules(
 export function getRendererTokenStylesSignature(
   styles: string,
   disableGlow: boolean,
-  innerTheme?: RendererInnerThemeConfig | string
+  innerTheme?: RendererInnerThemeConfig | string,
+  glowEnabled = true
 ): string {
   const wrapperClass = typeof innerTheme === "string" ? innerTheme : innerTheme?.wrapperClass;
-  return wrapperClass ? `${wrapperClass}:${disableGlow}:${styles}` : `${disableGlow}:${styles}`;
+  return wrapperClass ? `${wrapperClass}:${disableGlow}:${glowEnabled}:${styles}` : `${disableGlow}:${glowEnabled}:${styles}`;
 }
 
 function escapeRegExp(value: string): string {

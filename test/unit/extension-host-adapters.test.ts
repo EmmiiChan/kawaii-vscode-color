@@ -136,3 +136,30 @@ test("VscodeNotificationService forwards messages and reload commands after noti
     { method: "command", command: WORKBENCH_RELOAD_COMMAND }
   ]);
 });
+
+test("VscodeNotificationService does not block on passive information notifications", async () => {
+  let resolveInformationMessage: () => void = () => undefined;
+  const pendingInformationMessage = new Promise<void>((resolve) => {
+    resolveInformationMessage = resolve;
+  });
+  const service = createVscodeNotificationService({
+    commands: {
+      async executeCommand(): Promise<void> {}
+    },
+    window: {
+      async showErrorMessage(): Promise<void> {},
+      async showInformationMessage(): Promise<unknown> {
+        return pendingInformationMessage;
+      }
+    }
+  });
+
+  const result = await Promise.race([
+    service.showInformationMessage("not running").then(() => "resolved"),
+    new Promise<string>((resolve) => setTimeout(() => resolve("blocked"), 0))
+  ]);
+
+  resolveInformationMessage();
+
+  assert.equal(result, "resolved");
+});

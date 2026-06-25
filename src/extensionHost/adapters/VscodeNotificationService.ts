@@ -44,7 +44,7 @@ class VscodeNotificationService implements NeonNotificationService {
   }
 
   async showInformationMessage(message: string): Promise<void> {
-    await this.vscodeApi.window.showInformationMessage(message);
+    void Promise.resolve(this.vscodeApi.window.showInformationMessage(message)).catch(() => undefined);
   }
 }
 

@@ -1,4 +1,5 @@
 import { KAWAII_THEME_VARIANTS, KAWAII_UI_ROOT_CLASS } from "./shared/models/theme";
+import { EFFECT_ROOT_CLASS_BY_FEATURE } from "./shared/models/effects";
 
 export interface EmptyEditorLogoFallbackVersionCase {
   readonly id: string;
@@ -16,7 +17,9 @@ export const EMPTY_EDITOR_LOGO_FALLBACK_VERSION_CASES: readonly EmptyEditorLogoF
   }
 ];
 export const EMPTY_EDITOR_LOGO_LETTERPRESS_SELECTORS: readonly string[] = EMPTY_EDITOR_LOGO_FALLBACK_VERSION_CASES.map((fallbackCase) => fallbackCase.selector);
-export const EMPTY_EDITOR_LOGO_WRAPPER_SELECTORS: readonly string[] = KAWAII_THEME_VARIANTS.map((themeVariant) => `.${KAWAII_UI_ROOT_CLASS}.${themeVariant.wrapperClass}`);
+export const EMPTY_EDITOR_LOGO_WRAPPER_SELECTORS: readonly string[] = KAWAII_THEME_VARIANTS.map((themeVariant) => (
+  `.${KAWAII_UI_ROOT_CLASS}.${EFFECT_ROOT_CLASS_BY_FEATURE.noPageLogo}.${themeVariant.wrapperClass}`
+));
 
 /**
  * Builds CSS rules for replacing the empty editor watermark logo.

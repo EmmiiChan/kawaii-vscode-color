@@ -112,6 +112,14 @@ const baseState = {
     supportedFormats: "PNG, JPG/JPEG, WEBP, SVG",
     maxImageSizeLabel: "2 MB"
   },
+  effects: {
+    features: {
+      foundation: true,
+      editorBackground: true,
+      noPageLogo: true,
+      glow: true
+    }
+  },
   workbenchColors: [
     {
       id: "editor.background",
@@ -283,10 +291,18 @@ function expectPostedMessage(postedMessages, type, expectedPayload = {}) {
   assert.equal(message.type, type);
 
   Object.entries(expectedPayload).forEach(([key, expectedValue]) => {
-    assert.deepEqual(message[key], expectedValue, `Expected "${type}.${key}" to match`);
+    assert.deepEqual(toAssertableValue(message[key]), expectedValue, `Expected "${type}.${key}" to match`);
   });
 
   return message;
+}
+
+function toAssertableValue(value) {
+  if (value && typeof value === "object") {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  return value;
 }
 
 function assertNoPostedMessage(postedMessages, type) {

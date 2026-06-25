@@ -311,7 +311,68 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
     }
 
     .neon-status {
-      padding: 0;
+      min-height: 0;
+      margin: 12px 0;
+      padding: 10px 12px;
+      background: var(--vscode-editorWidget-background);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+    }
+
+    .neon-status:empty {
+      display: none;
+    }
+
+    .neon-status[data-tone="busy"] {
+      border-color: var(--vscode-progressBar-background, var(--vscode-focusBorder));
+    }
+
+    .neon-status[data-tone="success"] {
+      border-color: var(--vscode-testing-iconPassed, var(--vscode-focusBorder));
+    }
+
+    .neon-status[data-tone="warning"] {
+      border-color: var(--vscode-inputValidation-warningBorder, var(--border-color));
+    }
+
+    .neon-status[data-tone="error"] {
+      border-color: var(--vscode-inputValidation-errorBorder, var(--border-color));
+    }
+
+    .effect-feature-list {
+      display: grid;
+      gap: 8px;
+      margin: 16px 0;
+    }
+
+    .effect-feature {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      padding: 10px 12px;
+      background: var(--vscode-editorWidget-background);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+    }
+
+    .effect-feature input {
+      margin-top: 2px;
+    }
+
+    .effect-feature-title {
+      display: block;
+      font-weight: 600;
+    }
+
+    .effect-feature-description {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted-color);
+      font-size: 12px;
+      line-height: 1.4;
     }
 
     .color-settings {
@@ -787,7 +848,7 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
         <button class="nav-button active" data-page="home" type="button">Home</button>
         <div class="nav-group">Settings</div>
         <button class="nav-button" data-page="color-settings" type="button">Color Settings</button>
-        <button class="nav-button" data-page="neon-effect" type="button">Neon Effect</button>
+        <button class="nav-button" data-page="neon-effect" type="button">Effects</button>
         <button class="nav-button" data-page="image-customization" type="button">Image Customization</button>
         <button class="nav-button" data-page="sync-files" type="button">Sync / Files</button>
         <button class="nav-button" data-page="help" type="button">Help</button>
@@ -815,12 +876,42 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
       </section>
       <section id="neon-effect-page" class="page hidden">
         <div class="neon-effect">
-          <p class="home-label">Neon Effect</p>
-          <h2 class="home-title">Enable or disable Kawaii UI effects</h2>
-          <p class="home-text">The Neon Effect adds glow and editor chrome styling that VS Code color themes cannot express through normal theme JSON.</p>
+          <p class="home-label">Effects</p>
+          <h2 class="home-title">Configure Kawaii UI effects</h2>
+          <p class="home-text">Effects add modular editor chrome styling that VS Code color themes cannot express through normal theme JSON.</p>
+          <div class="effect-feature-list" aria-label="Effect modules">
+            <label class="effect-feature" for="effect-feature-foundation">
+              <input id="effect-feature-foundation" type="checkbox" data-effect-feature="foundation">
+              <span>
+                <span class="effect-feature-title">Foundation / Runtime Layer</span>
+                <span class="effect-feature-description">Installs or removes the wrapper script and shared stylesheet.</span>
+              </span>
+            </label>
+            <label class="effect-feature" for="effect-feature-editor-background">
+              <input id="effect-feature-editor-background" type="checkbox" data-effect-feature="editorBackground">
+              <span>
+                <span class="effect-feature-title">Editor Background</span>
+                <span class="effect-feature-description">Applies the editor gradient, background image, opacity, and fit area.</span>
+              </span>
+            </label>
+            <label class="effect-feature" for="effect-feature-no-page-logo">
+              <input id="effect-feature-no-page-logo" type="checkbox" data-effect-feature="noPageLogo">
+              <span>
+                <span class="effect-feature-title">No-Page Logo</span>
+                <span class="effect-feature-description">Replaces the empty editor watermark logo when no tab is open.</span>
+              </span>
+            </label>
+            <label class="effect-feature" for="effect-feature-glow">
+              <input id="effect-feature-glow" type="checkbox" data-effect-feature="glow">
+              <span>
+                <span class="effect-feature-title">Glow Effects</span>
+                <span class="effect-feature-description">Applies syntax glow, active tab glow, activity indicators, and lightbulb styling.</span>
+              </span>
+            </label>
+          </div>
           <div class="neon-actions">
-            <button id="enable-neon" class="button" type="button">Enable Neon Effect</button>
-            <button id="disable-neon" class="button secondary" type="button">Disable Neon Effect</button>
+            <button id="enable-neon" class="button" type="button">Enable Effects</button>
+            <button id="disable-neon" class="button secondary" type="button">Disable Effects</button>
           </div>
           <div id="neon-status" class="status neon-status"></div>
           <div class="workaround">
@@ -843,7 +934,7 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
               </div>
               <div class="workaround-step">
                 <span class="workaround-index">4.</span>
-                <span>To restore the supported state, disable Neon Effect and reinstall or repair VS Code so the modified workbench files are replaced.</span>
+                <span>To restore the supported state, disable Effects and reinstall or repair VS Code so the modified workbench files are replaced.</span>
               </div>
             </div>
             <div id="corruption-warning-links" class="workaround-links"></div>
@@ -851,11 +942,11 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
           <div class="disclaimer">
             <p class="disclaimer-title">Potential side effects</p>
             <ul class="disclaimer-list">
-              <li>Enabling Neon Effect modifies installed VS Code workbench files by adding a generated script reference.</li>
+              <li>Enabling Effects modifies installed VS Code workbench files by adding a generated script reference.</li>
               <li>VS Code can show an unsupported or corrupted installation warning after the patch.</li>
               <li>Administrator permissions may be required on Windows depending on the install location.</li>
               <li>VS Code updates can overwrite the patch, so the effect may need to be enabled again after updates.</li>
-              <li>Disable the effect before troubleshooting editor startup or workbench rendering issues.</li>
+              <li>Disable Effects before troubleshooting editor startup or workbench rendering issues.</li>
             </ul>
           </div>
         </div>
@@ -864,7 +955,7 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
         <div class="home">
           <p class="home-label">Image Customization</p>
           <h2 class="home-title">Editor background and no-tab logo</h2>
-          <p class="home-text">Image-backed effects use VS Code settings and the Neon Effect runtime. Uploads, opacity, fit area, random image selection, removal, and downloads are available from Color Settings.</p>
+          <p class="home-text">Image-backed effects use VS Code settings and the Kawaii Neon runtime. Uploads, opacity, fit area, random image selection, removal, and downloads are available from Color Settings.</p>
           <p class="home-text">The page uses editor-provided colors through VS Code webview tokens, so it follows the active Kawaii VS Code Color theme instead of defining a separate UI palette.</p>
         </div>
       </section>
@@ -905,7 +996,7 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
           <div class="editor-background-header">
             <div>
               <h2 id="editor-background-title" class="editor-background-title">Editor Background Image</h2>
-              <p class="theme-mode-description">Upload a local image for the editor background. Image changes apply through Neon Effect and take effect after VS Code reloads.</p>
+              <p class="theme-mode-description">Upload a local image for the editor background. Image changes apply through Effects and take effect after VS Code reloads.</p>
               <p id="editor-background-data-url-warning" class="image-data-url-warning"></p>
             </div>
           </div>
@@ -941,7 +1032,7 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
           <div class="editor-background-header">
             <div>
               <h2 id="empty-editor-logo-title" class="editor-background-title">No-tab Logo</h2>
-              <p class="theme-mode-description">Upload a local image to replace the VS Code watermark logo shown when there are no open editor tabs. Image changes apply through Neon Effect and take effect after VS Code reloads.</p>
+              <p class="theme-mode-description">Upload a local image to replace the VS Code watermark logo shown when there are no open editor tabs. Image changes apply through Effects and take effect after VS Code reloads.</p>
               <p id="empty-editor-logo-data-url-warning" class="image-data-url-warning"></p>
             </div>
           </div>
@@ -989,9 +1080,16 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
     let activeSection = "workbench";
     let filterText = "";
     let effectsPending = false;
+    let lastEffectsStatusDedupeKey = "";
     const pendingUpdates = new Map();
     const editorBackgroundOpacityPendingKey = "editor-background-opacity";
     const emptyEditorLogoOpacityPendingKey = "empty-editor-logo-opacity";
+    const defaultEffectFeatures = {
+      foundation: true,
+      editorBackground: true,
+      noPageLogo: true,
+      glow: true
+    };
 
     if (state.e2eTestApiEnabled) {
       Object.defineProperty(window, "kawaiiVsCodeColorE2EPostMessage", {
@@ -1053,6 +1151,7 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
     const emptyEditorLogoOpacity = document.getElementById("empty-editor-logo-opacity");
     const emptyEditorLogoOpacityValue = document.getElementById("empty-editor-logo-opacity-value");
     const emptyEditorLogoDataUrlWarning = document.getElementById("empty-editor-logo-data-url-warning");
+    const effectFeatureInputs = Array.from(document.querySelectorAll("[data-effect-feature]"));
 
     navButtons.forEach((button) => {
       button.addEventListener("click", () => {
@@ -1116,12 +1215,20 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
 
     homeApplyEffects.addEventListener("click", handleApplyEffectsClick);
     applyEffects.addEventListener("click", handleApplyEffectsClick);
+    effectFeatureInputs.forEach((input) => {
+      input.addEventListener("change", () => {
+        const features = getEffectFeaturesFromControls();
+        updateLocalEffectFeatures(features);
+        setStatus("Saving effect selection...");
+        vscode.postMessage({ type: "update-effect-features", features });
+      });
+    });
 
     function handleApplyEffectsClick() {
       hideEffectsWarning();
       setStatus("Applying effects...");
       setNeonStatus("Requesting effects apply...");
-      applyNeonCustomizations();
+      applyConfiguredEffects();
     }
 
     editorBackgroundUpload.addEventListener("click", () => {
@@ -1205,7 +1312,10 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
       }
       if (message.type === "neon-status") {
         hideEffectsWarning();
-        setNeonStatus(message.message || "Neon Effect request completed.");
+        setNeonStatus(message.message || "Effects request completed.");
+      }
+      if (message.type === "effects-status") {
+        showEffectsStatus(message);
       }
       if (message.type === "error") {
         setStatus(message.message || "Settings failed.");
@@ -1222,6 +1332,7 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
       renderCorruptionWarningLinks();
       renderChecksumFixLink();
       renderThemeVariantSelector();
+      renderEffectFeatureSettings();
       renderEditorBackgroundSettings();
       renderEmptyEditorLogoSettings();
 
@@ -1428,6 +1539,10 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
     }
 
     function showEffectsWarning(message) {
+      if (!effectsWarning.classList.contains("hidden") && effectsWarning.textContent === message) {
+        return;
+      }
+
       effectsPending = true;
       effectsWarning.textContent = message;
       effectsWarning.classList.remove("hidden");
@@ -1438,6 +1553,26 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
       effectsPending = false;
       effectsWarning.textContent = "";
       effectsWarning.classList.add("hidden");
+    }
+
+    function showEffectsStatus(message) {
+      const dedupeKey = typeof message.dedupeKey === "string" ? message.dedupeKey : "";
+      const title = typeof message.title === "string" && message.title ? message.title : "Effects";
+      const detail = typeof message.message === "string" ? message.message : "";
+      const tone = typeof message.tone === "string" ? message.tone : "info";
+      const renderedMessage = detail ? title + ": " + detail : title;
+
+      if (dedupeKey && lastEffectsStatusDedupeKey === dedupeKey && neonStatus.textContent === renderedMessage) {
+        return;
+      }
+
+      lastEffectsStatusDedupeKey = dedupeKey;
+      hideEffectsWarning();
+      setNeonStatus(renderedMessage, tone);
+
+      if (detail) {
+        setStatus(detail);
+      }
     }
 
     function getDefaultEffectsPendingMessage() {
@@ -1635,13 +1770,53 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
       pendingUpdates.delete(emptyEditorLogoOpacityPendingKey);
     }
 
-    function applyNeonCustomizations() {
+    function renderEffectFeatureSettings() {
+      const features = getEffectFeatures();
+
+      effectFeatureInputs.forEach((input) => {
+        input.checked = features[input.dataset.effectFeature] !== false;
+      });
+    }
+
+    function getEffectFeatures() {
+      const candidate = state.effects && state.effects.features ? state.effects.features : {};
+
+      return Object.keys(defaultEffectFeatures).reduce((features, featureId) => {
+        features[featureId] = candidate[featureId] !== false;
+        return features;
+      }, {});
+    }
+
+    function getEffectFeaturesFromControls() {
+      const features = getEffectFeatures();
+
+      effectFeatureInputs.forEach((input) => {
+        features[input.dataset.effectFeature] = Boolean(input.checked);
+      });
+
+      return features;
+    }
+
+    function updateLocalEffectFeatures(features) {
+      state = {
+        ...state,
+        effects: {
+          ...(state.effects || {}),
+          features
+        }
+      };
+    }
+
+    function applyConfiguredEffects() {
       clearImageCustomizationUpdateTimers();
+      const features = getEffectFeaturesFromControls();
+      updateLocalEffectFeatures(features);
       vscode.postMessage({
-        type: "apply-neon-customizations",
+        type: "apply-effects",
         editorBackgroundOpacity: editorBackgroundOpacity.value,
         editorBackgroundFit: editorBackgroundFit.value,
-        emptyEditorLogoOpacity: emptyEditorLogoOpacity.value
+        emptyEditorLogoOpacity: emptyEditorLogoOpacity.value,
+        features
       });
     }
 
@@ -1682,8 +1857,15 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
       status.textContent = message;
     }
 
-    function setNeonStatus(message) {
+    function setNeonStatus(message, tone) {
       neonStatus.textContent = message;
+
+      if (tone) {
+        neonStatus.dataset.tone = tone;
+        return;
+      }
+
+      delete neonStatus.dataset.tone;
     }
 
     render();

@@ -25,6 +25,28 @@ Use only the sections that matter for a given release:
 
 ## [Unreleased]
 
+### Added
+
+- Add modular Effects switches for Foundation / Runtime Layer, Editor Background, No-Page Logo, and Glow Effects, all enabled by default.
+- Add `apply-effects`, `update-effect-features`, and structured `effects-status` webview messages for a selected patch stack.
+
+### Changed
+
+- Rename the settings page from Neon Effect to Effects and refer to the injected runtime as Kawaii Neon in user-facing docs.
+- Gate generated workbench CSS and renderer token glow by module classes so each Effects module can be applied independently.
+- Apply Effects now persists selected modules, cleans previous generated modifications/assets, and applies the new stack in one flow.
+
+### Fixed
+
+- Fix a legacy lightbulb selector separator in the generated workbench CSS source.
+- Make Apply Effects pass the selected module stack directly to the controller so late switch persistence messages cannot apply a stale combination.
+- Avoid blocking Apply Effects when a passive information notification remains open after a no-op or already-removed patch cleanup.
+- Avoid stale settings webview refreshes after Effects switch changes so rapid multi-switch combinations are not overwritten before Apply.
+
+### Tests
+
+- Expand gated Kawaii Neon E2E validation to apply all 16 Effects switch combinations with before/after screenshots, generated asset checks, runtime module class checks, and a `neon-effects-combination-matrix.json` report.
+
 ## [0.2.7] - 2026-06-25
 
 ### Added

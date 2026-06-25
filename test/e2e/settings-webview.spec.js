@@ -29,7 +29,7 @@ describe("Settings webview E2E", function () {
             const pages = [
                 ["home", "home-page", "Kawaii VS Code Color"],
                 ["color-settings", "color-settings-page", "THEME MODE"],
-                ["neon-effect", "neon-effect-page", "Enable Neon Effect"],
+                ["neon-effect", "neon-effect-page", "Enable Effects"],
                 ["image-customization", "image-customization-page", "Editor background and no-tab logo"],
                 ["sync-files", "sync-files-page", "Settings Sync and JSON import/export"],
                 ["help", "help-page", "Project resources"]
@@ -85,13 +85,13 @@ describe("Settings webview E2E", function () {
         });
     });
 
-    it("does not run real Neon patch in safe suite", async function () {
+    it("does not run real Kawaii Neon patch in safe suite", async function () {
         await withSettingsWebview(async () => {
             await clickWebviewCss('.nav-button[data-page="neon-effect"]');
             await assertWebviewPageVisible("neon-effect-page");
             await assertWebviewCssVisible("#enable-neon");
             await assertWebviewCssVisible("#disable-neon");
-            await assertWebviewTextIncludes("#neon-effect-page", "Enable Neon Effect");
+            await assertWebviewTextIncludes("#neon-effect-page", "Enable Effects");
         });
     });
 });

@@ -20,12 +20,34 @@ test("settings webview renders neon effect page without running real patch", asy
   click(document, '[data-page="neon-effect"]');
 
   expectVisiblePage(document, "neon-effect");
+  assert.match(document.querySelector('[data-page="neon-effect"]').textContent, /Effects/);
   assert.ok(document.getElementById("enable-neon"));
   assert.ok(document.getElementById("disable-neon"));
+  assert.equal(document.getElementById("effect-feature-foundation").checked, true);
+  assert.equal(document.getElementById("effect-feature-editor-background").checked, true);
+  assert.equal(document.getElementById("effect-feature-no-page-logo").checked, true);
+  assert.equal(document.getElementById("effect-feature-glow").checked, true);
   assert.match(document.getElementById("neon-effect-page").textContent, /Potential side effects/);
   assert.match(document.getElementById("neon-effect-page").textContent, /modifies installed VS Code workbench files/);
   expectNoPostedMessage(postedMessages, "enable-neon");
   expectNoPostedMessage(postedMessages, "disable-neon");
+});
+
+test("settings webview updates effect feature switches before apply", async () => {
+  const { document, postedMessages } = await renderWebview();
+
+  click(document, '[data-page="neon-effect"]');
+  click(document, "#effect-feature-glow");
+
+  assert.equal(document.getElementById("effect-feature-glow").checked, false);
+  expectPostedMessage(postedMessages, "update-effect-features", {
+    features: {
+      foundation: true,
+      editorBackground: true,
+      noPageLogo: true,
+      glow: false
+    }
+  });
 });
 
 test("settings webview posts home apply effects without running real patch", async () => {
@@ -35,10 +57,16 @@ test("settings webview posts home apply effects without running real patch", asy
 
   expectStatusText(document, /Applying effects/);
   assert.match(document.getElementById("neon-status").textContent, /Requesting effects apply/);
-  expectPostedMessage(postedMessages, "apply-neon-customizations", {
+  expectPostedMessage(postedMessages, "apply-effects", {
     editorBackgroundOpacity: "0.12",
     editorBackgroundFit: "full",
-    emptyEditorLogoOpacity: "0.75"
+    emptyEditorLogoOpacity: "0.75",
+    features: {
+      foundation: true,
+      editorBackground: true,
+      noPageLogo: true,
+      glow: true
+    }
   });
 });
 
@@ -69,10 +97,16 @@ test("settings webview posts color settings apply effects with dark image custom
 
   expectStatusText(document, /Applying effects/);
   assert.match(document.getElementById("neon-status").textContent, /Requesting effects apply/);
-  expectPostedMessage(postedMessages, "apply-neon-customizations", {
+  expectPostedMessage(postedMessages, "apply-effects", {
     editorBackgroundOpacity: "0.21",
     editorBackgroundFit: "left",
-    emptyEditorLogoOpacity: "0.62"
+    emptyEditorLogoOpacity: "0.62",
+    features: {
+      foundation: true,
+      editorBackground: true,
+      noPageLogo: true,
+      glow: true
+    }
   });
 });
 
@@ -102,10 +136,16 @@ test("settings webview posts color settings apply effects with light missing-ima
 
   click(document, "#apply-effects");
 
-  expectPostedMessage(postedMessages, "apply-neon-customizations", {
+  expectPostedMessage(postedMessages, "apply-effects", {
     editorBackgroundOpacity: "0.18",
     editorBackgroundFit: "top-left",
-    emptyEditorLogoOpacity: "0.5"
+    emptyEditorLogoOpacity: "0.5",
+    features: {
+      foundation: true,
+      editorBackground: true,
+      noPageLogo: true,
+      glow: true
+    }
   });
 });
 
@@ -117,10 +157,16 @@ test("settings webview apply effects cancels pending image timers", async () => 
   setInputValue(window, "#empty-editor-logo-opacity", "0.4");
   click(document, "#apply-effects");
 
-  expectPostedMessage(postedMessages, "apply-neon-customizations", {
+  expectPostedMessage(postedMessages, "apply-effects", {
     editorBackgroundOpacity: "0.2",
     editorBackgroundFit: "full",
-    emptyEditorLogoOpacity: "0.4"
+    emptyEditorLogoOpacity: "0.4",
+    features: {
+      foundation: true,
+      editorBackground: true,
+      noPageLogo: true,
+      glow: true
+    }
   });
 
   await flushTimers();

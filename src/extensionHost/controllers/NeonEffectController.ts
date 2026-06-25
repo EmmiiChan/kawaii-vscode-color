@@ -1,10 +1,11 @@
 import type { NeonEffectConfiguration, NeonEffectService } from "../services/NeonEffectService";
 import { isThemeName } from "../../shared/models/theme";
+import { normalizeEffectFeatureSettings } from "../../shared/models/effects";
 
 export const COLOR_THEME_SETTING = "workbench.colorTheme";
 
 export interface NeonEffectActions {
-  enableNeon(): Promise<void>;
+  enableNeon(configuration?: NeonEffectConfigurationOverride): Promise<void>;
   disableNeon(): Promise<void>;
   isNeonEnabled(): boolean;
 }
@@ -15,11 +16,13 @@ export interface ConfigurationChangeEventLike {
 
 export interface NeonEffectController {
   disableNeon(): Promise<void>;
-  enableNeon(): Promise<void>;
+  enableNeon(configuration?: NeonEffectConfigurationOverride): Promise<void>;
   getSettingsActions(): NeonEffectActions;
   handleConfigurationChange(event: ConfigurationChangeEventLike): void;
   isNeonEnabled(): boolean;
 }
+
+export type NeonEffectConfigurationOverride = Partial<NeonEffectConfiguration>;
 
 export interface NeonEffectControllerDependencies {
   readonly getActiveColorThemeLabel: () => string;
@@ -42,8 +45,8 @@ class DefaultNeonEffectController implements NeonEffectController {
     this.activeColorThemeLabel = dependencies.getActiveColorThemeLabel();
   }
 
-  async enableNeon(): Promise<void> {
-    this.pendingEnableConfiguration = this.dependencies.getNeonConfiguration();
+  async enableNeon(configuration?: NeonEffectConfigurationOverride): Promise<void> {
+    this.pendingEnableConfiguration = this.createEnableConfiguration(configuration);
 
     if (this.disableInFlight) {
       await this.disableInFlight;
@@ -92,7 +95,7 @@ class DefaultNeonEffectController implements NeonEffectController {
 
   getSettingsActions(): NeonEffectActions {
     return {
-      enableNeon: () => this.enableNeon(),
+      enableNeon: (configuration) => this.enableNeon(configuration),
       disableNeon: () => this.disableNeon(),
       isNeonEnabled: () => this.isNeonEnabled()
     };
@@ -126,6 +129,24 @@ class DefaultNeonEffectController implements NeonEffectController {
       this.pendingEnableConfiguration = undefined;
       await this.dependencies.neonEffectService.enable(configuration);
     } while (this.enableRerunRequested);
+  }
+
+  private createEnableConfiguration(configuration?: NeonEffectConfigurationOverride): NeonEffectConfiguration {
+    const baseConfiguration = this.dependencies.getNeonConfiguration();
+
+    if (!configuration) {
+      return baseConfiguration;
+    }
+
+    const hasFeatureOverride = Object.prototype.hasOwnProperty.call(configuration, "features");
+
+    return {
+      ...baseConfiguration,
+      ...configuration,
+      features: hasFeatureOverride
+        ? normalizeEffectFeatureSettings(configuration.features)
+        : baseConfiguration.features
+    };
   }
 
   private async runDisableAfterEnable(enableRun: Promise<void> | undefined): Promise<void> {

@@ -226,8 +226,21 @@ test("extension facade rejects neon actions before activation", async () => {
 
 test("extension activation wires command, settings sync, configuration listener, and facade actions", async () => {
   const harness = createExtensionHarness();
+  const storedGlobalState = new Map([
+    ["kawaii_synthwave.effectFeatureSettings", {
+      foundation: true,
+      editorBackground: false,
+      noPageLogo: true,
+      glow: false
+    }]
+  ]);
   const context = {
-    subscriptions: []
+    subscriptions: [],
+    globalState: {
+      get(key) {
+        return storedGlobalState.get(key);
+      }
+    }
   };
 
   try {
@@ -256,7 +269,13 @@ test("extension activation wires command, settings sync, configuration listener,
     assert.equal(harness.controllerFactoryInputs[0].getActiveColorThemeLabel(), "Dark Pink Kawaii");
     assert.deepEqual(harness.controllerFactoryInputs[0].getNeonConfiguration(), {
       brightness: 0.45,
-      disableGlow: false
+      disableGlow: false,
+      features: {
+        foundation: true,
+        editorBackground: false,
+        noPageLogo: true,
+        glow: false
+      }
     });
 
     await harness.commandRegistrations[0].callback();

@@ -29,6 +29,52 @@ test("shared opacity normalization clamps incoming numeric values", () => {
   assert.equal(effects.normalizeOpacityValue("bad"), 1);
 });
 
+test("shared effect feature settings default every module to enabled", () => {
+  assert.deepEqual((effects as any).normalizeEffectFeatureSettings(undefined), {
+    foundation: true,
+    editorBackground: true,
+    noPageLogo: true,
+    glow: true
+  });
+  assert.deepEqual((effects as any).normalizeEffectFeatureSettings({ glow: false }), {
+    foundation: true,
+    editorBackground: true,
+    noPageLogo: true,
+    glow: false
+  });
+  assert.deepEqual((effects as any).getEnabledEffectFeatureIds({
+    foundation: true,
+    editorBackground: false,
+    noPageLogo: true,
+    glow: false
+  }), ["foundation", "noPageLogo"]);
+});
+
+test("effect feature combination matrix covers every switch permutation with stable ids", () => {
+  const matrix = effects.getEffectFeatureCombinationMatrix();
+
+  assert.equal(matrix.length, 16);
+  assert.deepEqual(matrix[0], {
+    id: "foundation-off__editor-background-off__no-page-logo-off__glow-off",
+    features: {
+      foundation: false,
+      editorBackground: false,
+      noPageLogo: false,
+      glow: false
+    }
+  });
+  assert.deepEqual(matrix[matrix.length - 1], {
+    id: "foundation-on__editor-background-on__no-page-logo-on__glow-on",
+    features: {
+      foundation: true,
+      editorBackground: true,
+      noPageLogo: true,
+      glow: true
+    }
+  });
+  assert.equal(new Set(matrix.map((combination) => combination.id)).size, 16);
+});
+
 test("shared theme guards identify supported Kawaii theme variants", () => {
   assert.equal(theme.isThemeName("Dark Pink Kawaii"), true);
   assert.equal(theme.isThemeName("Light Pink-Pastel Kawaii"), true);
@@ -81,8 +127,34 @@ test("webview message guard accepts known messages and rejects unknown payloads"
     }),
     true
   );
+  assert.equal(
+    webviewMessages.isWebviewToHostMessage({
+      type: "apply-effects",
+      features: {
+        foundation: true,
+        editorBackground: false,
+        noPageLogo: true,
+        glow: false
+      },
+      editorBackgroundOpacity: 0.2,
+      editorBackgroundFit: "left",
+      emptyEditorLogoOpacity: 0.7
+    }),
+    true
+  );
+  assert.equal(
+    webviewMessages.isHostToWebviewMessage({
+      type: "effects-status",
+      tone: "busy",
+      title: "Effects",
+      message: "Applying selected effects",
+      dedupeKey: "effects:apply"
+    }),
+    true
+  );
   assert.equal(webviewMessages.isWebviewToHostMessage({ type: "unknown" }), false);
   assert.equal(webviewMessages.isWebviewToHostMessage(null), false);
+  assert.equal(webviewMessages.isHostToWebviewMessage({ type: "effects-status", tone: "loud" }), false);
 });
 
 test("settings bundle schema constants preserve current and legacy schema names", () => {
