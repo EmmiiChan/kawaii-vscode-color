@@ -83,6 +83,7 @@ Command Palette
   -> Home page is shown first with theme and reference links
   -> side menu switches between Home, Settings, Color Settings, Effects, Image Customization, Sync/Files, and Help
   -> Color Settings reads colors from the active generated dark or light theme file
+  -> Image Customization manages editor background/no-tab logo image inputs, opacity, fit area, and Apply Effects
   -> user changes a color field
   -> webview posts update-color to the extension host
   -> extension host validates the hex color
@@ -230,7 +231,7 @@ Recommended extraction boundaries if the runtime grows:
 | Generated JS assembly | `src/neon/...` or a focused helper | Keep placeholders documented and validated |
 | Notification messages | A constants/helper module | Preserve user-facing clarity and avoid duplicated strings |
 | Token replacement rules | `src/js/theme_template.js` plus typed mirrors in `src/renderer/ThemeTemplate.ts` until the injected browser runtime is fully migrated | Keep in sync with theme token foreground colors |
-| Settings UI and persistence | `src/settings.ts`, `src/settingsWebview.ts`, `src/webview/settings`, `src/settingsPersistence.ts`, `src/settingsStore.ts`, `src/settingsColorService.ts`, `src/settingsBundle.ts`, `src/settingsEffectsPersistence.ts` | Keep Home and Color Settings in the same setup webview; keep user overrides in VS Code settings, not generated theme files; keep deterministic persistence logic unit-testable without a VS Code Extension Host |
+| Settings UI and persistence | `src/settings.ts`, `src/settingsWebview.ts`, `src/webview/settings`, `src/settingsPersistence.ts`, `src/settingsStore.ts`, `src/settingsColorService.ts`, `src/settingsBundle.ts`, `src/settingsEffectsPersistence.ts` | Keep Home, Color Settings, and Image Customization in the same setup webview; keep user overrides in VS Code settings, not generated theme files; keep deterministic persistence logic unit-testable without a VS Code Extension Host |
 
 Avoid these unless the project is deliberately refactored:
 

@@ -89,7 +89,7 @@ The settings window opens as a normal editor tab.
 | `Home` | Shows project links and extension information. |
 | `Color Settings` | Changes theme mode and workbench or syntax color overrides. |
 | `Effects` | Enables, disables, and selects the unsupported VS Code workbench patch modules used for runtime, editor background, no-tab logo, and glow effects. |
-| `Image Customization` | Stores editor background and no-tab logo image inputs used by the Effects patch. |
+| `Image Customization` | Stores editor background and no-tab logo image inputs, opacity/fit controls, and the `Apply Effects` action used by the Effects patch. |
 | `Sync/Files` | Saves or restores settings through VS Code Settings Sync, JSON export, and JSON import. |
 | `Help` | Shows repository, issue tracker, README/homepage, and publisher/contact links from project metadata. |
 
@@ -121,6 +121,7 @@ The `Image Customization` page can store one editor background image and one no-
 | `Remove Image` / `Remove Logo` | Removes the stored image input. |
 | `Opacity` | Controls the injected image layer opacity. |
 | `Fit Area` | Fits the editor background image inside full, half, or corner regions. |
+| `Apply Effects` | Applies the selected Effects module stack using the current image settings. |
 
 Supported image formats:
 
@@ -253,7 +254,7 @@ The project has four regular automated test layers, plus one gated Effects E2E l
 | --- | --- | --- |
 | `npm run test:check` | Static project check | Runs TypeScript no-emit checks, the Codex docs drift guard, compile checks, and `node --check` against runtime and build JavaScript files. |
 | `npm run test:unit` | Unit tests without UI | Uses Node's built-in test runner for build logic, workbench patch helpers, settings persistence modules, chained Settings Sync / JSON import-export state matrices, and mocked settings message chains. |
-| `npm run test:dom` | DOM UI tests | Uses `jsdom` to load the settings webview HTML and verify safe `postMessage` events, app navigation, Help metadata, Color Settings inputs/debounce, image/logo state, incoming webview messages, warnings/errors, and `--vscode-*` token usage. |
+| `npm run test:dom` | DOM UI tests | Uses `jsdom` to load the settings webview HTML and verify safe `postMessage` events, app navigation, Help metadata, Color Settings inputs/debounce, Image Customization image/logo state, incoming webview messages, warnings/errors, and `--vscode-*` token usage. |
 | `npm run test:integration` | VS Code integration | Uses `@vscode/test-cli` and `@vscode/test-electron` to activate the extension in an Extension Development Host and execute the settings command. |
 | `npm run test:package` | Local package check | Compiles script wrappers and runs the TypeScript-backed local VSIX package helper without bumping the package version. |
 | `npm run test:cleanup-diagnostics` | Cleanup diagnostics | Compiles script wrappers and reports stale disposable VS Code processes and known test artifact roots. |

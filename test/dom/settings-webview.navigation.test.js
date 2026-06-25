@@ -76,6 +76,35 @@ test("settings webview toggles each app page and keeps one active nav item", asy
   });
 });
 
+test("settings webview owns image controls on image customization page", async () => {
+  const { document } = await renderWebview();
+  const imagePage = document.getElementById("image-customization-page");
+  const colorPage = document.getElementById("color-settings-page");
+
+  for (const selector of [
+    "#apply-effects",
+    "#editor-background-preview",
+    "#editor-background-upload",
+    "#editor-background-random-neko",
+    "#editor-background-remove",
+    "#editor-background-download",
+    "#editor-background-opacity",
+    "#editor-background-fit",
+    "#empty-editor-logo-preview",
+    "#empty-editor-logo-upload",
+    "#empty-editor-logo-random-neko",
+    "#empty-editor-logo-remove",
+    "#empty-editor-logo-download",
+    "#empty-editor-logo-opacity"
+  ]) {
+    const element = document.querySelector(selector);
+
+    assert.ok(element, `Expected ${selector} to exist`);
+    assert.equal(imagePage.contains(element), true, `Expected ${selector} to be owned by Image Customization`);
+    assert.equal(colorPage.contains(element), false, `Expected ${selector} to be outside Color Settings`);
+  }
+});
+
 test("settings webview renders home and help metadata links", async () => {
   const { document, postedMessages } = await renderWebview();
 

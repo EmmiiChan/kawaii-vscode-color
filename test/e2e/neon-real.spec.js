@@ -1094,15 +1094,14 @@ async function applyVisualSettingsBundleAndEffects(visualCase, screenshotName, f
     let settingsScreenshotPath = "";
 
     await withSettingsWebview(async () => {
-        await clickWebviewCss('.nav-button[data-page="color-settings"]');
-        await assertWebviewPageVisible("color-settings-page");
-        await waitForWebviewTextIncludes("#color-settings-page", "THEME MODE");
+        await openColorSettingsPageInWebview();
 
         await postWebviewE2EMessage({ type: "e2e-apply-settings-bundle", bundle: visualCase.bundle });
         await waitForWebviewTextIncludes("#effects-warning", "Settings restored from E2E bundle", 30000);
         await waitForVisualSettingsState(visualCase);
 
         assert.equal(await getWebviewInputValue("#theme-variant"), "dark");
+        await openImageCustomizationPageInWebview();
         assert.equal(await getWebviewInputValue("#editor-background-opacity"), visualCase.expected.editorBackgroundOpacity);
         assert.equal(await getWebviewInputValue("#editor-background-fit"), visualCase.expected.editorBackgroundFit);
         assert.equal(await getWebviewInputValue("#empty-editor-logo-opacity"), visualCase.expected.emptyEditorLogoOpacity);
@@ -1111,8 +1110,7 @@ async function applyVisualSettingsBundleAndEffects(visualCase, screenshotName, f
             await clickWebviewCss('.nav-button[data-page="neon-effect"]');
             await assertWebviewPageVisible("neon-effect-page");
             await setEffectFeatureSwitches(features);
-            await clickWebviewCss('.nav-button[data-page="color-settings"]');
-            await assertWebviewPageVisible("color-settings-page");
+            await openImageCustomizationPageInWebview();
         }
 
         if (screenshotName) {
@@ -1127,16 +1125,16 @@ async function applyVisualSettingsBundleAndEffects(visualCase, screenshotName, f
 
 async function applyVisualSettingsThroughUiAndEffects(visualCase, screenshotName) {
     await withSettingsWebview(async () => {
-        await clickWebviewCss('.nav-button[data-page="color-settings"]');
-        await assertWebviewPageVisible("color-settings-page");
-        await waitForWebviewTextIncludes("#color-settings-page", "THEME MODE");
+        await openColorSettingsPageInWebview();
 
         const preseedVisualCase = visualCase.id === ALTERNATE_VISUAL_CASE.id
             ? DSTGROUP_VISUAL_CASE
             : ALTERNATE_VISUAL_CASE;
         await postWebviewE2EMessage({ type: "e2e-apply-settings-bundle", bundle: preseedVisualCase.bundle });
         await waitForVisualSettingsState(preseedVisualCase);
+        assert.equal(await getWebviewInputValue("#theme-variant"), "dark");
 
+        await openImageCustomizationPageInWebview();
         await postWebviewE2EMessage({
             type: "e2e-set-test-fixtures",
             fixtures: {
@@ -1156,8 +1154,6 @@ async function applyVisualSettingsThroughUiAndEffects(visualCase, screenshotName
         await waitForWebviewInputValue("#editor-background-fit", visualCase.expected.editorBackgroundFit, 20000);
         await setWebviewInputValue("#empty-editor-logo-opacity", visualCase.expected.emptyEditorLogoOpacity);
         await waitForWebviewInputValue("#empty-editor-logo-opacity", visualCase.expected.emptyEditorLogoOpacity, 20000);
-
-        assert.equal(await getWebviewInputValue("#theme-variant"), "dark");
 
         if (screenshotName) {
             await takeE2EScreenshot(screenshotName);
@@ -1219,6 +1215,7 @@ async function setEffectFeatureSwitches(features) {
 }
 
 async function setVisualControlsAndApply(visualCase, features) {
+    await openImageCustomizationPageInWebview();
     const applied = await VSBrowser.instance.driver.executeScript(`
         const editorBackgroundOpacity = document.querySelector('#editor-background-opacity');
         const editorBackgroundFit = document.querySelector('#editor-background-fit');
@@ -1262,6 +1259,18 @@ async function setVisualControlsAndApply(visualCase, features) {
     }
     await clickWebviewCss("#apply-effects");
     await waitForWebviewDomTextIncludes("#neon-status", "Effects apply request sent", 15000);
+}
+
+async function openColorSettingsPageInWebview() {
+    await clickWebviewCss('.nav-button[data-page="color-settings"]');
+    await assertWebviewPageVisible("color-settings-page");
+    await waitForWebviewTextIncludes("#color-settings-page", "THEME MODE");
+}
+
+async function openImageCustomizationPageInWebview() {
+    await clickWebviewCss('.nav-button[data-page="image-customization"]');
+    await assertWebviewPageVisible("image-customization-page");
+    await waitForWebviewTextIncludes("#image-customization-page", "EDITOR BACKGROUND IMAGE");
 }
 
 async function waitForWebviewDomTextIncludes(css, expectedText, timeout = 10000) {

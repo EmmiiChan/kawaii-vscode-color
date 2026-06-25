@@ -3,7 +3,6 @@ const test = require("node:test");
 
 const {
   click,
-  expectInputValue,
   expectNoPostedMessage,
   expectPostedMessage,
   expectStatusText,
@@ -70,7 +69,7 @@ test("settings webview posts home apply effects without running real patch", asy
   });
 });
 
-test("settings webview posts color settings apply effects with dark image customizations", async () => {
+test("settings webview posts image customization apply effects with dark image customizations", async () => {
   const { document, postedMessages } = await renderWebview({
     editorBackground: {
       opacity: 0.21,
@@ -89,9 +88,10 @@ test("settings webview posts color settings apply effects with dark image custom
     }
   });
 
-  click(document, '[data-page="color-settings"]');
-  expectVisiblePage(document, "color-settings");
-  expectInputValue(document, "#theme-variant", "dark");
+  click(document, '[data-page="image-customization"]');
+  expectVisiblePage(document, "image-customization");
+  assert.equal(document.getElementById("image-customization-page").contains(document.getElementById("apply-effects")), true);
+  assert.equal(document.getElementById("color-settings-page").contains(document.getElementById("apply-effects")), false);
 
   click(document, "#apply-effects");
 
@@ -110,7 +110,7 @@ test("settings webview posts color settings apply effects with dark image custom
   });
 });
 
-test("settings webview posts color settings apply effects with light missing-image state", async () => {
+test("settings webview posts image customization apply effects with light missing-image state", async () => {
   const { document, postedMessages } = await renderWebview({
     themeLabel: "Light Pink-Pastel Kawaii",
     activeThemeVariantId: "light",
@@ -129,9 +129,8 @@ test("settings webview posts color settings apply effects with light missing-ima
     }
   });
 
-  click(document, '[data-page="color-settings"]');
-  expectVisiblePage(document, "color-settings");
-  expectInputValue(document, "#theme-variant", "light");
+  click(document, '[data-page="image-customization"]');
+  expectVisiblePage(document, "image-customization");
   assert.match(document.getElementById("editor-background-file").textContent, /Stored image is missing/);
 
   click(document, "#apply-effects");
@@ -152,7 +151,7 @@ test("settings webview posts color settings apply effects with light missing-ima
 test("settings webview apply effects cancels pending image timers", async () => {
   const { document, window, postedMessages } = await renderWebview();
 
-  click(document, '[data-page="color-settings"]');
+  click(document, '[data-page="image-customization"]');
   setInputValue(window, "#editor-background-opacity", "0.2");
   setInputValue(window, "#empty-editor-logo-opacity", "0.4");
   click(document, "#apply-effects");

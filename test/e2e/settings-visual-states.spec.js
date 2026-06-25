@@ -60,7 +60,7 @@ describe("Settings visual state image validation E2E", function () {
 
     it("captures and validates image preview, warning, and missing-image states", async function () {
         await withSettingsWebview(async () => {
-            await openColorSettingsPage();
+            await openImageCustomizationPage();
 
             const beforeFull = await takeE2EScreenshot("settings-visual-image-preview-before-empty");
             const beforeEditorPreview = await takeWebviewElementScreenshot(
@@ -184,7 +184,7 @@ describe("Settings visual state image validation E2E", function () {
 
     it("captures and validates random loading, effects warning, neon status, and error states", async function () {
         await withSettingsWebview(async () => {
-            await openColorSettingsPage();
+            await openImageCustomizationPage();
 
             const beforeLoadingFull = await takeE2EScreenshot("settings-visual-loading-before-empty-previews");
             const beforeLoadingEditorPreview = await takeWebviewElementScreenshot(
@@ -315,18 +315,6 @@ describe("Settings visual state image validation E2E", function () {
                 "#content .row",
                 "settings-visual-color-controls-before-first-row-element"
             );
-            const beforeEditorOpacityValue = await takeWebviewElementScreenshot(
-                "#editor-background-opacity-value",
-                "settings-visual-color-controls-before-editor-opacity-value-element"
-            );
-            const beforeLogoOpacityValue = await takeWebviewElementScreenshot(
-                "#empty-editor-logo-opacity-value",
-                "settings-visual-color-controls-before-logo-opacity-value-element"
-            );
-            const beforeFitDescription = await takeWebviewElementScreenshot(
-                "#editor-background-fit-description",
-                "settings-visual-color-controls-before-fit-description-element"
-            );
 
             await setWebviewInputValue("#content .row .hex", "not-a-color");
             await waitForWebviewTextIncludes("#status", "Use #RGB");
@@ -338,7 +326,9 @@ describe("Settings visual state image validation E2E", function () {
 
             recordVisualAnalysis(
                 "invalid color input full state",
-                assertPngVisualChange("invalid color input full state", beforeControlsFull, invalidInputFull)
+                assertPngVisualChange("invalid color input full state", beforeControlsFull, invalidInputFull, {
+                    minMeanDifference: 0.2
+                })
             );
             recordVisualAnalysis(
                 "invalid color input row",
@@ -362,8 +352,21 @@ describe("Settings visual state image validation E2E", function () {
                 assertPngVisualChange("empty color filter content", beforeContent, emptyContent)
             );
 
-            await setWebviewInputValue("#search", "");
-            await waitForWebviewTextIncludes("#content", "editor.background");
+            await openImageCustomizationPage();
+            const beforeImageControlsFull = await takeE2EScreenshot("settings-visual-image-controls-before-default");
+            const beforeEditorOpacityValue = await takeWebviewElementScreenshot(
+                "#editor-background-opacity-value",
+                "settings-visual-image-controls-before-editor-opacity-value-element"
+            );
+            const beforeLogoOpacityValue = await takeWebviewElementScreenshot(
+                "#empty-editor-logo-opacity-value",
+                "settings-visual-image-controls-before-logo-opacity-value-element"
+            );
+            const beforeFitDescription = await takeWebviewElementScreenshot(
+                "#editor-background-fit-description",
+                "settings-visual-image-controls-before-fit-description-element"
+            );
+
             await dispatchWebviewMessage({
                 type: "state",
                 state: createChangedControlsState()
@@ -372,23 +375,23 @@ describe("Settings visual state image validation E2E", function () {
             await waitForWebviewTextIncludes("#empty-editor-logo-opacity-value", "40%");
             await waitForWebviewTextIncludes("#editor-background-fit-description", "Left area");
 
-            const changedControlsFull = await takeE2EScreenshot("settings-visual-color-controls-after-opacity-and-fit");
+            const changedControlsFull = await takeE2EScreenshot("settings-visual-image-controls-after-opacity-and-fit");
             const changedEditorOpacityValue = await takeWebviewElementScreenshot(
                 "#editor-background-opacity-value",
-                "settings-visual-color-controls-after-editor-opacity-value-element"
+                "settings-visual-image-controls-after-editor-opacity-value-element"
             );
             const changedLogoOpacityValue = await takeWebviewElementScreenshot(
                 "#empty-editor-logo-opacity-value",
-                "settings-visual-color-controls-after-logo-opacity-value-element"
+                "settings-visual-image-controls-after-logo-opacity-value-element"
             );
             const changedFitDescription = await takeWebviewElementScreenshot(
                 "#editor-background-fit-description",
-                "settings-visual-color-controls-after-fit-description-element"
+                "settings-visual-image-controls-after-fit-description-element"
             );
 
             recordVisualAnalysis(
                 "opacity and fit controls full state",
-                assertPngVisualChange("opacity and fit controls full state", emptyFilterFull, changedControlsFull)
+                assertPngVisualChange("opacity and fit controls full state", beforeImageControlsFull, changedControlsFull)
             );
             recordVisualAnalysis(
                 "editor background opacity value",
@@ -416,6 +419,12 @@ async function openColorSettingsPage() {
     await waitForWebviewTextIncludes("#color-settings-page", "THEME MODE");
     await clickWebviewCss('.tab[data-section="workbench"]');
     await setWebviewInputValue("#search", "");
+}
+
+async function openImageCustomizationPage() {
+    await clickWebviewCss('.nav-button[data-page="image-customization"]');
+    await assertWebviewPageVisible("image-customization-page");
+    await waitForWebviewTextIncludes("#image-customization-page", "EDITOR BACKGROUND IMAGE");
 }
 
 async function dispatchWebviewMessage(message) {

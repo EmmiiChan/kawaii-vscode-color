@@ -12,9 +12,11 @@ const {
 test("settings webview shows effects pending warnings", async () => {
   const { document, window } = await renderWebview();
 
-  click(document, '[data-page="color-settings"]');
+  click(document, '[data-page="image-customization"]');
   sendWindowMessage(window, { type: "effects-pending", message: "Pending test message" });
 
+  assert.equal(document.getElementById("effects-warning").closest(".page"), null);
+  assert.equal(document.getElementById("status").closest(".page"), null);
   assert.equal(document.getElementById("effects-warning").classList.contains("hidden"), false);
   assert.equal(document.getElementById("effects-warning").textContent, "Pending test message");
   assert.equal(document.getElementById("status").textContent, "Pending test message");
@@ -23,7 +25,7 @@ test("settings webview shows effects pending warnings", async () => {
 test("settings webview handles neon status messages", async () => {
   const { document, window } = await renderWebview();
 
-  click(document, '[data-page="color-settings"]');
+  click(document, '[data-page="image-customization"]');
   sendWindowMessage(window, { type: "effects-pending", message: "Pending test message" });
   sendWindowMessage(window, { type: "neon-status", message: "Neon complete" });
 
@@ -59,7 +61,7 @@ test("settings webview handles structured effects status messages with dedupe ke
 test("settings webview handles error messages and clears loading", async () => {
   const { document, window } = await renderWebview();
 
-  click(document, '[data-page="color-settings"]');
+  click(document, '[data-page="image-customization"]');
   click(document, "#editor-background-random-neko");
   click(document, "#empty-editor-logo-random-neko");
 

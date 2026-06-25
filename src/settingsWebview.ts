@@ -122,6 +122,18 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
       background: var(--panel-bg);
     }
 
+    .shared-feedback {
+      padding: 12px 28px 0;
+    }
+
+    .shared-feedback .effects-warning {
+      margin-top: 0;
+    }
+
+    .shared-feedback .status {
+      padding: 8px 0 0;
+    }
+
     .page {
       min-height: 100vh;
     }
@@ -768,6 +780,10 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
       font-size: 12px;
     }
 
+    .status:empty {
+      display: none;
+    }
+
     .empty {
       padding: 24px;
       color: var(--muted-color);
@@ -855,6 +871,10 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
       </nav>
     </aside>
     <div class="workspace">
+      <div class="shared-feedback" aria-live="polite">
+        <div id="effects-warning" class="effects-warning hidden" role="status"></div>
+        <div id="status" class="status"></div>
+      </div>
       <section id="home-page" class="page">
         <div class="home">
           <div class="home-header">
@@ -867,7 +887,7 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
             </div>
           </div>
           <p class="home-text">Kawaii VS Code Color focuses on dark pink and light green pastel-pink themes. It is inspired by SynthWave '84 and Sakura Theme, and was originally forked from SynthWave '84. This setup page keeps local user customization in VS Code settings and preserves the repository theme files as source assets.</p>
-          <p class="home-text">Use Color Settings to edit theme-specific colors, image-backed effects, Settings Sync bundles, and JSON import/export. Random Neko image inputs use Nekos.moe and were inspired by CatgirlDownloader.</p>
+          <p class="home-text">Use Color Settings to edit theme-specific colors and run Settings Sync or JSON import/export actions. Use Image Customization to manage image-backed effects. Random Neko image inputs use Nekos.moe and were inspired by CatgirlDownloader.</p>
           <section class="home-section" aria-labelledby="references-title">
             <h3 id="references-title" class="home-section-title">References</h3>
             <div id="documentation-links" class="link-list"></div>
@@ -953,10 +973,81 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
       </section>
       <section id="image-customization-page" class="page hidden">
         <div class="home">
-          <p class="home-label">Image Customization</p>
-          <h2 class="home-title">Editor background and no-tab logo</h2>
-          <p class="home-text">Image-backed effects use VS Code settings and the Kawaii Neon runtime. Uploads, opacity, fit area, random image selection, removal, and downloads are available from Color Settings.</p>
-          <p class="home-text">The page uses editor-provided colors through VS Code webview tokens, so it follows the active Kawaii VS Code Color theme instead of defining a separate UI palette.</p>
+          <div class="home-header">
+            <div>
+              <p class="home-label">Image Customization</p>
+              <h2 class="home-title">Editor background and no-tab logo</h2>
+            </div>
+            <div class="home-actions">
+              <button id="apply-effects" class="button" type="button">Apply Effects</button>
+            </div>
+          </div>
+          <p class="home-text">Image-backed effects use VS Code settings and the Kawaii Neon runtime. Uploads, opacity, fit area, random image selection, removal, and downloads are managed here.</p>
+          <p class="home-text">Image changes do not auto-apply. Click Apply Effects, then reload VS Code when prompted.</p>
+          <section class="editor-background" aria-labelledby="editor-background-title">
+            <div class="editor-background-header">
+              <div>
+                <h2 id="editor-background-title" class="editor-background-title">Editor Background Image</h2>
+                <p class="theme-mode-description">Upload a local image for the editor background. Image changes apply through Effects and take effect after VS Code reloads.</p>
+                <p id="editor-background-data-url-warning" class="image-data-url-warning"></p>
+              </div>
+            </div>
+            <div class="editor-background-details">
+              <div class="image-preview-column">
+                <div id="editor-background-preview" class="image-preview"></div>
+                <div class="image-preview-actions">
+                  <div class="image-source-actions">
+                    <button id="editor-background-upload" class="button" type="button">Upload Image</button>
+                    <button id="editor-background-random-neko" class="button" type="button">Random Neko</button>
+                  </div>
+                  <button id="editor-background-remove" class="button secondary" type="button">Remove Image</button>
+                  <button id="editor-background-download" class="button secondary" type="button">Download Image</button>
+                </div>
+              </div>
+              <div id="editor-background-file" class="editor-background-file"></div>
+              <label class="opacity-control" for="editor-background-opacity">
+                <span>Opacity</span>
+                <input id="editor-background-opacity" class="opacity-slider" type="range">
+                <span id="editor-background-opacity-value"></span>
+              </label>
+            </div>
+            <div class="editor-background-options">
+              <label class="fit-control" for="editor-background-fit">
+                <span>Fit area</span>
+                <select id="editor-background-fit" class="select"></select>
+              </label>
+              <p id="editor-background-fit-description" class="theme-mode-description"></p>
+            </div>
+          </section>
+          <hr class="section-divider">
+          <section class="editor-background" aria-labelledby="empty-editor-logo-title">
+            <div class="editor-background-header">
+              <div>
+                <h2 id="empty-editor-logo-title" class="editor-background-title">No-tab Logo</h2>
+                <p class="theme-mode-description">Upload a local image to replace the VS Code watermark logo shown when there are no open editor tabs. Image changes apply through Effects and take effect after VS Code reloads.</p>
+                <p id="empty-editor-logo-data-url-warning" class="image-data-url-warning"></p>
+              </div>
+            </div>
+            <div class="editor-background-details">
+              <div class="image-preview-column">
+                <div id="empty-editor-logo-preview" class="image-preview"></div>
+                <div class="image-preview-actions">
+                  <div class="image-source-actions">
+                    <button id="empty-editor-logo-upload" class="button" type="button">Upload Logo</button>
+                    <button id="empty-editor-logo-random-neko" class="button" type="button">Random Neko</button>
+                  </div>
+                  <button id="empty-editor-logo-remove" class="button secondary" type="button">Remove Logo</button>
+                  <button id="empty-editor-logo-download" class="button secondary" type="button">Download Logo</button>
+                </div>
+              </div>
+              <div id="empty-editor-logo-file" class="editor-background-file"></div>
+              <label class="opacity-control" for="empty-editor-logo-opacity">
+                <span>Opacity</span>
+                <input id="empty-editor-logo-opacity" class="opacity-slider" type="range">
+                <span id="empty-editor-logo-opacity-value"></span>
+              </label>
+            </div>
+          </section>
         </div>
       </section>
       <section id="sync-files-page" class="page hidden">
@@ -987,73 +1078,6 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
             <button id="import-vssync" class="button secondary" type="button">Import VSSync</button>
             <button id="export-settings" class="button secondary" type="button">Export As</button>
             <button id="import-settings" class="button secondary" type="button">Import</button>
-            <button id="apply-effects" class="button" type="button">Apply Effects</button>
-          </div>
-          <div id="effects-warning" class="effects-warning hidden" role="status"></div>
-        </section>
-        <hr class="section-divider">
-        <section class="editor-background" aria-labelledby="editor-background-title">
-          <div class="editor-background-header">
-            <div>
-              <h2 id="editor-background-title" class="editor-background-title">Editor Background Image</h2>
-              <p class="theme-mode-description">Upload a local image for the editor background. Image changes apply through Effects and take effect after VS Code reloads.</p>
-              <p id="editor-background-data-url-warning" class="image-data-url-warning"></p>
-            </div>
-          </div>
-          <div class="editor-background-details">
-            <div class="image-preview-column">
-              <div id="editor-background-preview" class="image-preview"></div>
-              <div class="image-preview-actions">
-                <div class="image-source-actions">
-                  <button id="editor-background-upload" class="button" type="button">Upload Image</button>
-                  <button id="editor-background-random-neko" class="button" type="button">Random Neko</button>
-                </div>
-                <button id="editor-background-remove" class="button secondary" type="button">Remove Image</button>
-                <button id="editor-background-download" class="button secondary" type="button">Download Image</button>
-              </div>
-            </div>
-            <div id="editor-background-file" class="editor-background-file"></div>
-            <label class="opacity-control" for="editor-background-opacity">
-              <span>Opacity</span>
-              <input id="editor-background-opacity" class="opacity-slider" type="range">
-              <span id="editor-background-opacity-value"></span>
-            </label>
-          </div>
-          <div class="editor-background-options">
-            <label class="fit-control" for="editor-background-fit">
-              <span>Fit area</span>
-              <select id="editor-background-fit" class="select"></select>
-            </label>
-            <p id="editor-background-fit-description" class="theme-mode-description"></p>
-          </div>
-        </section>
-        <hr class="section-divider">
-        <section class="editor-background" aria-labelledby="empty-editor-logo-title">
-          <div class="editor-background-header">
-            <div>
-              <h2 id="empty-editor-logo-title" class="editor-background-title">No-tab Logo</h2>
-              <p class="theme-mode-description">Upload a local image to replace the VS Code watermark logo shown when there are no open editor tabs. Image changes apply through Effects and take effect after VS Code reloads.</p>
-              <p id="empty-editor-logo-data-url-warning" class="image-data-url-warning"></p>
-            </div>
-          </div>
-          <div class="editor-background-details">
-            <div class="image-preview-column">
-              <div id="empty-editor-logo-preview" class="image-preview"></div>
-              <div class="image-preview-actions">
-                <div class="image-source-actions">
-                  <button id="empty-editor-logo-upload" class="button" type="button">Upload Logo</button>
-                  <button id="empty-editor-logo-random-neko" class="button" type="button">Random Neko</button>
-                </div>
-                <button id="empty-editor-logo-remove" class="button secondary" type="button">Remove Logo</button>
-                <button id="empty-editor-logo-download" class="button secondary" type="button">Download Logo</button>
-              </div>
-            </div>
-            <div id="empty-editor-logo-file" class="editor-background-file"></div>
-            <label class="opacity-control" for="empty-editor-logo-opacity">
-              <span>Opacity</span>
-              <input id="empty-editor-logo-opacity" class="opacity-slider" type="range">
-              <span id="empty-editor-logo-opacity-value"></span>
-            </label>
           </div>
         </section>
         <hr class="section-divider">
@@ -1067,7 +1091,6 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
           <button class="tab" data-section="token" type="button">Syntax</button>
         </div>
         <main id="content" class="content"></main>
-        <div id="status" class="status"></div>
       </section>
     </div>
   </div>
@@ -1303,7 +1326,7 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
         clearImageLoading(editorBackgroundPreview, editorBackgroundRandomNeko);
         clearImageLoading(emptyEditorLogoPreview, emptyEditorLogoRandomNeko);
         render();
-        if (activePage === "color-settings" && !effectsPending) {
+        if ((activePage === "color-settings" || activePage === "image-customization") && !effectsPending) {
           setStatus("Saved " + new Date().toLocaleTimeString());
         }
       }
