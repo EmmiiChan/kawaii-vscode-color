@@ -21,19 +21,19 @@ export const EMPTY_EDITOR_LOGO_WRAPPER_SELECTORS: readonly string[] = KAWAII_THE
 /**
  * Builds CSS rules for replacing the empty editor watermark logo.
  *
- * @param dataUri Image data URI.
+ * @param imageSource CSS image URL or data URI.
  * @param opacity CSS opacity value.
  * @returns CSS rule block.
  */
-export function createEmptyEditorLogoStyles(dataUri: string, opacity: number | string): string {
-  const escapedDataUri = String(dataUri).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+export function createEmptyEditorLogoStyles(imageSource: string, opacity: number | string): string {
+  const escapedImageSource = String(imageSource).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
   const scopedSelectors = EMPTY_EDITOR_LOGO_WRAPPER_SELECTORS.flatMap((wrapperSelector) => (
     EMPTY_EDITOR_LOGO_LETTERPRESS_SELECTORS.map((selector) => `${wrapperSelector} ${selector}`)
   ));
 
   return `
 ${scopedSelectors.join(",\n")} {
-\tbackground-image: url("${escapedDataUri}") !important;
+\tbackground-image: url("${escapedImageSource}") !important;
 \tbackground-position: center !important;
 \tbackground-size: contain !important;
 \tbackground-repeat: no-repeat !important;

@@ -4,7 +4,7 @@ import { replaceRendererPlaceholders } from "../../shared/contracts/rendererPlac
 import type { ExtensionFileSystem } from "../adapters/NodeFileSystem";
 import type { ExtensionStorage } from "../adapters/VscodeExtensionStorage";
 import type { NeonNotificationService } from "../adapters/VscodeNotificationService";
-import type { WorkbenchPatchService } from "./WorkbenchPatchService";
+import type { WorkbenchPatchBinaryAsset, WorkbenchPatchService } from "./WorkbenchPatchService";
 
 export const NEON_EFFECT_MESSAGES = {
   ACTIVATED: "Kawaii VS Code Color UI effects enabled. VS code must reload for this change to take effect. Code may display a warning that it is corrupted, this is normal. You can dismiss this message by choosing 'Don't show this again' on the notification.",
@@ -59,6 +59,10 @@ const EMPTY_EDITOR_LOGO_IMAGE_FILE_PREFIX = "empty-editor-logo-image";
 const EMPTY_EDITOR_LOGO_DEFAULT_OPACITY = 0.75;
 const EMPTY_EDITOR_LOGO_MIN_OPACITY = 0;
 const EMPTY_EDITOR_LOGO_MAX_OPACITY = 1;
+const WORKBENCH_IMAGE_ASSET_EXTENSIONS = Object.keys(EDITOR_BACKGROUND_MIME_TYPES);
+const EDITOR_BACKGROUND_WORKBENCH_ASSET_PREFIX = "kawaii-vscode-colors-editor-background-image";
+const EMPTY_EDITOR_LOGO_WORKBENCH_ASSET_PREFIX = "kawaii-vscode-colors-empty-editor-logo-image";
+const VERSIONED_STYLE_TOKEN = "[KAWAII_UI_STYLE_VERSION]";
 
 export interface NeonEffectConfiguration {
   readonly brightness?: unknown;
@@ -102,11 +106,32 @@ interface EditorBackgroundCssValues {
   readonly areaRight: string;
   readonly areaTop: string;
   readonly areaWidth: string;
+  readonly deleteAssetFileNames: readonly string[];
   readonly image: string;
+  readonly imageAssets: readonly WorkbenchPatchBinaryAsset[];
   readonly opacity: string;
   readonly position: string;
   readonly repeat: string;
   readonly size: string;
+}
+
+interface EmptyEditorLogoCssValues {
+  readonly deleteAssetFileNames: readonly string[];
+  readonly imageAssets: readonly WorkbenchPatchBinaryAsset[];
+  readonly styles: string;
+}
+
+interface CustomChromePatchAssets {
+  readonly deleteAssetFileNames: readonly string[];
+  readonly imageAssets: readonly WorkbenchPatchBinaryAsset[];
+  readonly styleContent: string;
+}
+
+interface StoredWorkbenchImageAsset {
+  readonly content: Buffer;
+  readonly deleteAssetFileNames: readonly string[];
+  readonly fileName: string;
+  readonly url: string;
 }
 
 interface StoredImageMetadata {
@@ -146,7 +171,7 @@ class DefaultNeonEffectService implements NeonEffectService {
     }
 
     try {
-      const uiStyles = this.buildCustomChromeStyles(
+      const customChromeAssets = this.buildCustomChromePatchAssets(
         this.dependencies.fileSystem.readTextFile(path.join(this.dependencies.extensionRoot, "src", "css", "kawaii-vscode-colors-ui.min.css"))
       );
       const jsTemplate = this.dependencies.fileSystem.readTextFile(
@@ -157,8 +182,10 @@ class DefaultNeonEffectService implements NeonEffectService {
         NEON_BRIGHTNESS: normalizedConfiguration.neonBrightness
       });
       const result = this.dependencies.workbenchPatchService.applyAssets(basePath, {
+        deleteAssetFileNames: customChromeAssets.deleteAssetFileNames,
+        imageAssets: customChromeAssets.imageAssets,
         scriptContent,
-        styleContent: uiStyles
+        styleContent: customChromeAssets.styleContent
       });
 
       if (result.status === "workbench-not-found") {
@@ -184,28 +211,42 @@ class DefaultNeonEffectService implements NeonEffectService {
   }
 
   buildCustomChromeStyles(chromeStyles: string): string {
-    const editorBackgroundCssValues = getEditorBackgroundCssValues(this.dependencies.storage, this.dependencies.fileSystem, this.dependencies.logger);
-    const emptyEditorLogoStyles = getEmptyEditorLogoStyles(this.dependencies.storage, this.dependencies.fileSystem, this.dependencies.logger);
+    return this.buildCustomChromePatchAssets(chromeStyles).styleContent;
+  }
 
-    return replaceRendererPlaceholders(chromeStyles, {
-      EDITOR_BACKGROUND_AREA_BOTTOM: editorBackgroundCssValues.areaBottom,
-      EDITOR_BACKGROUND_AREA_HEIGHT: editorBackgroundCssValues.areaHeight,
-      EDITOR_BACKGROUND_AREA_LEFT: editorBackgroundCssValues.areaLeft,
-      EDITOR_BACKGROUND_AREA_RIGHT: editorBackgroundCssValues.areaRight,
-      EDITOR_BACKGROUND_AREA_TOP: editorBackgroundCssValues.areaTop,
-      EDITOR_BACKGROUND_AREA_WIDTH: editorBackgroundCssValues.areaWidth,
-      EDITOR_BACKGROUND_IMAGE: editorBackgroundCssValues.image,
-      EDITOR_BACKGROUND_IMAGE_OPACITY: editorBackgroundCssValues.opacity,
-      EDITOR_BACKGROUND_IMAGE_POSITION: editorBackgroundCssValues.position,
-      EDITOR_BACKGROUND_IMAGE_REPEAT: editorBackgroundCssValues.repeat,
-      EDITOR_BACKGROUND_IMAGE_SIZE: editorBackgroundCssValues.size,
-      EMPTY_EDITOR_LOGO_STYLES: emptyEditorLogoStyles
-    });
+  private buildCustomChromePatchAssets(chromeStyles: string): CustomChromePatchAssets {
+    const editorBackgroundCssValues = getEditorBackgroundCssValues(this.dependencies.storage, this.dependencies.fileSystem, this.dependencies.logger);
+    const emptyEditorLogoCssValues = getEmptyEditorLogoStyles(this.dependencies.storage, this.dependencies.fileSystem, this.dependencies.logger);
+
+    return {
+      deleteAssetFileNames: [
+        ...editorBackgroundCssValues.deleteAssetFileNames,
+        ...emptyEditorLogoCssValues.deleteAssetFileNames
+      ],
+      imageAssets: [
+        ...editorBackgroundCssValues.imageAssets,
+        ...emptyEditorLogoCssValues.imageAssets
+      ],
+      styleContent: replaceRendererPlaceholders(chromeStyles, {
+        EDITOR_BACKGROUND_AREA_BOTTOM: editorBackgroundCssValues.areaBottom,
+        EDITOR_BACKGROUND_AREA_HEIGHT: editorBackgroundCssValues.areaHeight,
+        EDITOR_BACKGROUND_AREA_LEFT: editorBackgroundCssValues.areaLeft,
+        EDITOR_BACKGROUND_AREA_RIGHT: editorBackgroundCssValues.areaRight,
+        EDITOR_BACKGROUND_AREA_TOP: editorBackgroundCssValues.areaTop,
+        EDITOR_BACKGROUND_AREA_WIDTH: editorBackgroundCssValues.areaWidth,
+        EDITOR_BACKGROUND_IMAGE: editorBackgroundCssValues.image,
+        EDITOR_BACKGROUND_IMAGE_OPACITY: editorBackgroundCssValues.opacity,
+        EDITOR_BACKGROUND_IMAGE_POSITION: editorBackgroundCssValues.position,
+        EDITOR_BACKGROUND_IMAGE_REPEAT: editorBackgroundCssValues.repeat,
+        EDITOR_BACKGROUND_IMAGE_SIZE: editorBackgroundCssValues.size,
+        EMPTY_EDITOR_LOGO_STYLES: emptyEditorLogoCssValues.styles
+      })
+    };
   }
 
   async disable(): Promise<void> {
     try {
-      const result = this.dependencies.workbenchPatchService.removeScriptTag(resolveWorkbenchBasePath(this.dependencies.appRoot));
+      const result = this.dependencies.workbenchPatchService.removePatch(resolveWorkbenchBasePath(this.dependencies.appRoot));
 
       if (result.status === "workbench-not-found") {
         await this.dependencies.notifications.showErrorMessage(NEON_EFFECT_MESSAGES.ERROR_WORKBENCH_NOT_FOUND);
@@ -282,7 +323,9 @@ function getEditorBackgroundCssValues(
 ): EditorBackgroundCssValues {
   const defaultArea = getEditorBackgroundFitArea(EDITOR_BACKGROUND_DEFAULT_FIT);
   const defaultValues: EditorBackgroundCssValues = {
+    deleteAssetFileNames: getWorkbenchImageAssetFileNames(EDITOR_BACKGROUND_WORKBENCH_ASSET_PREFIX),
     image: "none",
+    imageAssets: [],
     opacity: "0",
     position: EDITOR_BACKGROUND_DEFAULT_POSITION,
     size: EDITOR_BACKGROUND_DEFAULT_SIZE,
@@ -307,17 +350,22 @@ function getEditorBackgroundCssValues(
     }
 
     const imagePath = getEditorBackgroundImagePath(storage, metadata.fileName);
+    const asset = getStoredWorkbenchImageAsset(
+      fileSystem,
+      metadata,
+      imagePath,
+      EDITOR_BACKGROUND_WORKBENCH_ASSET_PREFIX
+    );
 
-    if (!fileSystem.exists(imagePath)) {
+    if (!asset) {
       return defaultValues;
     }
-
-    const imageBuffer = fileSystem.readFile(imagePath);
-    const dataUri = `data:${metadata.mimeType};base64,${imageBuffer.toString("base64")}`;
     const fitArea = getEditorBackgroundFitArea(getStoredEditorBackgroundFit(storage));
 
     return {
-      image: `url("${dataUri}")`,
+      deleteAssetFileNames: asset.deleteAssetFileNames,
+      image: `url("${asset.url}")`,
+      imageAssets: [{ fileName: asset.fileName, content: asset.content }],
       opacity: String(getStoredEditorBackgroundOpacity(storage)),
       position: EDITOR_BACKGROUND_DEFAULT_POSITION,
       size: EDITOR_BACKGROUND_DEFAULT_SIZE,
@@ -339,32 +387,76 @@ function getEmptyEditorLogoStyles(
   storage: ExtensionStorage | undefined,
   fileSystem: ExtensionFileSystem,
   logger: NeonEffectLogger | undefined
-): string {
+): EmptyEditorLogoCssValues {
+  const defaultValues: EmptyEditorLogoCssValues = {
+    deleteAssetFileNames: getWorkbenchImageAssetFileNames(EMPTY_EDITOR_LOGO_WORKBENCH_ASSET_PREFIX),
+    imageAssets: [],
+    styles: ""
+  };
+
   if (!storage) {
-    return "";
+    return defaultValues;
   }
 
   try {
     const metadata = getStoredEmptyEditorLogoImageMetadata(storage);
 
     if (!metadata) {
-      return "";
+      return defaultValues;
     }
 
     const logoPath = getEmptyEditorLogoImagePath(storage, metadata.fileName);
+    const asset = getStoredWorkbenchImageAsset(
+      fileSystem,
+      metadata,
+      logoPath,
+      EMPTY_EDITOR_LOGO_WORKBENCH_ASSET_PREFIX
+    );
 
-    if (!fileSystem.exists(logoPath)) {
-      return "";
+    if (!asset) {
+      return defaultValues;
     }
 
-    const logoBuffer = fileSystem.readFile(logoPath);
-    const dataUri = `data:${metadata.mimeType};base64,${logoBuffer.toString("base64")}`;
-
-    return createEmptyEditorLogoStyles(dataUri, getStoredEmptyEditorLogoOpacity(storage));
+    return {
+      deleteAssetFileNames: asset.deleteAssetFileNames,
+      imageAssets: [{ fileName: asset.fileName, content: asset.content }],
+      styles: createEmptyEditorLogoStyles(asset.url, getStoredEmptyEditorLogoOpacity(storage))
+    };
   } catch (error) {
     logWithOptionalLogger(logger, "getEmptyEditorLogoStyles", error, {});
-    return "";
+    return defaultValues;
   }
+}
+
+function getWorkbenchImageAssetFileName(prefix: string, extension: string): string {
+  return `${prefix}.${extension}`;
+}
+
+function getWorkbenchImageAssetFileNames(prefix: string): readonly string[] {
+  return WORKBENCH_IMAGE_ASSET_EXTENSIONS.map((extension) => getWorkbenchImageAssetFileName(prefix, extension));
+}
+
+function getStoredWorkbenchImageAsset(
+  fileSystem: ExtensionFileSystem,
+  metadata: StoredImageMetadata,
+  imagePath: string,
+  assetPrefix: string
+): StoredWorkbenchImageAsset | undefined {
+  const extension = path.extname(metadata.fileName).slice(1).toLowerCase();
+
+  if (!Object.prototype.hasOwnProperty.call(EDITOR_BACKGROUND_MIME_TYPES, extension) || !fileSystem.exists(imagePath)) {
+    return undefined;
+  }
+
+  const fileName = getWorkbenchImageAssetFileName(assetPrefix, extension);
+  const allFileNames = getWorkbenchImageAssetFileNames(assetPrefix);
+
+  return {
+    content: fileSystem.readFile(imagePath),
+    deleteAssetFileNames: allFileNames.filter((candidateFileName) => candidateFileName !== fileName),
+    fileName,
+    url: `${fileName}?v=${VERSIONED_STYLE_TOKEN}`
+  };
 }
 
 function getStoredEditorBackgroundImageMetadata(storage: ExtensionStorage): StoredImageMetadata | undefined {

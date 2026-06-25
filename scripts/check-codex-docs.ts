@@ -146,6 +146,8 @@ const CRITICAL_FILES = [
   "scripts/require-e2e-neon-flag.ts",
   "scripts/run-e2e.js",
   "scripts/run-e2e.ts",
+  "scripts/test-process-cleanup-diagnostics.js",
+  "scripts/test-process-cleanup-diagnostics.ts",
   "scripts/run-test-all.js",
   "scripts/run-test-all.ts",
   "src/css/editor_chrome.css",

@@ -181,6 +181,7 @@ test("runE2EWithConfig removes stale Neon patch before launching the apply phase
     ].join("\n");
     const scriptFile = path.join(workbenchDir, "kawaii-vscode-colors-ui.js");
     const styleFile = path.join(workbenchDir, "kawaii-vscode-colors-ui.min.css");
+    const editorImageAssetFile = path.join(workbenchDir, "kawaii-vscode-colors-editor-background-image.png");
     const legacyScriptFile = path.join(workbenchDir, "neondreams.js");
     t.after(() => {
         fs.rmSync(workspaceRoot, { force: true, recursive: true });
@@ -189,6 +190,7 @@ test("runE2EWithConfig removes stale Neon patch before launching the apply phase
     fs.writeFileSync(htmlFile, patchedHtml, "utf8");
     fs.writeFileSync(scriptFile, "stale script", "utf8");
     fs.writeFileSync(styleFile, "stale style", "utf8");
+    fs.writeFileSync(editorImageAssetFile, "stale image", "utf8");
     fs.writeFileSync(legacyScriptFile, "stale legacy script", "utf8");
 
     let htmlAtSpawn = "";
@@ -214,6 +216,7 @@ test("runE2EWithConfig removes stale Neon patch before launching the apply phase
     assert.doesNotMatch(fs.readFileSync(htmlFile, "utf8"), /kawaii-vscode-colors-ui\.js/);
     assert.equal(fs.existsSync(scriptFile), false);
     assert.equal(fs.existsSync(styleFile), false);
+    assert.equal(fs.existsSync(editorImageAssetFile), false);
     assert.equal(fs.existsSync(legacyScriptFile), false);
 });
 

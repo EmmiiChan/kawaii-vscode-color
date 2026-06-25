@@ -33,17 +33,57 @@ export function createNeonEffectController(dependencies: NeonEffectControllerDep
 
 class DefaultNeonEffectController implements NeonEffectController {
   private activeColorThemeLabel: string;
+  private disableInFlight: Promise<void> | undefined;
+  private enableInFlight: Promise<void> | undefined;
+  private enableRerunRequested = false;
+  private pendingEnableConfiguration: NeonEffectConfiguration | undefined;
 
   constructor(private readonly dependencies: NeonEffectControllerDependencies) {
     this.activeColorThemeLabel = dependencies.getActiveColorThemeLabel();
   }
 
   async enableNeon(): Promise<void> {
-    await this.dependencies.neonEffectService.enable(this.dependencies.getNeonConfiguration());
+    this.pendingEnableConfiguration = this.dependencies.getNeonConfiguration();
+
+    if (this.disableInFlight) {
+      await this.disableInFlight;
+    }
+
+    if (this.enableInFlight) {
+      this.enableRerunRequested = true;
+      return this.enableInFlight;
+    }
+
+    const enableRun = this.runQueuedEnableRequests();
+    this.enableInFlight = enableRun;
+
+    try {
+      await enableRun;
+    } finally {
+      if (this.enableInFlight === enableRun) {
+        this.enableInFlight = undefined;
+      }
+    }
   }
 
   async disableNeon(): Promise<void> {
-    await this.dependencies.neonEffectService.disable();
+    this.pendingEnableConfiguration = undefined;
+    this.enableRerunRequested = false;
+
+    if (this.disableInFlight) {
+      return this.disableInFlight;
+    }
+
+    const disableRun = this.runDisableAfterEnable(this.enableInFlight);
+    this.disableInFlight = disableRun;
+
+    try {
+      await disableRun;
+    } finally {
+      if (this.disableInFlight === disableRun) {
+        this.disableInFlight = undefined;
+      }
+    }
   }
 
   isNeonEnabled(): boolean {
@@ -77,6 +117,23 @@ class DefaultNeonEffectController implements NeonEffectController {
     }
 
     void this.enableNeon();
+  }
+
+  private async runQueuedEnableRequests(): Promise<void> {
+    do {
+      this.enableRerunRequested = false;
+      const configuration = this.pendingEnableConfiguration || this.dependencies.getNeonConfiguration();
+      this.pendingEnableConfiguration = undefined;
+      await this.dependencies.neonEffectService.enable(configuration);
+    } while (this.enableRerunRequested);
+  }
+
+  private async runDisableAfterEnable(enableRun: Promise<void> | undefined): Promise<void> {
+    if (enableRun) {
+      await enableRun.catch(() => undefined);
+    }
+
+    await this.dependencies.neonEffectService.disable();
   }
 }
 

@@ -53,6 +53,12 @@ test("nodeFileSystem delegates text and binary file operations", (t) => {
   assert.equal(nodeFileSystem.exists(filePath), true);
   assert.equal(nodeFileSystem.readTextFile(filePath), "adapter content");
   assert.equal(nodeFileSystem.readFile(filePath).toString("utf8"), "adapter content");
+
+  const binaryPath = path.join(tempRoot, "binary.bin");
+  nodeFileSystem.writeFile(binaryPath, Buffer.from([1, 2, 3]));
+  assert.deepEqual(nodeFileSystem.readFile(binaryPath), Buffer.from([1, 2, 3]));
+  nodeFileSystem.deleteFile(binaryPath);
+  assert.equal(nodeFileSystem.exists(binaryPath), false);
 });
 
 test("VscodeExtensionStorage reads global state and resolves storage path fallbacks", () => {

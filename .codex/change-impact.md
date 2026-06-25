@@ -1,6 +1,6 @@
 # Codex Documentation Change Impact Matrix
 
-Last reviewed: 2026-06-19
+Last reviewed: 2026-06-25
 
 Use this file before finishing any change. The project goal is that `.codex` reflects additions, removals, and updates in the actual system, not only the initial architecture.
 
@@ -31,7 +31,8 @@ If the answer to 2 or 3 is no, update the documentation in the same change.
 | Test commands, E2E phases, `test-results/e2e/kawaii-last-run.json`, screenshots, visual metrics, or safe/gated boundaries | Update `.codex/AGENTS.md`, `.codex/docs.md`, and `.codex/system-map.md`. |
 | `scripts/check-codex-docs.js` or `npm run test:docs` rules | Update this matrix, `.codex/system-map.md`, and `scripts/check-codex-docs.test.js`. |
 | New source module, deleted module, renamed module, or responsibility move | Update `.codex/system-map.md` and `.codex/structure.md` in the same change. |
-| Marketplace docs, README screenshots, icon, install/publish workflow, or extension id assumptions | Update `.codex/AGENTS.md`, `.codex/docs.md`, README, and `.vscodeignore` notes if packaging changes. |
+| Changelog, release notes, published-version summary, or GitHub Release body | Update `CHANGELOG.md`, README release-note links if user-facing, and `.codex/AGENTS.md` / `.codex/docs.md` when release workflow expectations change. |
+| Marketplace docs, README screenshots, icon, install/publish workflow, or extension id assumptions | Update `.codex/AGENTS.md`, `.codex/docs.md`, README, `CHANGELOG.md` if user-facing release notes change, and `.vscodeignore` notes if packaging changes. |
 
 ## Completion Checklist
 

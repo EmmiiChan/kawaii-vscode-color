@@ -1,8 +1,8 @@
 # Codex Project Operations Guide
 
-Last reviewed: 2026-06-22
+Last reviewed: 2026-06-25
 
-This file tells Codex how to test, run, package, locally install, and prepare this VS Code theme extension for publishing. For architecture, read `.codex/structure.md`. For official documentation links, read `.codex/docs.md`.
+This file tells Codex how to test, run, package, locally install, and prepare this VS Code theme extension for publishing. For architecture, read `.codex/structure.md`. For official documentation links, read `.codex/docs.md`. For release notes, update `CHANGELOG.md`.
 
 ## Project Reality
 
@@ -36,6 +36,7 @@ npm run test:unit
 npm run test:dom
 npm run test:integration
 npm run test:package
+npm run test:cleanup-diagnostics
 npm run test:e2e
 npm run test:all
 npm run build:theme
@@ -51,6 +52,7 @@ Expected result:
 - `npm run test:dom` should compile first, then pass settings webview DOM tests covering all safe webview events, app navigation, Help metadata, Color Settings inputs/debounce, image/logo state, incoming webview messages, warnings/errors, split webview contracts, and editor-provided `--vscode-*` tokens instead of a standalone UI palette.
 - `npm run test:integration` should compile, activate the extension in the Extension Development Host, and execute `kawaii_synthwave.openSettings` without running the real Neon Effect patch.
 - `npm run test:package` should compile script wrappers and create a local VSIX through `scripts/package-local-vsix.ts` without incrementing `package.json.version`.
+- `npm run test:cleanup-diagnostics` should compile script wrappers and report disposable VS Code process/artifact cleanup status without terminating anything.
 - `npm run test:e2e` should compile, package the extension, open disposable VS Code `1.111.0` through ExTester/WebDriver, navigate the real settings webview, avoid all real Neon patch actions, cover safe fixture-backed upload/import/export/download and Random Neko flows without native dialogs or network, write safe Settings visual screenshots plus PNG analysis under `test-results/e2e`, and update `test-results/e2e/kawaii-last-run.json`.
 - `npm run test:e2e:current` should compile and run the same safe E2E suite in `.vscode-test/extest-current` using ExTester's `max` version by default; use `KAWAII_E2E_CURRENT_CODE_VERSION=<version>` when probing a specific VS Code stable build.
 - `npm run test:e2e:neon` should remove stale marked Kawaii/legacy workbench script tags and generated UI assets from the disposable `.vscode-test/extest-111-neon` workbench before launching the first apply phase, so the baseline screenshot starts from an unpatched renderer.
@@ -68,6 +70,7 @@ TypeScript migration note:
 - Real E2E orchestration lives in `scripts/run-e2e.ts` behind the stable `scripts/run-e2e.js` wrapper; E2E commands compile scripts before invoking the wrapper.
 - Safe all-tests orchestration lives in `scripts/run-test-all.ts` behind the stable `scripts/run-test-all.js` wrapper; `npm run test:all` compiles scripts before invoking the wrapper.
 - Test artifact cleanup lives in `scripts/clean-test-artifacts.ts` behind the stable `scripts/clean-test-artifacts.js` wrapper; `npm run clean:test-artifacts` removes `.vscode-test`, `test-results`, `playwright-report`, and `out-tests`.
+- Disposable VS Code cleanup diagnostics live in `scripts/test-process-cleanup-diagnostics.ts` behind the stable `scripts/test-process-cleanup-diagnostics.js` wrapper; `npm run test:cleanup-diagnostics` audits and `npm run test:cleanup-processes` terminates only matching disposable VS Code processes.
 - `vscode:prepublish`, `build:local`, integration tests, E2E scripts, gated Neon guard scripts, package version scripts, and local VSIX package scripts compile before loading or packaging the extension.
 
 Codex documentation rule:
@@ -258,6 +261,7 @@ Before a publish package, verify:
 - `package.json.publisher` is the intended Marketplace publisher.
 - `package.json.version` is bumped according to SemVer.
 - `package.json.repository.url` points to the intended repository.
+- `CHANGELOG.md` has a release section for the version being packaged or published.
 - `README.md`, screenshots, icon, and links match the fork being published.
 - `.vscodeignore` does not exclude required runtime files.
 - `LICENSE` is present.

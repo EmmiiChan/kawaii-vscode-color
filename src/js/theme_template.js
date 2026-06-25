@@ -66,7 +66,18 @@
   const UI_STYLESHEET_ID = 'kawaii-vscode-colors-ui-stylesheet';
   const TOKEN_STYLES_ID = 'kawaii-vscode-colors-ui-token-styles';
   const UI_STYLESHEET_HREF = 'kawaii-vscode-colors-ui.min.css?v=[KAWAII_UI_STYLE_VERSION]';
+  const BOOTSTRAP_OBSERVER_TIMEOUT_MS = 15000;
+  const MUTATION_REFRESH_DEBOUNCE_MS = 50;
   let activeTokenStylesSignature = '';
+  let pendingRefreshTimer = null;
+  let bootstrapObserver = null;
+  let bootstrapObserverTimeout = null;
+  let themeClassObserver = null;
+  let themeMarkerObserver = null;
+  let observedThemeMarkerElement = null;
+  let tokenContainerObserver = null;
+  let tokenStylesObserver = null;
+  let observedTokenStylesElement = null;
 
   //=============================
   // Helper functions
@@ -324,23 +335,23 @@
   /**
    * @summary Attempts to bootstrap the theme
    * @param {boolean} disableGlow 
-   * @param {MutationObserver} obs 
+   * @returns {boolean} true when required theme/token state has been initialized
    */
-  const initKawaiiVsCodeColorsUi = (disableGlow, obs) => {
+  const initKawaiiVsCodeColorsUi = (disableGlow) => {
     const tokensEl = document.querySelector('.vscode-tokens-styles');
 
     const activeInnerTheme = cleanupInactiveThemeStyles();
     ensureUiStylesheet();
 
     if (!tokensEl || !readyForReplacement(tokensEl, activeInnerTheme)) {
-      return;
+      return false;
     }
 
     const initialThemeStyles = tokensEl.innerText;
     const tokenStylesSignature = getTokenStylesSignature(initialThemeStyles, disableGlow, activeInnerTheme);
 
     if (activeTokenStylesSignature === tokenStylesSignature) {
-      return;
+      return true;
     }
 
     const orderedTokenReplacements = getOrderedTokenReplacementSets(tokensEl);
@@ -365,38 +376,130 @@
     activeTokenStylesSignature = tokenStylesSignature;
 
     console.log('Kawaii VS Code Color: UI effects initialised!');
+    return true;
   };
 
   /**
-   * @summary A MutationObserver callback that attempts to bootstrap the theme and assigns a retry attempt if it fails
+   * @summary Disconnects the broad startup observer after success or timeout.
+   * @returns {void}
    */
-  const watchForBootstrap = function(mutationsList, observer) {
-    for(let mutation of mutationsList) {
-      if (mutation.type === 'attributes' || mutation.type === 'childList') {
-        const activeInnerTheme = cleanupInactiveThemeStyles();
-        ensureUiStylesheet();
-
-        // does the style div exist yet?
-        const tokensEl = document.querySelector('.vscode-tokens-styles');
-        if (readyForReplacement(tokensEl, activeInnerTheme)) {
-          // If everything we need is ready, then initialise
-          initKawaiiVsCodeColorsUi([DISABLE_GLOW], observer);
-        }
-      }
+  const disconnectBootstrapObserver = () => {
+    if (bootstrapObserver) {
+      bootstrapObserver.disconnect();
+      bootstrapObserver = null;
     }
+
+    if (bootstrapObserverTimeout) {
+      clearTimeout(bootstrapObserverTimeout);
+      bootstrapObserverTimeout = null;
+    }
+  };
+
+  const getActiveInnerThemeElement = () => document.querySelector(
+    innerThemeConfigs.flatMap((innerTheme) => innerTheme.selectors).join(', ')
+  );
+
+  const observeActiveThemeMarkerElement = () => {
+    const activeThemeMarkerElement = getActiveInnerThemeElement();
+
+    if (observedThemeMarkerElement === activeThemeMarkerElement) {
+      return;
+    }
+
+    if (themeMarkerObserver) {
+      themeMarkerObserver.disconnect();
+      themeMarkerObserver = null;
+    }
+
+    observedThemeMarkerElement = activeThemeMarkerElement;
+
+    if (!activeThemeMarkerElement) {
+      return;
+    }
+
+    themeMarkerObserver = new MutationObserver(scheduleRuntimeRefresh);
+    themeMarkerObserver.observe(activeThemeMarkerElement, { attributes: true, attributeFilter: ['class'] });
+  };
+
+  const observeTokenStylesElement = () => {
+    const tokensEl = document.querySelector('.vscode-tokens-styles');
+
+    if (observedTokenStylesElement === tokensEl) {
+      return;
+    }
+
+    if (tokenStylesObserver) {
+      tokenStylesObserver.disconnect();
+      tokenStylesObserver = null;
+    }
+
+    observedTokenStylesElement = tokensEl;
+
+    if (!tokensEl) {
+      return;
+    }
+
+    tokenStylesObserver = new MutationObserver(scheduleRuntimeRefresh);
+    tokenStylesObserver.observe(tokensEl, { childList: true, characterData: true, subtree: true });
+  };
+
+  const observeNarrowRuntimeTargets = () => {
+    if (!themeClassObserver) {
+      themeClassObserver = new MutationObserver(scheduleRuntimeRefresh);
+      [document.documentElement, document.body].filter(Boolean).forEach((target) => {
+        themeClassObserver.observe(target, { attributes: true, attributeFilter: ['class'] });
+      });
+    }
+
+    if (!tokenContainerObserver) {
+      tokenContainerObserver = new MutationObserver(scheduleRuntimeRefresh);
+      [document.head, document.body].filter(Boolean).forEach((target) => {
+        tokenContainerObserver.observe(target, { childList: true });
+      });
+    }
+
+    observeActiveThemeMarkerElement();
+    observeTokenStylesElement();
+  };
+
+  const runRuntimeRefresh = () => {
+    pendingRefreshTimer = null;
+    const initialized = initKawaiiVsCodeColorsUi([DISABLE_GLOW]);
+    observeNarrowRuntimeTargets();
+
+    if (initialized) {
+      disconnectBootstrapObserver();
+    }
+  };
+
+  function scheduleRuntimeRefresh() {
+    if (pendingRefreshTimer) {
+      clearTimeout(pendingRefreshTimer);
+    }
+
+    pendingRefreshTimer = setTimeout(runRuntimeRefresh, MUTATION_REFRESH_DEBOUNCE_MS);
+  }
+
+  const startBoundedBootstrapObserver = () => {
+    const bootstrapTarget = document.body || document.documentElement;
+
+    if (!bootstrapTarget || bootstrapObserver) {
+      return;
+    }
+
+    bootstrapObserver = new MutationObserver(scheduleRuntimeRefresh);
+    bootstrapObserver.observe(bootstrapTarget, { attributes: true, childList: true, subtree: true });
+    bootstrapObserverTimeout = setTimeout(disconnectBootstrapObserver, BOOTSTRAP_OBSERVER_TIMEOUT_MS);
   };
 
   //=============================
   // Start bootstrapping!
   //=============================
-  // Grab body node
-  const bodyNode = document.querySelector('body');
-  // Use a mutation observer to check when we can bootstrap the theme
-  const observer = new MutationObserver(watchForBootstrap);
-  /* watch for both attribute and childList changes because, depending on 
-  the VS code version, the mutations might happen on the body, or they might 
-  happen on a nested div */
-  observer.observe(bodyNode, { attributes: true, childList: true, subtree: true });
-  ensureUiStylesheet();
-  initKawaiiVsCodeColorsUi([DISABLE_GLOW], observer);
+  observeNarrowRuntimeTargets();
+
+  if (!initKawaiiVsCodeColorsUi([DISABLE_GLOW])) {
+    startBoundedBootstrapObserver();
+  } else {
+    disconnectBootstrapObserver();
+  }
 })();

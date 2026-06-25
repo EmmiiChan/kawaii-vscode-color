@@ -16,6 +16,10 @@ The current extension has grown into a standalone codebase with a compiled TypeS
 | Neon Effect | Optionally patches VS Code workbench files to add glow, editor background images, and no-tab logo replacement. |
 | Development | Uses strict TypeScript source, stable JavaScript wrappers for scripts, and project-owned validation commands. |
 
+## Release Notes
+
+User-facing and maintainer release notes are tracked in [CHANGELOG.md](./CHANGELOG.md). The current performance cleanup release focuses on bounded renderer observers, repeated Neon apply safety, generated workbench asset cleanup, copied image assets instead of injected image payloads, and disposable VS Code cleanup diagnostics.
+
 ## Preview
 
 ![Kawaii VS Code Color features overview](images/kawaii-vscode-color-features-1.png)
@@ -125,7 +129,7 @@ Supported image formats:
 - WEBP
 - SVG
 
-Images are capped at 2 MB. If preview or injected effects fail, try a smaller image resolution because image previews and Neon Effect injection use data URLs.
+Images are capped at 2 MB. Settings previews use `data:` URLs and JSON exports carry base64 image payloads. The Neon Effect copies selected images into generated workbench asset files when effects are applied, but oversized images can still slow reloads; use a smaller image resolution if VS Code feels unstable.
 
 Image changes do not auto-apply. Click `Apply Effects`, then reload VS Code when prompted. If the editor does not refresh cleanly, close and open VS Code manually.
 
@@ -153,14 +157,14 @@ VS Code Settings Sync must be enabled in VS Code for `Save to VSSync` / `Import 
 
 VS Code color themes do not natively support text glow, editor background images, no-tab logo replacement, or arbitrary editor CSS. Those effects are provided by the optional Neon Effect path.
 
-The Neon Effect modifies VS Code workbench files by adding one marked `kawaii-vscode-colors-ui.js` script reference with a refresh key. That script adds the `.kawaii-vscode-colors-ui` class to the highest workbench root, links the generated `kawaii-vscode-colors-ui.min.css` stylesheet, and emits scoped token glow rules. The original VS Code token/style tags are not edited in place; the effect is additive and wrapper-conditioned.
+The Neon Effect modifies VS Code workbench files by adding one marked `kawaii-vscode-colors-ui.js` script reference with a refresh key. It writes generated CSS and copied image assets next to the workbench HTML. That script adds the `.kawaii-vscode-colors-ui` class to the highest workbench root, links the generated `kawaii-vscode-colors-ui.min.css` stylesheet, and emits scoped token glow rules. The original VS Code token/style tags are not edited in place; the effect is additive and wrapper-conditioned.
 
 Use it with caution:
 
 - Administrator permissions may be required on Windows.
 - VS Code may show an unsupported or corrupted installation warning.
 - VS Code updates can overwrite the patch.
-- Disable the effect before troubleshooting editor startup or workbench rendering issues.
+- Disable the effect before troubleshooting editor startup or workbench rendering issues; disabling removes the marked HTML reference and generated Kawaii JS/CSS/image assets.
 
 Enable or disable the effect:
 
@@ -243,6 +247,8 @@ The project has four regular automated test layers, plus one gated Neon Effect E
 | `npm run test:dom` | DOM UI tests | Uses `jsdom` to load the settings webview HTML and verify safe `postMessage` events, app navigation, Help metadata, Color Settings inputs/debounce, image/logo state, incoming webview messages, warnings/errors, and `--vscode-*` token usage. |
 | `npm run test:integration` | VS Code integration | Uses `@vscode/test-cli` and `@vscode/test-electron` to activate the extension in an Extension Development Host and execute the settings command. |
 | `npm run test:package` | Local package check | Compiles script wrappers and runs the TypeScript-backed local VSIX package helper without bumping the package version. |
+| `npm run test:cleanup-diagnostics` | Cleanup diagnostics | Compiles script wrappers and reports stale disposable VS Code processes and known test artifact roots. |
+| `npm run test:cleanup-processes` | Cleanup diagnostics kill mode | Runs the same diagnostic path and terminates only matching disposable VS Code processes. |
 | `npm run test:e2e` | Real VS Code UI E2E | Uses ExTester/WebDriver to package the extension, open a disposable VS Code, run `Kawaii VS Code Color: Settings`, navigate the real webview, validate safe UI flows, and write the project-owned last-run marker. |
 | `npm run test:e2e:current` | Experimental real VS Code UI E2E | Runs the same safe E2E suite in separate `.vscode-test/extest-current` storage using ExTester's `max` VS Code version by default; override with `KAWAII_E2E_CURRENT_CODE_VERSION=<version>` when probing a specific stable VS Code build. |
 | `npm test` | Full suite | Runs unit, DOM, and VS Code integration tests in sequence. |
@@ -279,7 +285,7 @@ npm run test:e2e:neon
 
 `npm run test:e2e:neon` patches only the disposable VS Code installation under `.vscode-test/extest-111-neon`. The runner refuses Neon mode unless `KAWAII_E2E_ALLOW_NEON_PATCH=1` is present and the storage path resolves inside that disposable Neon directory. It runs five separate VS Code launches to validate the same lifecycle users may need manually: before applying, after applying dstgroup images and reopening VS Code, after switching to an alternate image and reopening VS Code, after reverting to dstgroup and reopening VS Code, and after removing the patch and reopening VS Code. It verifies the workbench HTML hash returns to the original baseline and that injected runtime CSS uses editor-provided `--vscode-*` tokens rather than a standalone UI palette.
 
-The gated Neon suite imports controlled settings fixtures through internal test hooks exposed only when `KAWAII_E2E_ALLOW_NEON_PATCH=1`. Its first apply path pre-seeds a different image bundle, then uses the real Settings UI upload controls with fixture-backed dialogs before clicking `Apply Effects`, so image/logo payload replacement is validated through the UI path. It validates generated `kawaii-vscode-colors-ui.js`, image data URLs, editor background opacity/fit, no-tab logo opacity, active no-page fallback selector, runtime style tags, screenshots, image replacement, dstgroup logo restoration, and final HTML restoration. It also writes a visual editor-background fit matrix under `test-results/e2e` with a no-overlay baseline plus one screenshot for each supported fit area: `full`, `top`, `bottom`, `left`, `right`, `top-left`, `top-right`, `bottom-left`, and `bottom-right`.
+The gated Neon suite imports controlled settings fixtures through internal test hooks exposed only when `KAWAII_E2E_ALLOW_NEON_PATCH=1`. Its first apply path pre-seeds a different image bundle, then uses the real Settings UI upload controls with fixture-backed dialogs before clicking `Apply Effects`, so image/logo payload replacement is validated through the UI path. It validates generated `kawaii-vscode-colors-ui.js`, generated CSS asset URLs, editor background opacity/fit, no-tab logo opacity, active no-page fallback selector, runtime style tags, screenshots, image replacement, dstgroup logo restoration, generated asset deletion after disable, and final HTML restoration. It also writes a visual editor-background fit matrix under `test-results/e2e` with a no-overlay baseline plus one screenshot for each supported fit area: `full`, `top`, `bottom`, `left`, `right`, `top-left`, `top-right`, `bottom-left`, and `bottom-right`.
 
 ### Build a Local VSIX
 
@@ -333,6 +339,7 @@ Before publishing:
 - Confirm `package.json.publisher` is `ITEM-PIXEL`.
 - Confirm `package.json.name` is `kawaii-vscode-color`.
 - Confirm `package.json.repository.url` points to the public repository that contains the README images.
+- Confirm [CHANGELOG.md](./CHANGELOG.md) has a release section for the package version being published.
 - Package to `./dist` with `npm run build:local`.
 - Publish only from an account authorized for the configured publisher.
 
@@ -344,6 +351,7 @@ Kawaii VS Code Color is rewrited with Typescript and roots in `SynthWave '84 - V
 
 - Marketplace extension: [Kawaii VS Code Color](https://marketplace.visualstudio.com/items?itemName=ITEM-PIXEL.kawaii-vscode-color)
 - Repository: [EmmiiChan/kawaii-vscode-color](https://github.com/EmmiiChan/kawaii-vscode-color)
+- Changelog: [CHANGELOG.md](./CHANGELOG.md)
 - VS Code Color Theme guide: [Color Theme](https://code.visualstudio.com/api/extension-guides/color-theme)
 - VS Code Theme Color reference: [Theme Color](https://code.visualstudio.com/api/references/theme-color)
 - VS Code theme customization: [Customize a color theme](https://code.visualstudio.com/docs/configure/themes#_customize-a-color-theme)

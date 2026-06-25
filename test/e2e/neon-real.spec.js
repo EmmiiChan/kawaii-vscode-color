@@ -318,12 +318,14 @@ describe("Neon real gated E2E @neon-real", function () {
 
         const restoredSnapshot = await waitForPatchSnapshot(
             patchPaths,
-            (snapshot) => !snapshot.patchEnabled && snapshot.html === state.baselineHtml,
+            (snapshot) => !snapshot.patchEnabled && snapshot.html === state.baselineHtml && !snapshot.scriptExists && !snapshot.styleExists,
             "Expected workbench HTML to match the before state after disabling"
         );
 
         assert.equal(restoredSnapshot.htmlHash, state.baselineHtmlHash, "Expected restored HTML hash to match the before state");
         assert.equal(restoredSnapshot.scriptTagCount, 0, "Expected no Kawaii UI script tag after disabling");
+        assert.equal(restoredSnapshot.scriptExists, false, "Expected generated Kawaii UI script asset to be deleted after disabling");
+        assert.equal(restoredSnapshot.styleExists, false, "Expected generated Kawaii UI CSS asset to be deleted after disabling");
         updateState({
             restoredHtmlHash: restoredSnapshot.htmlHash
         });
@@ -411,12 +413,14 @@ function createExpectedVisualEffects(bundle) {
     const emptyEditorLogoImage = bundle.effects.emptyEditorLogo.image;
 
     return {
+        editorBackgroundAssetFileName: `kawaii-vscode-colors-editor-background-image.${editorBackgroundImage.extension}`,
         editorBackgroundDataUrl: createDataUrl(editorBackgroundImage),
         editorBackgroundOpacity: String(bundle.effects.editorBackground.opacity),
         editorBackgroundFit: bundle.effects.editorBackground.fit,
         editorBackgroundFitArea: getExpectedEditorBackgroundFitArea(bundle.effects.editorBackground.fit),
         editorBackgroundOriginalName: editorBackgroundImage.originalName,
         editorBackgroundMimeType: editorBackgroundImage.mimeType,
+        emptyEditorLogoAssetFileName: `kawaii-vscode-colors-empty-editor-logo-image.${emptyEditorLogoImage.extension}`,
         emptyEditorLogoDataUrl: createDataUrl(emptyEditorLogoImage),
         emptyEditorLogoOpacity: String(bundle.effects.emptyEditorLogo.opacity),
         emptyEditorLogoOriginalName: emptyEditorLogoImage.originalName,
@@ -994,22 +998,26 @@ function assertAppliedStyleUsesEditorTokens(style) {
 }
 
 function assertAppliedStyleIncludesVisualEffects(style, visualCase) {
+    const editorBackgroundAssetUrl = `${visualCase.expected.editorBackgroundAssetFileName}?v=`;
+    const emptyEditorLogoAssetUrl = `${visualCase.expected.emptyEditorLogoAssetFileName}?v=`;
+
+    assert.doesNotMatch(style, /data:image\/(?:png|jpeg|webp|svg\+xml);base64/);
     assert.ok(
-        style.includes(visualCase.expected.editorBackgroundDataUrl),
-        `Expected ${visualCase.id} editor background image data URL in generated Kawaii UI CSS`
+        style.includes(editorBackgroundAssetUrl),
+        `Expected ${visualCase.id} editor background asset URL in generated Kawaii UI CSS`
     );
     assert.ok(
-        style.includes(visualCase.expected.emptyEditorLogoDataUrl),
-        `Expected ${visualCase.id} empty editor logo data URL in generated Kawaii UI CSS`
+        style.includes(emptyEditorLogoAssetUrl),
+        `Expected ${visualCase.id} empty editor logo asset URL in generated Kawaii UI CSS`
     );
     assert.ok(
-        style.includes(`--kawaii-editor-background-image: url("${visualCase.expected.editorBackgroundDataUrl}`),
+        style.includes(`--kawaii-editor-background-image: url("${editorBackgroundAssetUrl}`),
         `Expected ${visualCase.id} editor background image declaration in generated Kawaii UI CSS`
     );
     assert.match(style, new RegExp(`--kawaii-editor-background-image-opacity:\\s*${escapeRegExp(visualCase.expected.editorBackgroundOpacity)}`));
     assertAppliedStyleIncludesEditorBackgroundFitArea(style, visualCase);
     assert.ok(
-        style.includes(`background-image: url("${visualCase.expected.emptyEditorLogoDataUrl}`),
+        style.includes(`background-image: url("${emptyEditorLogoAssetUrl}`),
         `Expected ${visualCase.id} empty editor logo background declaration in generated Kawaii UI CSS`
     );
     assert.match(style, new RegExp(`opacity:\\s*${escapeRegExp(visualCase.expected.emptyEditorLogoOpacity)}`));
@@ -1048,8 +1056,8 @@ async function waitForRuntimeNeonState(predicate, message, visualCase = DSTGROUP
 
 async function getRuntimeNeonState(visualCase, options = {}) {
     return VSBrowser.instance.driver.executeScript(`
-        const expectedEditorBackgroundDataUrl = arguments[0];
-        const expectedEmptyEditorLogoDataUrl = arguments[1];
+        const expectedEditorBackgroundImageFragment = arguments[0];
+        const expectedEmptyEditorLogoImageFragment = arguments[1];
         const expectedEditorBackgroundOpacity = arguments[2];
         const expectedEmptyEditorLogoOpacity = arguments[3];
         const expectedEditorBackgroundFitArea = arguments[4];
@@ -1105,14 +1113,14 @@ async function getRuntimeNeonState(visualCase, options = {}) {
         });
         const editorTarget = editorTargets.find((element) => {
             const styles = window.getComputedStyle(element, '::before');
-            return styles.backgroundImage.includes(expectedEditorBackgroundDataUrl);
+            return styles.backgroundImage.includes(expectedEditorBackgroundImageFragment);
         }) || editorTargets[0];
         const editorTargetStyles = editorTarget ? window.getComputedStyle(editorTarget, '::before') : null;
         const editorTargetRect = editorTarget ? editorTarget.getBoundingClientRect() : null;
         const logoTargets = Array.from(document.querySelectorAll(emptyEditorLogoSelectors.join(', ')));
         const logoTarget = logoTargets.find((element) => {
             const styles = window.getComputedStyle(element);
-            return styles.backgroundImage.includes(expectedEmptyEditorLogoDataUrl);
+            return styles.backgroundImage.includes(expectedEmptyEditorLogoImageFragment);
         }) || logoTargets[0];
         const logoTargetStyles = logoTarget ? window.getComputedStyle(logoTarget) : null;
         const logoTargetRect = logoTarget ? logoTarget.getBoundingClientRect() : null;
@@ -1120,7 +1128,7 @@ async function getRuntimeNeonState(visualCase, options = {}) {
             const matches = Array.from(document.querySelectorAll(fallbackCase.selector));
             const expectedImageMatches = matches.filter((element) => {
                 const styles = window.getComputedStyle(element);
-                return styles.backgroundImage.includes(expectedEmptyEditorLogoDataUrl);
+                return styles.backgroundImage.includes(expectedEmptyEditorLogoImageFragment);
             });
 
             return {
@@ -1150,9 +1158,9 @@ async function getRuntimeNeonState(visualCase, options = {}) {
             hasThemeWrapperClass: Boolean(themeWrapper && /kawaii/i.test(themeWrapper.className || '')),
             usesEditorTokens: /var\\(--vscode-/.test(injectedText),
             hasOwnPaletteOnly: Boolean(injectedText) && !/var\\(--vscode-/.test(injectedText),
-            hasExpectedEditorBackgroundImage: injectedText.includes(expectedEditorBackgroundDataUrl),
-            hasExpectedEditorBackgroundImageOnEditor: Boolean(editorTargetStyles && editorTargetStyles.backgroundImage.includes(expectedEditorBackgroundDataUrl)),
-            hasExpectedEmptyEditorLogoImage: Boolean(logoTargetStyles && logoTargetStyles.backgroundImage.includes(expectedEmptyEditorLogoDataUrl)),
+            hasExpectedEditorBackgroundImage: injectedText.includes(expectedEditorBackgroundImageFragment),
+            hasExpectedEditorBackgroundImageOnEditor: Boolean(editorTargetStyles && editorTargetStyles.backgroundImage.includes(expectedEditorBackgroundImageFragment)),
+            hasExpectedEmptyEditorLogoImage: Boolean(logoTargetStyles && logoTargetStyles.backgroundImage.includes(expectedEmptyEditorLogoImageFragment)),
             editorBackgroundTargetCount: editorTargets.length,
             editorBackgroundTargetClassName: editorTarget ? editorTarget.className : '',
             editorBackgroundPseudoBackgroundImageLength: editorTargetStyles ? editorTargetStyles.backgroundImage.length : 0,
@@ -1200,8 +1208,8 @@ async function getRuntimeNeonState(visualCase, options = {}) {
             }
         }
     `,
-        visualCase.expected.editorBackgroundDataUrl,
-        visualCase.expected.emptyEditorLogoDataUrl,
+        visualCase.expected.editorBackgroundAssetFileName,
+        visualCase.expected.emptyEditorLogoAssetFileName,
         visualCase.expected.editorBackgroundOpacity,
         visualCase.expected.emptyEditorLogoOpacity,
         visualCase.expected.editorBackgroundFitArea,

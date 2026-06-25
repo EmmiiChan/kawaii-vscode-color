@@ -55,6 +55,9 @@ test("NeonEffectService generates the runtime script with typed configuration an
   const htmlFile = path.join(workbenchBase, "electron-sandbox", "workbench", "workbench.esm.html");
   const scriptFile = path.join(workbenchBase, "electron-sandbox", "workbench", "kawaii-vscode-colors-ui.js");
   const styleFile = path.join(workbenchBase, "electron-sandbox", "workbench", "kawaii-vscode-colors-ui.min.css");
+  const workbenchDir = path.dirname(htmlFile);
+  const editorAssetFile = path.join(workbenchDir, "kawaii-vscode-colors-editor-background-image.png");
+  const logoAssetFile = path.join(workbenchDir, "kawaii-vscode-colors-empty-editor-logo-image.svg");
   const editorImagePath = path.join(storageRoot, "editor-background-image.png");
   const logoPath = path.join(storageRoot, "empty-editor-logo-image.svg");
   const files = new Map<string, MemoryFileValue>([
@@ -66,8 +69,8 @@ test("NeonEffectService generates the runtime script with typed configuration an
     ].join("\n")],
     [path.join(extensionRoot, "src", "js", "theme_template.js"), "brightness=[NEON_BRIGHTNESS];glow=[DISABLE_GLOW];href=kawaii-vscode-colors-ui.min.css?v=[KAWAII_UI_STYLE_VERSION]"],
     [htmlFile, "<html><body>Workbench</body></html>\n"],
-    [editorImagePath, Buffer.from("editor image").toString("binary")],
-    [logoPath, "<svg></svg>"]
+    [editorImagePath, Buffer.from("editor image")],
+    [logoPath, Buffer.from("<svg></svg>")]
   ]);
   const notificationCalls: NotificationCall[] = [];
   const service = createNeonEffectService({
@@ -104,10 +107,14 @@ test("NeonEffectService generates the runtime script with typed configuration an
   assert.match(script, /brightness=7F/);
   assert.match(script, /glow=true/);
   assert.match(script, /kawaii-vscode-colors-ui\.min\.css\?v=neon/);
-  assert.match(styles, /data:image\/png;base64,/);
+  assert.doesNotMatch(styles, /data:image\/(?:png|jpeg|webp|svg\+xml);base64/);
+  assert.match(styles, /image=url\("kawaii-vscode-colors-editor-background-image\.png\?v=neon"\)/);
   assert.match(styles, /opacity=0\.2/);
   assert.match(styles, /area=auto,0,0,auto,50%,50%/);
-  assert.match(styles, /data:image\/svg\+xml;base64,/);
+  assert.match(styles, /background-image: url\("kawaii-vscode-colors-empty-editor-logo-image\.svg\?v=neon"\) !important;/);
+  assert.ok(styles.length < 2000, `Expected generated CSS to stay small, got ${styles.length} bytes`);
+  assert.deepEqual(files.get(editorAssetFile), Buffer.from("editor image"));
+  assert.deepEqual(files.get(logoAssetFile), Buffer.from("<svg></svg>"));
   assert.doesNotMatch(styles, /\[(?:EDITOR_BACKGROUND_IMAGE|EMPTY_EDITOR_LOGO_STYLES)\]/);
   assert.match(String(files.get(htmlFile) || ""), /kawaii-vscode-colors-ui\.js\?v=neon/);
   assert.deepEqual(notificationCalls, [{
@@ -119,9 +126,14 @@ test("NeonEffectService generates the runtime script with typed configuration an
 
 test("NeonEffectService disables active patches and reports inactive patches", async () => {
   const harness = createMinimalServiceHarness("<html></html>\n");
+  const generatedAssetPaths = getGeneratedPatchAssetPaths();
 
   await harness.service.enable({ brightness: 2, disableGlow: false });
+  assert.equal(harness.files.has(generatedAssetPaths.scriptFile), true);
+  assert.equal(harness.files.has(generatedAssetPaths.styleFile), true);
   await harness.service.disable();
+  assert.equal(harness.files.has(generatedAssetPaths.scriptFile), false);
+  assert.equal(harness.files.has(generatedAssetPaths.styleFile), false);
   await harness.service.disable();
 
   assert.equal(harness.service.isEnabled(), false);
@@ -155,7 +167,7 @@ test("NeonEffectService reports file access failures while disabling the patch",
       isEnabled() {
         return false;
       },
-      removeScriptTag() {
+      removePatch() {
         throw error;
       },
       resolvePatchPaths() {
@@ -196,7 +208,7 @@ test("NeonEffectService logs unexpected isEnabled failures and returns false", (
       isEnabled() {
         throw error;
       },
-      removeScriptTag() {
+      removePatch() {
         return { status: "workbench-not-found", paths: null };
       },
       resolvePatchPaths() {
@@ -284,6 +296,16 @@ function createMinimalServiceHarness(html: string): MemoryHarness {
   };
 }
 
+function getGeneratedPatchAssetPaths() {
+  const workbenchBase = path.normalize("C:/VSCode/resources/app/out/vs/code");
+  const workbenchDir = path.join(workbenchBase, "electron-browser", "workbench");
+
+  return {
+    scriptFile: path.join(workbenchDir, "kawaii-vscode-colors-ui.js"),
+    styleFile: path.join(workbenchDir, "kawaii-vscode-colors-ui.min.css")
+  };
+}
+
 function createMemoryFileSystem(files: Map<string, MemoryFileValue>) {
   return {
     exists(filePath: string): boolean {
@@ -300,6 +322,12 @@ function createMemoryFileSystem(files: Map<string, MemoryFileValue>) {
     },
     writeTextFile(filePath: string, content: string): void {
       files.set(filePath, content);
+    },
+    writeFile(filePath: string, content: Buffer): void {
+      files.set(filePath, Buffer.from(content));
+    },
+    deleteFile(filePath: string): void {
+      files.delete(filePath);
     },
     readFile(filePath: string): Buffer {
       if (!files.has(filePath)) {

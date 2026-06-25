@@ -1,6 +1,6 @@
 # Codex Structure and Workflow Guide
 
-Last reviewed: 2026-06-22
+Last reviewed: 2026-06-25
 
 Use this guide to understand how this VS Code theme extension is shaped, how files relate to each other, and where future changes belong. For official API links and version-specific references, read `.codex/docs.md` first.
 
@@ -35,6 +35,7 @@ Command Palette
   -> internal enableNeon() handler resolves VS Code workbench paths
   -> reads generated UI CSS and JS template
   -> replaces JS and CSS placeholders with settings-derived values
+  -> copies stored editor/no-tab images into deterministic VS Code workbench asset files when present
   -> writes kawaii-vscode-colors-ui.js and kawaii-vscode-colors-ui.min.css into VS Code workbench folder
   -> patches workbench HTML with the marked script tag
   -> shows a VS Code notification
@@ -64,11 +65,12 @@ Kawaii VS Code Color: Settings webview
   -> internal disableNeon() handler
   -> resolves the same workbench HTML path
   -> removes the marked script tag from workbench HTML
+  -> deletes generated Kawaii JS/CSS/image workbench assets
   -> shows a notification
   -> reloads VS Code when needed
 ```
 
-Disabling removes the HTML reference to `kawaii-vscode-colors-ui.js`. The current code does not delete the generated script or CSS asset files.
+Disabling removes the HTML reference to `kawaii-vscode-colors-ui.js` and deletes generated workbench assets so stale CSS or images are not left behind after a successful disable.
 
 Setup and color settings path:
 
@@ -190,6 +192,7 @@ Current source of truth:
 - Typed settings webview view-model serialization, CSP/HTML adapter contracts, page ids, style token names, and client message names live under `src/webview/settings`.
 - Workbench path detection and marked HTML patch helpers live in `src/workbenchPatch.ts`.
 - E2E orchestration lives in `scripts/run-e2e.ts` behind the stable `scripts/run-e2e.js` wrapper. Neon mode removes stale marked Kawaii/legacy script tags and generated UI assets from the disposable workbench before the first launch. E2E last-run marker normalization lives in `scripts/e2e-last-run.ts` behind the stable `scripts/e2e-last-run.js` wrapper; `test-results/e2e/kawaii-last-run.json` is the authoritative project marker and `.last-run.json` is ExTester diagnostics only.
+- Disposable VS Code process and artifact diagnostics live in `scripts/test-process-cleanup-diagnostics.ts` behind the stable `scripts/test-process-cleanup-diagnostics.js` wrapper; `npm run test:cleanup-diagnostics` audits and `npm run test:cleanup-processes` terminates only matching disposable VS Code processes.
 - Test artifact cleanup lives in `scripts/clean-test-artifacts.ts` behind the stable `scripts/clean-test-artifacts.js` wrapper and removes `.vscode-test`, `test-results`, `playwright-report`, and `out-tests`.
 - Shared TypeScript migration contracts and guards live under `src/shared`; keep them free of VS Code, filesystem, DOM, and network dependencies.
 - Real VS Code E2E helpers live in `test/e2e/helpers/extester-app.js`.
@@ -334,7 +337,7 @@ Current mechanics:
 - The gated E2E command `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` validates this only inside `.vscode-test/extest-111-neon`.
 - Before launching the first gated Neon phase, `scripts/run-e2e.ts` removes stale marked current or legacy script tags plus generated UI assets from the disposable workbench so baseline screenshots are not contaminated by a previous patched renderer.
 - The gated E2E uses five separate VS Code launches: capture baseline/apply dstgroup patch, validate dstgroup runtime after full restart and apply an alternate image, validate the alternate image after full restart and reapply dstgroup, validate dstgroup after full restart and disable, then validate restored runtime after another full restart.
-- The gated E2E captures screenshots of the default watermark, UI-backed dstgroup no-tab logo replacement, alternate no-tab image, reverted dstgroup logo, real editor-page backgrounds for dstgroup, alternate, and reverted dstgroup states, and a no-overlay baseline plus one real-editor screenshot for every `full`, `top`, `bottom`, `left`, `right`, `top-left`, `top-right`, `bottom-left`, and `bottom-right` editor background fit area. It also checks runtime CSS data URLs, real `.monaco-editor::before` background application, active no-page logo fallback selector matching, editor background fit area CSS variables, image-difference positioning metrics, and `--vscode-*` token usage. Unit tests cover the complete fit area mapping and both no-page logo fallback selector versions without opening VS Code.
+- The gated E2E captures screenshots of the default watermark, UI-backed dstgroup no-tab logo replacement, alternate no-tab image, reverted dstgroup logo, real editor-page backgrounds for dstgroup, alternate, and reverted dstgroup states, and a no-overlay baseline plus one real-editor screenshot for every `full`, `top`, `bottom`, `left`, `right`, `top-left`, `top-right`, `bottom-left`, and `bottom-right` editor background fit area. It also checks runtime CSS asset URLs, real `.monaco-editor::before` background application, active no-page logo fallback selector matching, editor background fit area CSS variables, image-difference positioning metrics, generated asset deletion after disable, and `--vscode-*` token usage. Unit tests cover the complete fit area mapping and both no-page logo fallback selector versions without opening VS Code.
 
 Patch marker contract:
 
@@ -431,6 +434,7 @@ Before packaging or publishing:
 
 - Check `.vscodeignore` so required runtime assets are included and private/local files are excluded.
 - Run `npm run build:theme` so the generated theme is current.
+- Update `CHANGELOG.md` with the release notes for the package version being shipped.
 - Ensure `package.json.publisher`, `name`, `repository`, and README links match the intended publisher/fork.
 - Ensure `icon.png`, `banner.png`, and screenshots still match README/Marketplace usage.
 - If the extension id changes, update any renderer selector that depends on the current extension id pattern.
@@ -441,6 +445,7 @@ Before packaging or publishing:
 Local source anchors:
 
 - `package.json`: manifest, contributions, activation, settings, extension entry.
+- `CHANGELOG.md`: user-facing and maintainer release notes used for package/publish history.
 - `src/extension.ts`: extension host activation, command registration, and service composition, compiled to `out/src/extension.js`.
 - `src/extensionHost`: typed adapters, Neon Effect controller, Settings command/message controllers, script assembly service, settings host services, and workbench patch service.
 - `src/extensionRoot.ts`: package-root and asset path resolution for source and compiled runtime directories.
@@ -484,6 +489,8 @@ Local source anchors:
 - `scripts/require-e2e-neon-flag.ts`: TypeScript implementation for refusing real Neon E2E unless `KAWAII_E2E_ALLOW_NEON_PATCH=1` is set.
 - `scripts/run-e2e.js`: stable Node wrapper for safe, current, and gated real VS Code E2E orchestration.
 - `scripts/run-e2e.ts`: TypeScript implementation for ExTester phase selection, disposable storage configuration, stale Neon workbench tag/asset cleanup before the first apply launch, E2E process execution, and `test-results/e2e/kawaii-last-run.json` updates for safe, current, and Neon modes.
+- `scripts/test-process-cleanup-diagnostics.js`: stable Node wrapper for disposable VS Code process and test artifact diagnostics.
+- `scripts/test-process-cleanup-diagnostics.ts`: TypeScript implementation for disposable VS Code process filtering, optional termination, and artifact path reporting used by `npm run test:cleanup-diagnostics` and `npm run test:cleanup-processes`.
 - `scripts/run-test-all.js`: stable Node wrapper for safe test orchestration.
 - `scripts/run-test-all.ts`: TypeScript implementation for `npm run test:all`, including safe phase selection, child process execution, fail-fast behavior, and final aggregate pass/fail/skipped summary output.
 - `test/unit`: Node unit tests without UI.

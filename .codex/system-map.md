@@ -1,6 +1,6 @@
 # Kawaii VS Code Color System Map
 
-Last reviewed: 2026-06-22
+Last reviewed: 2026-06-25
 
 This file is the migration-oriented contract map for the extension. Keep it factual and close to source. `npm run test:docs` verifies the critical facts in this file against the repository.
 
@@ -10,6 +10,7 @@ This file is the migration-oriented contract map for the extension. Keep it fact
 | --- | --- |
 | Package | `kawaii-vscode-color`; patch version is managed automatically in `package.json` and `package-lock.json` |
 | Publisher | `ITEM-PIXEL` |
+| Changelog | `CHANGELOG.md` is the release-notes source for users, maintainers, and GitHub Releases |
 | Runtime entry | `./out/src/extension.js` |
 | VS Code engine | `^1.33.0` |
 | Extension kind | `ui` |
@@ -17,6 +18,7 @@ This file is the migration-oriented contract map for the extension. Keep it fact
 | Public command | `kawaii_synthwave.openSettings` -> `Kawaii VS Code Color: Settings` |
 | Documentation guard | `npm run test:docs` -> `npm run compile:scripts` -> `node scripts/check-codex-docs.js` wrapper -> `out-scripts/scripts/check-codex-docs.js` |
 | Test artifact cleanup | `npm run clean:test-artifacts` -> `npm run compile:scripts` -> `node scripts/clean-test-artifacts.js`; `npm run build:clean` runs cleanup before `npm run build:local` |
+| Disposable VS Code cleanup diagnostics | `npm run test:cleanup-diagnostics` audits stale disposable VS Code processes and test artifacts; `npm run test:cleanup-processes` runs the same diagnostic in kill mode |
 | Lockfile | `lockfileVersion: 3`; root package patch version is automatic and not duplicated in `.codex` docs |
 
 Dev dependency contract:
@@ -39,6 +41,7 @@ Dev dependency contract:
 - `.codex/docs.md`
 - `.codex/structure.md`
 - `.codex/system-map.md`
+- `CHANGELOG.md`
 - `package.json`
 - `package-lock.json`
 - `scripts/build-color-theme.js`
@@ -59,6 +62,8 @@ Dev dependency contract:
 - `scripts/require-e2e-neon-flag.ts`
 - `scripts/run-e2e.js`
 - `scripts/run-e2e.ts`
+- `scripts/test-process-cleanup-diagnostics.js`
+- `scripts/test-process-cleanup-diagnostics.ts`
 - `scripts/run-test-all.js`
 - `scripts/run-test-all.ts`
 - `src/css/editor_chrome.css`
@@ -127,7 +132,7 @@ Build behavior:
 | `src/emptyEditorLogoStyles.ts` -> `out/src/emptyEditorLogoStyles.js` | CSS selector list and generated CSS for no-tab logo replacement. |
 | `src/randomNekoImage.ts` -> `out/src/randomNekoImage.js` | Testable Random Neko API payload parsing, URL resolution, guarded HTTPS fetch, and image response normalization. |
 | `src/renderer` -> `out/src/renderer` | Browser-only typed renderer token replacement maps, Kawaii theme wrapper selectors, runtime style ids, token color normalization, and token replacement helpers for the injected workbench script boundary. |
-| `src/js/theme_template.js` | Renderer-side wrapper bootstrap, stylesheet link lifecycle, token CSS detection, theme matching, and additive scoped token glow rule generation. |
+| `src/js/theme_template.js` | Renderer-side wrapper bootstrap, bounded bootstrap observer, narrow token/theme observers after initialization, stylesheet link lifecycle, token CSS detection, theme matching, and additive scoped token glow rule generation. |
 | `src/css/kawaii-vscode-colors-ui.min.css` | Generated Sass output written next to the workbench HTML and linked by the injected renderer script. |
 | `src/scss/kawaii-vscode-colors-ui.scss` | Sass wrapper entrypoint for additive `.kawaii-vscode-colors-ui` static workbench chrome rules. |
 | `src/scss/generated/_editor-chrome.generated.scss` | Generated bridge partial created from the legacy `src/css/editor_chrome.css` source. |
@@ -251,6 +256,8 @@ Runtime DOM/CSS contract:
 - The script adds `.kawaii-vscode-colors-ui` and exactly one sanitized inner theme class, normally `.dark-pink-kawaii` or `.light-pink-pastel-kawaii`, to the highest available workbench root, normally `document.documentElement`.
 - Static UI CSS is linked with `#kawaii-vscode-colors-ui-stylesheet` and `kawaii-vscode-colors-ui.min.css?v=<same-token-as-script>`.
 - Dynamic token glow rules are additive and emitted into `#kawaii-vscode-colors-ui-token-styles` as `.kawaii-vscode-colors-ui.<inner-theme-wrapper> <token-selector> { ... }`.
+- Stored editor background and no-tab logo images are copied into deterministic workbench asset files next to the generated JS/CSS, and generated CSS references those relative assets with the same cache-busting token instead of embedding image `data:` payloads.
+- Disabling the patch removes the marked HTML script tag plus generated JS, generated CSS, and known generated image asset variants.
 
 The renderer code must keep using VS Code workbench/theme tokens and must not define an independent UI palette for the settings webview or injected workbench surfaces. Typed renderer helpers live in `src/renderer/ThemeTemplate.ts`; the injected runtime template remains `src/js/theme_template.js` until the browser script is fully migrated.
 
@@ -267,6 +274,7 @@ The renderer code must keep using VS Code workbench/theme tokens and must not de
 | Integration | `npm run test:integration` | Compiles, then runs VS Code Extension Development Host activation and command smoke tests. |
 | Package | `npm run test:package` | Compiles script wrappers, runs the TypeScript-backed local VSIX package helper, executes VSCE prepublish compile/theme checks, and creates a local VSIX without incrementing the package version. |
 | Test artifact cleanup | `npm run clean:test-artifacts` | Compiles script wrappers, then removes `.vscode-test`, `test-results`, `playwright-report`, and `out-tests` if they exist inside the workspace. |
+| Disposable process cleanup diagnostics | `npm run test:cleanup-diagnostics` / `npm run test:cleanup-processes` | Compiles script wrappers, audits stale disposable VS Code processes and disposable test artifact roots, and optionally terminates only matching disposable VS Code processes. |
 | Safe E2E | `npm run test:e2e` | Compiles, then runs disposable VS Code UI automation without applying the real Neon patch. |
 | Current VS Code E2E | `npm run test:e2e:current` | Compiles, then runs experimental safe E2E against the latest ExTester-supported VS Code version, isolated from the stable `1.111.0` safe gate. |
 | Gated Neon E2E | `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` | Requires the flag, removes stale marked Kawaii/legacy script tags and generated UI assets from the disposable workbench before the first launch, compiles, then runs real disposable workbench patch lifecycle, screenshots, restore checks, and fit matrix. |

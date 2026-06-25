@@ -95,6 +95,13 @@ test("createEmptyEditorLogoStyles applies data URI and opacity", () => {
   assert.match(css, /filter: none !important;/);
 });
 
+test("empty editor logo styles accept relative workbench asset URLs", () => {
+  const css = createEmptyEditorLogoStyles("kawaii-vscode-colors-empty-editor-logo-image.svg?v=fixed", 0.5);
+
+  assert.match(css, /background-image: url\("kawaii-vscode-colors-empty-editor-logo-image\.svg\?v=fixed"\) !important;/);
+  assert.match(css, /opacity: 0\.5;/);
+});
+
 function escapeRegExp(value: string): string {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

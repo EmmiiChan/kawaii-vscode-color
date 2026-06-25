@@ -25,24 +25,33 @@ Use only the sections that matter for a given release:
 
 ## [Unreleased]
 
+## [0.2.7] - 2026-06-25
+
 ### Added
 
 - Add a clean local build workflow for removing generated test artifacts before packaging.
 - Add current TypeScript architecture documentation and consolidate historical README material into one chronological legacy archive.
+- Add disposable VS Code cleanup diagnostics through `npm run test:cleanup-diagnostics` and `npm run test:cleanup-processes`.
 
 ### Changed
 
 - Scope injected Neon UI assets by active Kawaii theme wrapper and keep the generated workbench runtime asset names Kawaii-specific.
+- Bound the renderer bootstrap observer, keep post-bootstrap token/theme observers narrow, and rebuild glow styles only when the relevant workbench signatures change.
+- Coalesce repeated Neon apply/enable/disable requests so overlapping settings UI actions do not stack concurrent workbench patch writes.
+- Copy stored editor background and no-tab logo images into generated workbench assets instead of embedding large image `data:` payloads in generated CSS.
 - Remove packaged VSIX artifacts from source control.
 
 ### Fixed
 
 - Restore no-tab logo and editor background behavior across older and newer VS Code empty-editor DOM shapes.
 - Align settings webview contracts with the safe DOM and E2E flows.
+- Remove generated Kawaii workbench JS, CSS, and image assets when Neon Effect is disabled.
+- Clean stale marked Kawaii/legacy workbench script tags and generated UI assets before the gated Neon E2E baseline launch.
 
 ### Tests
 
 - Harden unit, DOM, package, and E2E coverage for theme wrappers, settings webview contracts, image/logo states, and disposable Neon patch behavior.
+- Cover renderer observer lifecycle, runtime image asset URLs, generated asset cleanup after disable, single-flight Neon request handling, and disposable process cleanup diagnostics.
 
 ## [0.2.0] - 2026-06-22
 

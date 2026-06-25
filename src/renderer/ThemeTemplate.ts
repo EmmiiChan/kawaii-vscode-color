@@ -66,6 +66,11 @@ export const RENDERER_STYLE_IDS = {
   token: "kawaii-vscode-colors-ui-token-styles"
 } as const;
 
+export const RENDERER_OBSERVER_RUNTIME_LIMITS = {
+  bootstrapTimeoutMs: 15000,
+  mutationDebounceMs: 50
+} as const;
+
 export function normalizeRendererTokenColor(color: string): string {
   const normalizedColor = color.trim().replace(/^#/, "").toLowerCase();
   return normalizedColor.length === 8 && normalizedColor.endsWith("ff")
@@ -182,8 +187,13 @@ export function createScopedRendererTokenRules(
   return scopedRules.join("");
 }
 
-export function getRendererTokenStylesSignature(styles: string, disableGlow: boolean): string {
-  return `${disableGlow}:${styles}`;
+export function getRendererTokenStylesSignature(
+  styles: string,
+  disableGlow: boolean,
+  innerTheme?: RendererInnerThemeConfig | string
+): string {
+  const wrapperClass = typeof innerTheme === "string" ? innerTheme : innerTheme?.wrapperClass;
+  return wrapperClass ? `${wrapperClass}:${disableGlow}:${styles}` : `${disableGlow}:${styles}`;
 }
 
 function escapeRegExp(value: string): string {

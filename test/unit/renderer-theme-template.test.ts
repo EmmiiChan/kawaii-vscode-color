@@ -104,3 +104,21 @@ test("renderer placeholder helpers replace only known placeholders", () => {
     "brightness=7F;glow=false;style=v1;unknown=[UNKNOWN_PLACEHOLDER]"
   );
 });
+
+
+test("renderer observer runtime limits are explicit and token signatures include the active inner theme", () => {
+  assert.deepEqual(themeTemplate.RENDERER_OBSERVER_RUNTIME_LIMITS, {
+    bootstrapTimeoutMs: 15000,
+    mutationDebounceMs: 50
+  });
+
+  const darkInnerTheme = themeTemplate.RENDERER_INNER_THEME_CONFIGS[0];
+  if (!darkInnerTheme) {
+    throw new Error("Expected dark renderer inner theme config.");
+  }
+
+  assert.equal(
+    themeTemplate.getRendererTokenStylesSignature(".mtk1{color:#fe4450;}", false, darkInnerTheme),
+    "dark-pink-kawaii:false:.mtk1{color:#fe4450;}"
+  );
+});

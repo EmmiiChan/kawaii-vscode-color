@@ -93,7 +93,7 @@ const EDITOR_BACKGROUND_OPACITY_STATE_KEY = "kawaii_synthwave.editorBackgroundOp
 const EDITOR_BACKGROUND_IMAGE_FILE_PREFIX = "editor-background-image";
 const EDITOR_BACKGROUND_ALLOWED_EXTENSIONS = ["png", "jpg", "jpeg", "webp", "svg"];
 const EDITOR_BACKGROUND_SUPPORTED_FORMATS_LABEL = "PNG, JPG/JPEG, WEBP, SVG";
-const IMAGE_DATA_URL_WARNING = "If preview image fails to apply, try a smaller image resolution. Image previews and injected effects use data URLs, so oversized images can make the settings page or VS Code reload unstable.";
+const IMAGE_DATA_URL_WARNING = "Settings previews use data URLs and JSON exports carry base64 image payloads. UI effects copy images into generated workbench assets when effects are applied, but oversized images can still slow reloads; use a smaller image resolution if VS Code feels unstable.";
 const NEKOS_MOE_RANDOM_IMAGE_ENDPOINT = "https://nekos.moe/api/v1/random/image?nsfw=false";
 const NEKOS_MOE_IMAGE_BASE_URL = "https://nekos.moe/image/";
 const NEKOS_MOE_USER_AGENT = "KawaiiVSCodeColor (https://github.com/EmmiiChan/kawaii-vscode-color)";

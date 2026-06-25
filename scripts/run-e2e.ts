@@ -9,6 +9,7 @@ import {
     validateE2ERunOptions,
     writeE2ELastRunRecord
 } from "./e2e-last-run";
+import { cleanupDisposableVSCodeProcesses } from "./test-process-cleanup-diagnostics";
 
 type E2EMode = "safe" | "current" | "neon";
 type E2ELastRunRecord = ReturnType<typeof createE2ELastRunRecord>;
@@ -64,6 +65,16 @@ const WORKBENCH_PATCH_SCRIPT_TAG_PATTERNS: readonly RegExp[] = [
 const WORKBENCH_PATCH_ASSET_FILE_NAMES: readonly string[] = [
     "kawaii-vscode-colors-ui.js",
     "kawaii-vscode-colors-ui.min.css",
+    "kawaii-vscode-colors-editor-background-image.png",
+    "kawaii-vscode-colors-editor-background-image.jpg",
+    "kawaii-vscode-colors-editor-background-image.jpeg",
+    "kawaii-vscode-colors-editor-background-image.webp",
+    "kawaii-vscode-colors-editor-background-image.svg",
+    "kawaii-vscode-colors-empty-editor-logo-image.png",
+    "kawaii-vscode-colors-empty-editor-logo-image.jpg",
+    "kawaii-vscode-colors-empty-editor-logo-image.jpeg",
+    "kawaii-vscode-colors-empty-editor-logo-image.webp",
+    "kawaii-vscode-colors-empty-editor-logo-image.svg",
     "neondreams.js"
 ];
 const NEON_PHASES: readonly E2EPhase[] = [
@@ -224,30 +235,9 @@ function cleanupE2EPhase(config: E2ERunnerConfig, _phase: E2EPhase): void {
         return;
     }
 
-    const storageRoot = path.resolve(config.workspaceRoot, config.storage);
-    const command = [
-        `$storage = ${toPowerShellString(storageRoot)}`,
-        "for ($attempt = 0; $attempt -lt 20; $attempt++) {",
-        "$processes = Get-CimInstance Win32_Process -Filter \"name = 'Code.exe'\"",
-        "| Where-Object {",
-        "($_.ExecutablePath -and $_.ExecutablePath.StartsWith($storage, [System.StringComparison]::OrdinalIgnoreCase))",
-        "-or ($_.CommandLine -and $_.CommandLine.IndexOf($storage, [System.StringComparison]::OrdinalIgnoreCase) -ge 0)",
-        "};",
-        "if (-not $processes) { break }",
-        "$processes | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }",
-        "Start-Sleep -Milliseconds 500",
-        "}",
-        "Start-Sleep -Milliseconds 1000"
-    ].join(" ");
-
-    spawnSync("powershell.exe", [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-Command",
-        command
-    ], {
-        stdio: "ignore"
+    cleanupDisposableVSCodeProcesses({
+        workspaceRoot: config.workspaceRoot,
+        output: { write() {} }
     });
 }
 
@@ -257,10 +247,6 @@ function shouldCleanupBeforePhase(config: E2ERunnerConfig, phase: E2EPhase): boo
 
 function shouldCleanupAfterPhase(config: E2ERunnerConfig, phase: E2EPhase): boolean {
     return config.mode !== "neon" || phase.name !== NEON_APPLY_PHASE_NAME;
-}
-
-function toPowerShellString(value: string): string {
-    return `'${value.replace(/'/g, "''")}'`;
 }
 
 function removeDisposableNeonWorkbenchPatch(config: E2ERunnerConfig): void {
