@@ -106,6 +106,10 @@ test("SettingsMessageController dispatches host messages and preserves legacy pa
     editorBackgroundFit: "right",
     emptyEditorLogoOpacity: 0.8
   });
+  await controller.handleMessage({
+    type: "update-application-settings",
+    openNativeWelcomePage: false
+  });
 
   assert.deepEqual(calls, [
     ["state"],
@@ -123,6 +127,8 @@ test("SettingsMessageController dispatches host messages and preserves legacy pa
       noPageLogo: true,
       glow: false
     }],
+    ["state"],
+    ["applicationSettings", false],
     ["state"]
   ]);
 });
@@ -463,6 +469,9 @@ function createHandlers(calls: Calls) {
     },
     async updateEmptyEditorLogoOpacity(opacity: unknown) {
       record(calls, "logoOpacity", opacity);
+    },
+    async updateApplicationSettings(settings: TestMessage) {
+      record(calls, "applicationSettings", settings.openNativeWelcomePage);
     },
     async updateEffectFeatures(features: unknown) {
       record(calls, "effectFeatures", features);

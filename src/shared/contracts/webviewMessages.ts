@@ -65,6 +65,7 @@ export type WebviewToHostMessage =
     | { readonly type: "update-empty-editor-logo-opacity"; readonly opacity: OpacityValue }
     | { readonly type: "update-editor-background-fit"; readonly fit: EditorBackgroundFit }
     | { readonly type: "update-effect-features"; readonly features: EffectFeatureSettings }
+    | { readonly type: "update-application-settings"; readonly openNativeWelcomePage: boolean }
     | { readonly type: "open-link"; readonly href: string }
     | { readonly type: "open-link"; readonly url: string }
     | { readonly type: "e2e-set-test-fixtures"; readonly fixtures: unknown }
@@ -148,6 +149,8 @@ export function isWebviewToHostMessage(value: unknown): value is WebviewToHostMe
             return isEditorBackgroundFit(value.fit);
         case "update-effect-features":
             return isEffectFeatureSettings(value.features);
+        case "update-application-settings":
+            return typeof value.openNativeWelcomePage === "boolean";
         case "open-link":
             return typeof value.href === "string" || typeof value.url === "string";
         case "e2e-set-test-fixtures":

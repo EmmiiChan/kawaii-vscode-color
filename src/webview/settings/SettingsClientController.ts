@@ -18,6 +18,7 @@ export const SETTINGS_CLIENT_POST_MESSAGE_TYPES: readonly string[] = [
   "remove-empty-editor-logo-image",
   "download-empty-editor-logo-image",
   "update-empty-editor-logo-opacity",
+  "update-application-settings",
   "enable-neon",
   "disable-neon",
   "open-link",

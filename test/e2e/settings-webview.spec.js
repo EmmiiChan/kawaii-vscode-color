@@ -28,6 +28,7 @@ describe("Settings webview E2E", function () {
 
             const pages = [
                 ["home", "home-page", "Kawaii VS Code Color"],
+                ["settings", "settings-page", "Application settings"],
                 ["color-settings", "color-settings-page", "THEME MODE"],
                 ["neon-effect", "neon-effect-page", "Enable Effects"],
                 ["image-customization", "image-customization-page", "Editor background and no-tab logo"],

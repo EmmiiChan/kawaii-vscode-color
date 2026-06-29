@@ -387,6 +387,161 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
       line-height: 1.4;
     }
 
+    .app-settings {
+      max-width: 860px;
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      padding: 28px;
+    }
+
+    .settings-list {
+      min-height: 0;
+      margin-top: 18px;
+      padding-right: 4px;
+      overflow: auto;
+    }
+
+    .settings-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: center;
+      padding: 12px;
+      background: var(--vscode-editorWidget-background);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+    }
+
+    .settings-row-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      margin: 0;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .settings-row-description,
+    .settings-row-meta {
+      margin: 4px 0 0;
+      color: var(--muted-color);
+      font-size: 12px;
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+    }
+
+    .settings-info {
+      position: relative;
+      display: inline-flex;
+      flex: 0 0 auto;
+    }
+
+    .settings-info-button {
+      width: 18px;
+      height: 18px;
+      display: inline-grid;
+      place-items: center;
+      padding: 0;
+      color: var(--vscode-foreground);
+      background: var(--vscode-editorWidget-background);
+      border: 1px solid var(--border-color);
+      border-radius: 50%;
+      font-size: 11px;
+      line-height: 1;
+      cursor: help;
+    }
+
+    .settings-popover {
+      position: absolute;
+      z-index: 10;
+      left: 0;
+      top: 24px;
+      width: min(320px, 70vw);
+      display: none;
+      padding: 8px 10px;
+      color: var(--vscode-foreground);
+      background: var(--vscode-editorWidget-background);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      box-shadow: 0 4px 16px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.35));
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+    }
+
+    .settings-info:hover .settings-popover,
+    .settings-info:focus-within .settings-popover {
+      display: block;
+    }
+
+    .switch-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .switch-control input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .switch-track {
+      width: 42px;
+      height: 22px;
+      position: relative;
+      display: inline-block;
+      background: var(--vscode-editorWidget-background);
+      border: 1px solid var(--border-color);
+      border-radius: 999px;
+    }
+
+    .switch-thumb {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 14px;
+      height: 14px;
+      background: var(--vscode-foreground);
+      border-radius: 50%;
+      transition: left 120ms ease, background 120ms ease;
+    }
+
+    .switch-control input:checked + .switch-track {
+      background: var(--vscode-button-background);
+      border-color: var(--vscode-focusBorder);
+    }
+
+    .switch-control input:checked + .switch-track .switch-thumb {
+      left: 23px;
+      background: var(--vscode-button-foreground);
+    }
+
+    .switch-control input:focus + .switch-track {
+      outline: 1px solid var(--vscode-focusBorder);
+      outline-offset: 2px;
+    }
+
+    .settings-save-bar {
+      position: sticky;
+      bottom: 0;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 12px 0 0;
+      margin-top: 12px;
+      background: var(--panel-bg);
+      border-top: 1px solid var(--border-color);
+    }
+
+    .settings-save-bar .button {
+      min-width: 120px;
+    }
+
     .color-settings {
       display: grid;
       grid-template-rows: auto auto auto auto auto auto auto auto 1fr auto;
@@ -862,6 +1017,10 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
         padding: 18px;
       }
 
+      .app-settings {
+        padding: 18px;
+      }
+
       .home-header {
         grid-template-columns: 1fr;
       }
@@ -880,6 +1039,18 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
 
       .theme-mode-row {
         grid-template-columns: 1fr;
+      }
+
+      .settings-row {
+        grid-template-columns: 1fr;
+      }
+
+      .settings-save-bar {
+        justify-content: stretch;
+      }
+
+      .settings-save-bar .button {
+        width: 100%;
       }
 
       .sync-file-actions,
@@ -917,6 +1088,7 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
       <nav class="nav" aria-label="Kawaii VS Code Color settings">
         <button class="nav-button active" data-page="home" type="button">Home</button>
         <div class="nav-group">Settings</div>
+        <button class="nav-button" data-page="settings" type="button">Settings</button>
         <button class="nav-button" data-page="color-settings" type="button">Color Settings</button>
         <button class="nav-button" data-page="neon-effect" type="button">Effects</button>
         <button class="nav-button" data-page="image-customization" type="button">Image Customization</button>
@@ -946,6 +1118,39 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
             <h3 id="references-title" class="home-section-title">References</h3>
             <div id="documentation-links" class="link-list"></div>
           </section>
+        </div>
+      </section>
+      <section id="settings-page" class="page hidden">
+        <div class="app-settings">
+          <div>
+            <p class="home-label">Settings</p>
+            <h2 class="home-title">Application settings</h2>
+            <p class="home-text">These options write directly to VS Code user settings and are refreshed from the current editor state whenever this page opens.</p>
+          </div>
+          <div class="settings-list" aria-label="Application settings list">
+            <section class="settings-row" aria-labelledby="startup-editor-setting-title">
+              <div>
+                <h3 id="startup-editor-setting-title" class="settings-row-title">
+                  <span>Open VS Code Welcome page on startup</span>
+                  <span class="settings-info">
+                    <button class="settings-info-button" type="button" aria-label="Show startup editor setting info" aria-describedby="startup-editor-setting-info">?</button>
+                    <span id="startup-editor-setting-info" class="settings-popover" role="tooltip">Controls VS Code workbench.startupEditor. Enabled saves welcomePage so VS Code opens the native Welcome page. Disabled saves none.</span>
+                  </span>
+                </h3>
+                <p class="settings-row-description">Open the native VS Code Welcome page when VS Code starts.</p>
+                <p id="startup-editor-setting-meta" class="settings-row-meta"></p>
+              </div>
+              <label class="switch-control" for="startup-editor-toggle">
+                <input id="startup-editor-toggle" type="checkbox">
+                <span class="switch-track" aria-hidden="true">
+                  <span class="switch-thumb"></span>
+                </span>
+              </label>
+            </section>
+          </div>
+          <div class="settings-save-bar">
+            <button id="save-application-settings" class="button" type="button">Save</button>
+          </div>
         </div>
       </section>
       <section id="neon-effect-page" class="page hidden">
@@ -1174,6 +1379,7 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
     let filterText = "";
     let effectsPending = false;
     let lastEffectsStatusDedupeKey = "";
+    let pendingPageAfterStateRefresh = "";
     const pendingUpdates = new Map();
     const editorBackgroundOpacityPendingKey = "editor-background-opacity";
     const emptyEditorLogoOpacityPendingKey = "empty-editor-logo-opacity";
@@ -1201,6 +1407,7 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
 
     const pages = {
       home: document.getElementById("home-page"),
+      settings: document.getElementById("settings-page"),
       "neon-effect": document.getElementById("neon-effect-page"),
       "image-customization": document.getElementById("image-customization-page"),
       "sync-files": document.getElementById("sync-files-page"),
@@ -1218,6 +1425,9 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
     const status = document.getElementById("status");
     const neonStatus = document.getElementById("neon-status");
     const themeVariantSelect = document.getElementById("theme-variant");
+    const startupEditorToggle = document.getElementById("startup-editor-toggle");
+    const startupEditorSettingMeta = document.getElementById("startup-editor-setting-meta");
+    const saveApplicationSettings = document.getElementById("save-application-settings");
     const saveVssync = document.getElementById("save-vssync");
     const importVssync = document.getElementById("import-vssync");
     const exportSettings = document.getElementById("export-settings");
@@ -1248,7 +1458,17 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
 
     navButtons.forEach((button) => {
       button.addEventListener("click", () => {
-        activePage = button.dataset.page;
+        const nextPage = button.dataset.page;
+
+        if (nextPage === "settings") {
+          pendingPageAfterStateRefresh = "settings";
+          setStatus("Refreshing application settings...");
+          vscode.postMessage({ type: "refresh" });
+          return;
+        }
+
+        pendingPageAfterStateRefresh = "";
+        activePage = nextPage;
         render();
       });
     });
@@ -1280,6 +1500,19 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
       clearPendingUpdates();
       setStatus("Switching theme...");
       vscode.postMessage({ type: "change-theme-variant", themeVariantId: themeVariantSelect.value });
+    });
+
+    startupEditorToggle.addEventListener("change", () => {
+      setStatus("Unsaved application setting change.");
+    });
+
+    saveApplicationSettings.addEventListener("click", () => {
+      clearPendingUpdates();
+      setStatus("Saving application settings...");
+      vscode.postMessage({
+        type: "update-application-settings",
+        openNativeWelcomePage: Boolean(startupEditorToggle.checked)
+      });
     });
 
     saveVssync.addEventListener("click", () => {
@@ -1393,10 +1626,14 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
       const message = event.data;
       if (message.type === "state") {
         state = message.state;
+        if (pendingPageAfterStateRefresh) {
+          activePage = pendingPageAfterStateRefresh;
+          pendingPageAfterStateRefresh = "";
+        }
         clearImageLoading(editorBackgroundPreview, editorBackgroundRandomNeko);
         clearImageLoading(emptyEditorLogoPreview, emptyEditorLogoRandomNeko);
         render();
-        if ((activePage === "color-settings" || activePage === "image-customization") && !effectsPending) {
+        if ((activePage === "settings" || activePage === "color-settings" || activePage === "image-customization") && !effectsPending) {
           setStatus("Saved " + new Date().toLocaleTimeString());
         }
       }
@@ -1424,6 +1661,7 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
       renderHelp();
       renderCorruptionWarningLinks();
       renderChecksumFixLink();
+      renderApplicationSettings();
       renderThemeVariantSelector();
       renderEffectFeatureSettings();
       renderEditorBackgroundSettings();
@@ -1471,6 +1709,23 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
       if (state.checksumFixLink) {
         checksumFixLink.appendChild(createDocumentationLinkButton(state.checksumFixLink));
       }
+    }
+
+    function renderApplicationSettings() {
+      const startupEditor = getStartupEditorState();
+      startupEditorToggle.checked = Boolean(startupEditor.openNativeWelcomePage);
+      startupEditorSettingMeta.textContent = "Current VS Code setting: " + startupEditor.setting + " = " + startupEditor.value + ".";
+    }
+
+    function getStartupEditorState() {
+      const applicationSettings = state.applicationSettings || {};
+      const startupEditor = applicationSettings.startupEditor || {};
+
+      return {
+        setting: startupEditor.setting || "workbench.startupEditor",
+        value: startupEditor.value || "none",
+        openNativeWelcomePage: startupEditor.openNativeWelcomePage === true
+      };
     }
 
     function renderThemeVariantSelector() {

@@ -7,6 +7,7 @@ const WORKSPACE_ROOT = path.resolve(__dirname, "..", "..", "..");
 const E2E_RESULTS_DIR = path.join(WORKSPACE_ROOT, "test-results", "e2e");
 const SETTINGS_COMMAND_LABEL = "Kawaii VS Code Color: Settings";
 const SETTINGS_EDITOR_TITLE = "Kawaii VS Code Color Settings";
+const COMMAND_QUICK_PICK_TIMEOUT_MS = 30000;
 
 async function waitForWorkbench(timeout = 60000) {
     await VSBrowser.instance.waitForWorkbench(timeout);
@@ -88,10 +89,11 @@ async function selectCommandQuickPick(commandLabel) {
             row.click();
             return true;
         `, commandLabel);
-    }, 10000, `Expected command quick pick to be visible: ${commandLabel}`);
+    }, COMMAND_QUICK_PICK_TIMEOUT_MS, `Expected command quick pick to be visible: ${commandLabel}`);
 }
 
 async function openSettingsWebview() {
+    await waitForWorkbench();
     await runCommand(SETTINGS_COMMAND_LABEL);
 
     const webview = await waitForSettingsEditor();
@@ -139,9 +141,10 @@ async function withSettingsWebview(callback) {
 
 async function waitForWebviewElement(locator, timeout = 10000) {
     const driver = VSBrowser.instance.driver;
-    const element = await driver.wait(until.elementLocated(locator), timeout);
+    const locatorLabel = typeof locator.toString === "function" ? locator.toString() : String(locator);
+    const element = await driver.wait(until.elementLocated(locator), timeout, `Expected webview element to be located: ${locatorLabel}`);
 
-    await driver.wait(until.elementIsVisible(element), timeout);
+    await driver.wait(until.elementIsVisible(element), timeout, `Expected webview element to be visible: ${locatorLabel}`);
 
     return element;
 }

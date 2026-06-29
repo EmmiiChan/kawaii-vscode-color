@@ -120,6 +120,15 @@ const baseState = {
       glow: true
     }
   },
+  applicationSettings: {
+    startupEditor: {
+      setting: "workbench.startupEditor",
+      value: "welcomePage",
+      enabledValue: "welcomePage",
+      disabledValue: "none",
+      openNativeWelcomePage: true
+    }
+  },
   workbenchColors: [
     {
       id: "editor.background",

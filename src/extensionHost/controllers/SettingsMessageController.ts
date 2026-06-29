@@ -25,6 +25,7 @@ export type SettingsHostMessage =
   | { readonly type: "download-empty-editor-logo-image" }
   | { readonly type: "update-empty-editor-logo-opacity"; readonly opacity: unknown }
   | { readonly type: "update-effect-features"; readonly features: unknown }
+  | { readonly type: "update-application-settings"; readonly openNativeWelcomePage: unknown }
   | {
     readonly type: "apply-effects";
     readonly features: unknown;
@@ -88,6 +89,7 @@ export interface SettingsMessageHandlers {
   updateEditorBackgroundFit(fit: unknown): Promise<void> | void;
   updateEditorBackgroundOpacity(opacity: unknown): Promise<void> | void;
   updateEmptyEditorLogoOpacity(opacity: unknown): Promise<void> | void;
+  updateApplicationSettings(settings: Extract<SettingsHostMessage, { readonly type: "update-application-settings" }>): Promise<void> | void;
   updateEffectFeatures(features: unknown): Promise<void> | void;
 }
 
@@ -153,6 +155,8 @@ export function isSettingsHostMessage(message: unknown): message is SettingsHost
         && isEffectFeatureSettings(message.features);
     case "update-effect-features":
       return isEffectFeatureSettings(message.features);
+    case "update-application-settings":
+      return typeof message.openNativeWelcomePage === "boolean";
     case "update-color":
       return Object.prototype.hasOwnProperty.call(message, "section")
         && Object.prototype.hasOwnProperty.call(message, "id")
@@ -322,6 +326,10 @@ class DefaultSettingsMessageController implements SettingsMessageController {
         return;
       case "update-effect-features":
         await handlers.updateEffectFeatures(message.features);
+        return;
+      case "update-application-settings":
+        await handlers.updateApplicationSettings(message);
+        await handlers.postSettingsState();
         return;
       case "update-color":
         await handlers.updateColorCustomization(message.section, message.id, message.value, message.themeVariantId);

@@ -37,8 +37,12 @@ const THEME_VARIANTS = KAWAII_THEME_VARIANTS.map(function mapThemeVariant(themeV
 });
 const DEFAULT_THEME_VARIANT_ID = "dark";
 const COLOR_THEME_SETTING = "workbench.colorTheme";
+const STARTUP_EDITOR_SETTING = "workbench.startupEditor";
 const WORKBENCH_CUSTOMIZATIONS_SETTING = "workbench.colorCustomizations";
 const TOKEN_CUSTOMIZATIONS_SETTING = "editor.tokenColorCustomizations";
+const STARTUP_EDITOR_WELCOME_PAGE_VALUE = "welcomePage";
+const STARTUP_EDITOR_EMPTY_WORKBENCH_WELCOME_PAGE_VALUE = "welcomePageInEmptyWorkbench";
+const STARTUP_EDITOR_DISABLED_VALUE = "none";
 const BRIGHTNESS_SETTING = "kawaii_synthwave.brightness";
 const DISABLE_GLOW_SETTING = "kawaii_synthwave.disableGlow";
 const SETTINGS_EXPORT_FILE_NAME = "kawaii-vscode-color-settings.json";
@@ -546,6 +550,9 @@ function createSettingsMessageHandlers(panel, context) {
     },
     updateEmptyEditorLogoOpacity(opacity) {
       return settingsEffectsService.updateEmptyEditorLogoOpacity(context, opacity);
+    },
+    updateApplicationSettings(settings) {
+      return updateApplicationSettings(settings);
     },
     updateEffectFeatures(features) {
       return updateEffectFeatures(context, features);
@@ -1299,6 +1306,20 @@ async function updateEffectFeatures(context, features) {
 }
 
 /**
+ * Updates VS Code user-level settings controlled by the Kawaii settings page.
+ *
+ * @param {Record<string, unknown>} settings - Candidate application settings.
+ * @returns {Promise<void>} Completes when the VS Code setting is persisted.
+ */
+async function updateApplicationSettings(settings) {
+  const openNativeWelcomePage = Boolean(settings && settings.openNativeWelcomePage);
+  await updateGlobalSetting(
+    STARTUP_EDITOR_SETTING,
+    openNativeWelcomePage ? STARTUP_EDITOR_WELCOME_PAGE_VALUE : STARTUP_EDITOR_DISABLED_VALUE
+  );
+}
+
+/**
  * Opens the system image picker and stores the selected empty editor logo.
  *
  * @param {vscode.ExtensionContext} context - Extension context.
@@ -1977,6 +1998,7 @@ function createSettingsState(context, webview) {
     corruptionWarningLinks: CORRUPTION_WARNING_LINKS,
     checksumFixLink: CHECKSUM_FIX_LINK,
     e2eTestApiEnabled: isSettingsE2ETestHookEnabled(),
+    applicationSettings: getApplicationSettingsState(),
     effects: {
       features: getStoredEffectFeatures(context)
     },
@@ -1986,6 +2008,37 @@ function createSettingsState(context, webview) {
     tokenColors,
     updatedAt: new Date().toISOString()
   };
+}
+
+/**
+ * Reads application-level VS Code settings for the Settings page.
+ *
+ * @returns {Record<string, unknown>} Current application settings state.
+ */
+function getApplicationSettingsState() {
+  const startupEditorValue = getStartupEditorSettingValue();
+
+  return {
+    startupEditor: {
+      setting: STARTUP_EDITOR_SETTING,
+      value: startupEditorValue,
+      enabledValue: STARTUP_EDITOR_WELCOME_PAGE_VALUE,
+      disabledValue: STARTUP_EDITOR_DISABLED_VALUE,
+      openNativeWelcomePage: startupEditorValue === STARTUP_EDITOR_WELCOME_PAGE_VALUE
+        || startupEditorValue === STARTUP_EDITOR_EMPTY_WORKBENCH_WELCOME_PAGE_VALUE
+    }
+  };
+}
+
+/**
+ * Gets the current workbench startup editor setting from VS Code configuration.
+ *
+ * @returns {string} Normalized startup editor value.
+ */
+function getStartupEditorSettingValue() {
+  const settingValue = settingsStore.getConfigurationSettingValue(STARTUP_EDITOR_SETTING);
+
+  return typeof settingValue === "string" && settingValue ? settingValue : STARTUP_EDITOR_DISABLED_VALUE;
 }
 
 /**

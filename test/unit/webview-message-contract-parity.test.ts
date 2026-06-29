@@ -53,7 +53,8 @@ test("shared webview guard accepts real inline settings webview payloads handled
         noPageLogo: true,
         glow: false
       }
-    }
+    },
+    { type: "update-application-settings", openNativeWelcomePage: true }
   ];
 
   for (const message of realInlineMessages) {
@@ -85,7 +86,8 @@ test("shared webview guard rejects malformed legacy settings payloads", () => {
       editorBackgroundOpacity: 0.2,
       editorBackgroundFit: "left",
       emptyEditorLogoOpacity: 0.7
-    }
+    },
+    { type: "update-application-settings", openNativeWelcomePage: "yes" }
   ];
 
   for (const message of malformedMessages) {

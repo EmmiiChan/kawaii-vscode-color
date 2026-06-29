@@ -4,10 +4,13 @@ const test = require("node:test");
 const {
   click,
   countActiveNavItems,
+  createInitialState,
   expectPostedMessage,
   expectVisiblePage,
   getLastPostedMessage,
-  renderWebview
+  getRequiredElement,
+  renderWebview,
+  sendWindowMessage
 } = require("./settings-webview-helper");
 
 function getButtonByText(document, selector, text) {
@@ -38,6 +41,7 @@ test("settings webview exposes app-specific navigation and help links", async ()
 
   assert.deepEqual(navLabels, [
     "Home",
+    "Settings",
     "Color Settings",
     "Effects",
     "Image Customization",
@@ -54,14 +58,22 @@ test("settings webview exposes app-specific navigation and help links", async ()
 });
 
 test("settings webview toggles each app page and keeps one active nav item", async () => {
-  const { document } = await renderWebview();
-  const pageIds = ["home", "color-settings", "neon-effect", "image-customization", "sync-files", "help"];
+  const { document, postedMessages, window } = await renderWebview();
+  const pageIds = ["home", "settings", "color-settings", "neon-effect", "image-customization", "sync-files", "help"];
 
   assert.equal(document.querySelector(".nav-group").textContent.trim(), "Settings");
   assert.equal(document.querySelectorAll(".nav-group.active").length, 0);
 
   pageIds.forEach((pageId) => {
     click(document, `[data-page="${pageId}"]`);
+
+    if (pageId === "settings") {
+      assert.equal(getLastPostedMessage(postedMessages, "refresh").type, "refresh");
+      sendWindowMessage(window, {
+        type: "state",
+        state: createInitialState()
+      });
+    }
 
     pageIds.forEach((candidatePageId) => {
       assert.equal(
@@ -74,6 +86,71 @@ test("settings webview toggles each app page and keeps one active nav item", asy
     assert.equal(countActiveNavItems(document), 1);
     assert.equal(document.querySelector(".nav-button.active").dataset.page, pageId);
   });
+});
+
+test("settings webview renders application settings and saves startup editor choice", async () => {
+  const { document, postedMessages, window } = await renderWebview({
+    applicationSettings: {
+      startupEditor: {
+        setting: "workbench.startupEditor",
+        value: "none",
+        enabledValue: "welcomePage",
+        disabledValue: "none",
+        openNativeWelcomePage: false
+      }
+    }
+  });
+
+  click(document, '[data-page="settings"]');
+  assert.equal(getLastPostedMessage(postedMessages, "refresh").type, "refresh");
+  assert.equal(
+    document.getElementById("settings-page").classList.contains("hidden"),
+    true,
+    "Expected Settings to wait for a fresh VS Code state before becoming visible"
+  );
+  sendWindowMessage(window, {
+    type: "state",
+    state: createInitialState({
+      applicationSettings: {
+        startupEditor: {
+          setting: "workbench.startupEditor",
+          value: "welcomePageInEmptyWorkbench",
+          openNativeWelcomePage: true
+        }
+      }
+    })
+  });
+  expectVisiblePage(document, "settings");
+
+  const toggle = getRequiredElement(document, "#startup-editor-toggle");
+  assert.equal(toggle.checked, true);
+  assert.match(document.getElementById("startup-editor-setting-info").textContent, /workbench\.startupEditor/);
+  assert.match(document.getElementById("startup-editor-setting-info").textContent, /welcomePage/);
+  assert.match(document.getElementById("startup-editor-setting-meta").textContent, /welcomePageInEmptyWorkbench/);
+  assert.ok(document.querySelector(".settings-save-bar"), "Expected a persistent Settings save bar");
+
+  toggle.click();
+  click(document, "#save-application-settings");
+
+  expectPostedMessage(postedMessages, "update-application-settings", {
+    openNativeWelcomePage: false
+  });
+
+  sendWindowMessage(window, {
+    type: "state",
+    state: createInitialState({
+      applicationSettings: {
+        startupEditor: {
+          setting: "workbench.startupEditor",
+          value: "welcomePage",
+          openNativeWelcomePage: true
+        }
+      }
+    })
+  });
+
+  assert.equal(toggle.checked, true, "Expected incoming VS Code state to overwrite temporary switch state");
+  assert.match(document.getElementById("status").textContent, /Saved/);
 });
 
 test("settings webview owns image controls on image customization page", async () => {

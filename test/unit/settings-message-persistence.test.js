@@ -30,6 +30,7 @@ function createSettingsHarness(options = {}) {
     ["workbench.colorTheme", "Dark Pink Kawaii"],
     ["workbench.colorCustomizations", {}],
     ["editor.tokenColorCustomizations", {}],
+    ["workbench.startupEditor", "welcomePage"],
     ["kawaii_synthwave.brightness", 0.45],
     ["kawaii_synthwave.disableGlow", false]
   ]);
@@ -244,6 +245,33 @@ test("settings webview messages reach persistence services without touching real
     const messageHandler = harness.getMessageHandler();
     assert.equal(typeof messageHandler, "function");
     assert.match(harness.panel().webview.html, /Color Settings/);
+
+    await messageHandler({ type: "refresh" });
+    assert.equal(
+      harness.postedMessages.at(-1).state.applicationSettings.startupEditor.value,
+      "welcomePage"
+    );
+
+    await messageHandler({
+      type: "update-application-settings",
+      openNativeWelcomePage: false
+    });
+    assert.equal(harness.configurationValues.get("workbench.startupEditor"), "none");
+    assert.equal(
+      harness.postedMessages.at(-1).state.applicationSettings.startupEditor.openNativeWelcomePage,
+      false
+    );
+
+    harness.configurationValues.set("workbench.startupEditor", "none");
+    await messageHandler({
+      type: "update-application-settings",
+      openNativeWelcomePage: true
+    });
+    assert.equal(harness.configurationValues.get("workbench.startupEditor"), "welcomePage");
+    assert.equal(
+      harness.postedMessages.at(-1).state.applicationSettings.startupEditor.openNativeWelcomePage,
+      true
+    );
 
     await messageHandler({
       type: "update-color",
