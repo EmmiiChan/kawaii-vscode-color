@@ -46,6 +46,8 @@ Dev dependency contract:
 - `package-lock.json`
 - `scripts/build-color-theme.js`
 - `scripts/build-color-theme.ts`
+- `scripts/update-theme-color-packs.js`
+- `scripts/update-theme-color-packs.ts`
 - `scripts/build-ui-css.js`
 - `scripts/build-ui-css.ts`
 - `scripts/check-codex-docs.js`
@@ -112,6 +114,7 @@ Dev dependency contract:
 Build behavior:
 
 - `scripts/build-color-theme.ts` reads every public `themes/*.json` color pack plus the matching protected core base; `scripts/build-color-theme.js` is the stable wrapper entrypoint.
+- `scripts/update-theme-color-packs.ts` reads the configured GitHub `themes` folder through the contents API, validates each JSON file as a public color pack, compares numeric versions, and writes only missing or newer packs; `scripts/update-theme-color-packs.js` is the stable wrapper entrypoint.
 - Public color packs require `id`, `name`, `mode`, and non-null numeric `version.major`, `version.minor`, and `version.patch`.
 - `colors` and `semanticTokenColors` merge by object key.
 - `tokenColors` replace matching base rules by `name` or `scope`; unmatched override rules append.

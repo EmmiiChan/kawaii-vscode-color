@@ -30,6 +30,7 @@ Use only the sections that matter for a given release:
 - Add modular Effects switches for Foundation / Runtime Layer, Editor Background, No-Page Logo, and Glow Effects, all enabled by default.
 - Add `apply-effects`, `update-effect-features`, and structured `effects-status` webview messages for a selected patch stack.
 - Add public theme color packs under `themes/` with numeric color version metadata and a generated internal theme catalog.
+- Add `npm run update:themes` with GitHub folder ingestion, version-aware local updates, and `--dry-run` validation for public color packs.
 - Add `colorVersion` to settings exports, starting at `0.0.1` and incrementing through Settings Sync and JSON export flows.
 
 ### Changed
@@ -51,7 +52,7 @@ Use only the sections that matter for a given release:
 ### Tests
 
 - Expand gated Kawaii Neon E2E validation to apply all 16 Effects switch combinations with before/after screenshots, generated asset checks, runtime module class checks, and a `neon-effects-combination-matrix.json` report.
-- Cover public color pack validation, generated internal theme catalog output, and settings export color version increments in unit tests.
+- Cover public color pack validation, GitHub folder ingestion, version-aware theme update planning, generated internal theme catalog output, and settings export color version increments in unit tests.
 
 ## [0.2.7] - 2026-06-25
 

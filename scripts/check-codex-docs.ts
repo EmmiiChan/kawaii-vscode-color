@@ -150,6 +150,8 @@ const CRITICAL_FILES = [
   "scripts/test-process-cleanup-diagnostics.ts",
   "scripts/run-test-all.js",
   "scripts/run-test-all.ts",
+  "scripts/update-theme-color-packs.js",
+  "scripts/update-theme-color-packs.ts",
   "src/css/editor_chrome.css",
   "src/css/kawaii-vscode-colors-ui.min.css",
   "src/core-themes",

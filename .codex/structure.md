@@ -208,6 +208,7 @@ Current source of truth:
 - Dark Kawaii palette and token changes must be placed in `themes/dark-pink-kawaii.json`.
 - Light Kawaii palette and token changes must be placed in `themes/light-pink-pastel-kawaii.json`.
 - Public community color packs belong in `themes/` as `<theme-id>.json` files with `id`, `name`, `mode`, and numeric `version` metadata.
+- Public color-pack updates from GitHub live in `scripts/update-theme-color-packs.ts` behind the stable `scripts/update-theme-color-packs.js` wrapper and only write packs that are missing locally or newer by numeric `version`.
 - The native public dark theme loaded by VS Code is generated at `src/generated-themes/kawaii_synthwave-generated-color-theme.json`.
 - The native public light theme loaded by VS Code is generated at `src/generated-themes/kawaii_synthwave-generated-color-theme-light.json`.
 - The internal color pack catalog is generated at `src/generated-themes/internal-themes.json`.
@@ -429,6 +430,7 @@ Useful checks for this repository:
 - `npm run test:all`
 - `KAWAII_E2E_ALLOW_NEON_PATCH=1 npm run test:e2e:neon` only when validating disposable Kawaii Neon patch behavior.
 - `KAWAII_E2E_CURRENT_CODE_VERSION=<version> npm run test:e2e:current` only when probing a specific VS Code build with the safe E2E suite.
+- `npm run update:themes -- --dry-run` when validating the public GitHub theme-pack folder contract.
 - `npm run build:theme`
 - Manual inspection of `package.json` contribution points.
 - Manual theme validation in VS Code with `Developer: Inspect Editor Tokens and Scopes`.
@@ -483,6 +485,8 @@ Local source anchors:
 - `src/generated-themes/internal-themes.json`: generated internal catalog of every public color pack.
 - `scripts/build-color-theme.js`: stable Node wrapper for the base-plus-overrides theme build flow.
 - `scripts/build-color-theme.ts`: TypeScript implementation of the base-plus-overrides theme build flow.
+- `scripts/update-theme-color-packs.js`: stable Node wrapper for version-aware public color-pack updates from GitHub.
+- `scripts/update-theme-color-packs.ts`: TypeScript implementation that reads the GitHub `themes` contents API, validates public color packs, and writes only missing or newer local packs.
 - `scripts/check-codex-docs.js`: stable Node wrapper for the Codex documentation drift guard.
 - `scripts/check-codex-docs.ts`: TypeScript implementation of Codex documentation drift checks for package facts, themes, message contracts, state keys, schemas, renderer placeholders, and `semanticTokenColors`.
 - `scripts/clean-test-artifacts.js`: stable Node wrapper for local generated test artifact cleanup.

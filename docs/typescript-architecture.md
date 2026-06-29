@@ -11,7 +11,7 @@ Kawaii VS Code Color is a VS Code theme extension with a compiled TypeScript ext
 | Settings webview | `src/settings.ts`, `src/settingsWebview.ts`, `src/webview/settings` | Renders the settings editor tab, sends typed webview messages, and uses VS Code webview color tokens. |
 | Shared contracts | `src/shared` | Defines typed models, message contracts, schemas, renderer placeholders, guards, and validation helpers. |
 | Renderer patch | `src/js/theme_template.js`, `src/renderer/ThemeTemplate.ts` | Injects the scoped workbench runtime and mirrors renderer behavior for tests. |
-| Theme build | `src/core-themes`, `themes/*`, `src/generated-themes`, `scripts/build-color-theme.ts` | Preserves core base themes, applies public color packs, and writes generated VS Code theme JSON plus the internal catalog. |
+| Theme build | `src/core-themes`, `themes/*`, `src/generated-themes`, `scripts/build-color-theme.ts`, `scripts/update-theme-color-packs.ts` | Preserves core base themes, applies public color packs, can update packs from the public GitHub folder by version, and writes generated VS Code theme JSON plus the internal catalog. |
 | Workbench CSS | `src/scss`, `src/css`, `scripts/build-ui-css.ts` | Builds scoped CSS linked by the injected Kawaii Neon runtime for modular Effects visuals. |
 | Tooling scripts | `scripts/*.ts`, `scripts/*.js` | Keeps TypeScript implementations behind stable JavaScript command wrappers. |
 
@@ -35,7 +35,7 @@ npm run test:all
 
 ## Source Rules
 
-- Edit theme colors in public color pack files under `themes/`, then run `npm run build:theme`.
+- Edit theme colors in public color pack files under `themes/`, optionally run `npm run update:themes -- --dry-run` to validate the public GitHub folder, then run `npm run build:theme`.
 - Do not edit generated theme files under `src/generated-themes` by hand.
 - Keep VS Code workbench patching behind the Effects flow.
 - Keep Effects modules independently selectable through `kawaii_synthwave.effectFeatureSettings`, with generated CSS gated by `.kawaii-effect-editor-background`, `.kawaii-effect-no-page-logo`, and `.kawaii-effect-glow`.

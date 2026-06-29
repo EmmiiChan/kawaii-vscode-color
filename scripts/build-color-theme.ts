@@ -1,4 +1,5 @@
 import fs = require("node:fs");
+import https = require("node:https");
 import path = require("node:path");
 
 type PlainRecord = Record<string, any>;
@@ -37,14 +38,69 @@ interface ThemeColorPack {
   readonly version: ColorVersion;
 }
 
+interface RemoteThemeColorPack extends ThemeColorPack {
+  readonly source: string;
+  readonly sourceUrl: string;
+}
+
 interface TokenRuleLike {
   readonly name?: unknown;
   readonly scope?: unknown;
 }
 
+interface GitHubThemesUrlParts {
+  readonly folderPath: string;
+  readonly owner: string;
+  readonly ref: string;
+  readonly repository: string;
+}
+
+interface GitHubContentFileEntry {
+  readonly downloadUrl: string;
+  readonly name: string;
+}
+
+interface ThemeColorPackUpdate {
+  readonly colorPack: ThemeColorPack;
+  readonly currentVersion?: ColorVersion;
+  readonly reason: "missing" | "newer";
+  readonly remoteVersion: ColorVersion;
+  readonly source: string;
+  readonly sourceUrl: string;
+  readonly targetPath: string;
+}
+
+interface ThemeColorPackUpdateSkip {
+  readonly currentVersion: ColorVersion;
+  readonly fileName: string;
+  readonly id: string;
+  readonly reason: "older-remote" | "same-version";
+  readonly remoteVersion: ColorVersion;
+}
+
+interface ThemeColorPackUpdatePlan {
+  readonly skipped: readonly ThemeColorPackUpdateSkip[];
+  readonly updates: readonly ThemeColorPackUpdate[];
+}
+
+interface ThemeColorPackUpdateResult extends ThemeColorPackUpdatePlan {
+  readonly remotePacks: readonly RemoteThemeColorPack[];
+  readonly summaryLines: readonly string[];
+}
+
+interface UpdateThemeColorPacksOptions {
+  readonly dryRun?: boolean;
+  readonly fetchText?: TextFetcher;
+  readonly githubThemesUrl?: string;
+  readonly themesDirectory?: string;
+}
+
+type TextFetcher = (url: string) => Promise<string>;
+
 const WORKSPACE_ROOT = resolveWorkspaceRoot(__dirname);
 const FILE_ENCODING = "utf8";
 const PUBLIC_THEMES_DIR = path.join(WORKSPACE_ROOT, "themes");
+const DEFAULT_REMOTE_THEMES_URL = "https://github.com/EmmiiChan/kawaii-vscode-color/tree/main/themes";
 const CORE_THEME_PATH_BY_MODE: Record<ThemeMode, string> = {
   dark: path.join(WORKSPACE_ROOT, "src", "core-themes", "kawaii_synthwave-color-theme.json"),
   light: path.join(WORKSPACE_ROOT, "src", "core-themes", "kawaii_synthwave-color-theme-light.json")
@@ -215,14 +271,19 @@ function removeTrailingCommas(source: string): string {
  */
 function readJsoncFile(filePath: string): PlainRecord {
   const rawSource = fs.readFileSync(filePath, FILE_ENCODING);
-  const strictJsonSource = removeTrailingCommas(removeJsonComments(rawSource));
+
+  return parseJsoncSource(rawSource, formatRelativePath(filePath));
+}
+
+function parseJsoncSource(source: string, sourceLabel: string): PlainRecord {
+  const strictJsonSource = removeTrailingCommas(removeJsonComments(source));
 
   try {
     return JSON.parse(strictJsonSource);
   } catch (error) {
     const normalizedError = error instanceof Error ? error : new Error(String(error));
 
-    normalizedError.message = `Failed to parse ${path.relative(WORKSPACE_ROOT, filePath)}: ${normalizedError.message}`;
+    normalizedError.message = `Failed to parse ${sourceLabel}: ${normalizedError.message}`;
     throw normalizedError;
   }
 }
@@ -329,6 +390,291 @@ function readThemeColorPacks(themesDirectory = PUBLIC_THEMES_DIR): ThemeColorPac
       const filePath = path.join(themesDirectory, fileName);
       return normalizeThemeColorPack(filePath, readJsoncFile(filePath));
     });
+}
+
+function parseGitHubThemesUrl(githubThemesUrl: string): GitHubThemesUrlParts {
+  const parsedUrl = new URL(githubThemesUrl);
+  const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+  const [owner, repository, treeSegment, ref, ...folderPathParts] = pathParts;
+
+  if (
+    parsedUrl.hostname !== "github.com"
+    || !owner
+    || !repository
+    || treeSegment !== "tree"
+    || !ref
+    || folderPathParts.length === 0
+  ) {
+    throw new Error(`Expected a GitHub tree URL like https://github.com/<owner>/<repo>/tree/<ref>/themes, received: ${githubThemesUrl}`);
+  }
+
+  return {
+    folderPath: folderPathParts.join("/"),
+    owner,
+    ref,
+    repository
+  };
+}
+
+function createGitHubContentsApiUrl(githubThemesUrl: string): string {
+  const parts = parseGitHubThemesUrl(githubThemesUrl);
+
+  return [
+    "https://api.github.com/repos",
+    encodeURIComponent(parts.owner),
+    encodeURIComponent(parts.repository),
+    "contents",
+    encodeGitHubPath(parts.folderPath)
+  ].join("/") + `?ref=${encodeURIComponent(parts.ref)}`;
+}
+
+function encodeGitHubPath(folderPath: string): string {
+  return folderPath.split("/").map((part) => encodeURIComponent(part)).join("/");
+}
+
+async function fetchTextFromUrl(url: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const request = https.get(url, {
+      headers: {
+        Accept: "application/vnd.github+json",
+        "User-Agent": "kawaii-vscode-color-theme-updater"
+      }
+    }, (response) => {
+      const statusCode = response.statusCode || 0;
+
+      if (statusCode >= 300 && statusCode < 400 && response.headers.location) {
+        response.resume();
+        fetchTextFromUrl(new URL(response.headers.location, url).toString()).then(resolve, reject);
+        return;
+      }
+
+      if (statusCode >= 400) {
+        response.resume();
+        reject(new Error(`Failed to fetch ${url}: HTTP ${statusCode}`));
+        return;
+      }
+
+      let responseBody = "";
+      response.setEncoding(FILE_ENCODING);
+      response.on("data", (chunk: string) => {
+        responseBody += chunk;
+      });
+      response.on("end", () => {
+        resolve(responseBody);
+      });
+    });
+
+    request.setTimeout(30000, () => {
+      request.destroy(new Error(`Timed out fetching ${url}`));
+    });
+    request.on("error", reject);
+  });
+}
+
+async function readRemoteThemeColorPacks(
+  githubThemesUrl = DEFAULT_REMOTE_THEMES_URL,
+  fetchText: TextFetcher = fetchTextFromUrl
+): Promise<RemoteThemeColorPack[]> {
+  const apiUrl = createGitHubContentsApiUrl(githubThemesUrl);
+  const listingSource = await fetchText(apiUrl);
+  const listingValue = parseGitHubContentsListing(listingSource, apiUrl);
+  const files = normalizeGitHubContentsFiles(listingValue, apiUrl);
+  const colorPacks: RemoteThemeColorPack[] = [];
+
+  for (const file of files) {
+    const source = await fetchText(file.downloadUrl);
+    const value = parseJsoncSource(source, file.downloadUrl);
+    const colorPack = normalizeThemeColorPack(path.join(PUBLIC_THEMES_DIR, file.name), value);
+
+    colorPacks.push({
+      ...colorPack,
+      source,
+      sourceUrl: file.downloadUrl
+    });
+  }
+
+  return colorPacks.sort((left, right) => left.id.localeCompare(right.id));
+}
+
+function parseGitHubContentsListing(source: string, apiUrl: string): unknown {
+  try {
+    return JSON.parse(source);
+  } catch (error) {
+    const normalizedError = error instanceof Error ? error : new Error(String(error));
+
+    normalizedError.message = `Failed to parse GitHub contents listing ${apiUrl}: ${normalizedError.message}`;
+    throw normalizedError;
+  }
+}
+
+function normalizeGitHubContentsFiles(value: unknown, apiUrl: string): GitHubContentFileEntry[] {
+  if (!Array.isArray(value)) {
+    throw new TypeError(`GitHub contents listing must be an array: ${apiUrl}`);
+  }
+
+  return value
+    .map((entry) => normalizeGitHubContentsFile(entry, apiUrl))
+    .filter((entry): entry is GitHubContentFileEntry => entry !== undefined)
+    .sort((left, right) => left.name.localeCompare(right.name));
+}
+
+function normalizeGitHubContentsFile(entry: unknown, apiUrl: string): GitHubContentFileEntry | undefined {
+  const record = ensureObject(entry, `GitHub contents entry from ${apiUrl}`);
+  const type = typeof record.type === "string" ? record.type : "";
+  const name = typeof record.name === "string" ? record.name : "";
+
+  if (type !== "file" || !name.endsWith(".json")) {
+    return undefined;
+  }
+
+  const downloadUrl = typeof record.download_url === "string" ? record.download_url : "";
+
+  if (!downloadUrl) {
+    throw new TypeError(`GitHub JSON file ${name} from ${apiUrl} must define download_url.`);
+  }
+
+  return { downloadUrl, name };
+}
+
+function compareColorVersions(left: ColorVersion, right: ColorVersion): number {
+  if (left.major !== right.major) {
+    return left.major - right.major;
+  }
+
+  if (left.minor !== right.minor) {
+    return left.minor - right.minor;
+  }
+
+  return left.patch - right.patch;
+}
+
+function createThemeColorPackUpdatePlan(
+  localPacks: readonly ThemeColorPack[],
+  remotePacks: readonly RemoteThemeColorPack[],
+  themesDirectory = PUBLIC_THEMES_DIR
+): ThemeColorPackUpdatePlan {
+  const localPackById = new Map(localPacks.map((colorPack) => [colorPack.id, colorPack]));
+  const remoteIds = new Set<string>();
+  const updates: ThemeColorPackUpdate[] = [];
+  const skipped: ThemeColorPackUpdateSkip[] = [];
+
+  for (const remotePack of remotePacks) {
+    if (remoteIds.has(remotePack.id)) {
+      throw new Error(`Duplicate remote color pack id: ${remotePack.id}`);
+    }
+
+    remoteIds.add(remotePack.id);
+    const localPack = localPackById.get(remotePack.id);
+
+    if (!localPack) {
+      updates.push(createThemeColorPackUpdate(remotePack, "missing", undefined, themesDirectory));
+      continue;
+    }
+
+    const versionComparison = compareColorVersions(remotePack.version, localPack.version);
+
+    if (versionComparison > 0) {
+      updates.push(createThemeColorPackUpdate(remotePack, "newer", localPack.version, themesDirectory));
+      continue;
+    }
+
+    skipped.push({
+      currentVersion: localPack.version,
+      fileName: remotePack.fileName,
+      id: remotePack.id,
+      reason: versionComparison < 0 ? "older-remote" : "same-version",
+      remoteVersion: remotePack.version
+    });
+  }
+
+  return { skipped, updates };
+}
+
+function createThemeColorPackUpdate(
+  remotePack: RemoteThemeColorPack,
+  reason: ThemeColorPackUpdate["reason"],
+  currentVersion: ColorVersion | undefined,
+  themesDirectory: string
+): ThemeColorPackUpdate {
+  const targetPath = path.join(themesDirectory, getSafeRemoteThemeFileName(remotePack.fileName));
+  const update = {
+    colorPack: remotePack,
+    reason,
+    remoteVersion: remotePack.version,
+    source: remotePack.source,
+    sourceUrl: remotePack.sourceUrl,
+    targetPath
+  };
+
+  return currentVersion === undefined ? update : {
+    ...update,
+    currentVersion
+  };
+}
+
+function getSafeRemoteThemeFileName(fileName: string): string {
+  if (path.basename(fileName) !== fileName || !fileName.endsWith(".json")) {
+    throw new Error(`Remote color pack file name is not safe: ${fileName}`);
+  }
+
+  return fileName;
+}
+
+async function updateThemeColorPacksFromGitHub(options: UpdateThemeColorPacksOptions = {}): Promise<ThemeColorPackUpdateResult> {
+  const themesDirectory = options.themesDirectory || PUBLIC_THEMES_DIR;
+  const githubThemesUrl = options.githubThemesUrl || DEFAULT_REMOTE_THEMES_URL;
+  const dryRun = options.dryRun === true;
+  const remotePacks = await readRemoteThemeColorPacks(githubThemesUrl, options.fetchText || fetchTextFromUrl);
+  const localPacks = fs.existsSync(themesDirectory) ? readThemeColorPacks(themesDirectory) : [];
+  const plan = createThemeColorPackUpdatePlan(localPacks, remotePacks, themesDirectory);
+
+  if (!dryRun) {
+    fs.mkdirSync(themesDirectory, { recursive: true });
+
+    for (const update of plan.updates) {
+      fs.writeFileSync(update.targetPath, ensureTrailingNewline(update.source), FILE_ENCODING);
+    }
+  }
+
+  return {
+    remotePacks,
+    skipped: plan.skipped,
+    summaryLines: getThemeColorPackUpdateSummaryLines(remotePacks, plan, dryRun),
+    updates: plan.updates
+  };
+}
+
+function ensureTrailingNewline(source: string): string {
+  return source.endsWith("\n") ? source : `${source}\n`;
+}
+
+function getThemeColorPackUpdateSummaryLines(
+  remotePacks: readonly RemoteThemeColorPack[],
+  plan: ThemeColorPackUpdatePlan,
+  dryRun: boolean
+): string[] {
+  const actionLabel = dryRun ? "Planned updates" : "Applied updates";
+  const writeLabel = dryRun ? "Would write" : "Wrote";
+  const summaryLines = [
+    `Remote color packs: ${remotePacks.length}`,
+    `${actionLabel}: ${plan.updates.length}`,
+    `Skipped color packs: ${plan.skipped.length}`
+  ];
+
+  plan.updates.forEach((update) => {
+    const currentVersionPrefix = update.currentVersion ? `${getColorVersionLabel(update.currentVersion)} -> ` : "";
+    summaryLines.push(
+      `${writeLabel} ${formatRelativePath(update.targetPath)} (${update.reason}, ${currentVersionPrefix}${getColorVersionLabel(update.remoteVersion)})`
+    );
+  });
+
+  plan.skipped.forEach((skip) => {
+    summaryLines.push(
+      `Skipped ${skip.fileName} (${skip.reason}, local ${getColorVersionLabel(skip.currentVersion)}, remote ${getColorVersionLabel(skip.remoteVersion)})`
+    );
+  });
+
+  return summaryLines;
 }
 
 /**
@@ -625,14 +971,21 @@ export {
   buildGeneratedThemeFromColorPack,
   buildInternalThemeOutputs,
   buildThemeVariant,
+  compareColorVersions,
+  createGitHubContentsApiUrl,
   createInternalThemeCatalog,
+  createThemeColorPackUpdatePlan,
+  DEFAULT_REMOTE_THEMES_URL,
   getColorVersionLabel,
   normalizeColorVersion,
   normalizeThemeColorPack,
   main,
+  parseGitHubThemesUrl,
   readJsoncFile,
+  readRemoteThemeColorPacks,
   readThemeColorPacks,
   removeJsonComments,
   removeTrailingCommas,
-  runCli
+  runCli,
+  updateThemeColorPacksFromGitHub
 };
