@@ -439,11 +439,19 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
     }
 
     .sync-file-group {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
       min-width: 0;
       padding: 12px;
       background: var(--vscode-editorWidget-background);
       border: 1px solid var(--border-color);
       border-radius: 6px;
+    }
+
+    .sync-file-copy {
+      min-width: 0;
     }
 
     .sync-file-title {
@@ -463,7 +471,7 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 8px;
-      margin-top: 12px;
+      margin-top: 0;
     }
 
     .sync-file-buttons .button {
@@ -1104,16 +1112,20 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
           <p class="home-text">These actions preserve repository theme files and write user-local customization to VS Code settings only.</p>
           <div class="sync-file-actions" aria-label="Settings Sync and file actions">
             <section class="sync-file-group" aria-labelledby="settings-sync-actions-title">
-              <h3 id="settings-sync-actions-title" class="sync-file-title">Settings Sync</h3>
-              <p class="sync-file-description">Store or restore the current bundle through VS Code synced extension state.</p>
+              <div class="sync-file-copy">
+                <h3 id="settings-sync-actions-title" class="sync-file-title">Settings Sync</h3>
+                <p class="sync-file-description">Store or restore the current bundle through VS Code synced extension state.</p>
+              </div>
               <div class="sync-file-buttons">
                 <button id="save-vssync" class="button" type="button">Save to VSSync</button>
                 <button id="import-vssync" class="button secondary" type="button">Import VSSync</button>
               </div>
             </section>
             <section class="sync-file-group" aria-labelledby="settings-file-actions-title">
-              <h3 id="settings-file-actions-title" class="sync-file-title">JSON Files</h3>
-              <p class="sync-file-description">Export a portable settings file or import a previously saved bundle.</p>
+              <div class="sync-file-copy">
+                <h3 id="settings-file-actions-title" class="sync-file-title">JSON Files</h3>
+                <p class="sync-file-description">Export a portable settings file or import a previously saved bundle.</p>
+              </div>
               <div class="sync-file-buttons">
                 <button id="export-settings" class="button" type="button">Export As</button>
                 <button id="import-settings" class="button secondary" type="button">Import</button>

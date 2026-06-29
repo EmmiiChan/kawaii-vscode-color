@@ -36,6 +36,9 @@ test("settings webview owns sync and file controls on Sync Files page", async ()
   const { document } = await renderWebview();
   const syncFilesPage = document.getElementById("sync-files-page");
   const colorSettingsPage = document.getElementById("color-settings-page");
+  const actionGroups = Array.from(syncFilesPage.querySelectorAll(".sync-file-group"));
+
+  assert.equal(actionGroups.length, 2, "Expected Sync / Files to render two action groups");
 
   for (const selector of [
     "#save-vssync",
@@ -48,5 +51,10 @@ test("settings webview owns sync and file controls on Sync Files page", async ()
     assert.ok(element, `Expected ${selector} to exist`);
     assert.equal(syncFilesPage.contains(element), true, `Expected ${selector} to be owned by Sync / Files`);
     assert.equal(colorSettingsPage.contains(element), false, `Expected ${selector} to be outside Color Settings`);
+  }
+
+  for (const actionGroup of actionGroups) {
+    assert.ok(actionGroup.querySelector(".sync-file-copy"), "Expected each action group to wrap title and description");
+    assert.ok(actionGroup.querySelector(".sync-file-buttons"), "Expected each action group to wrap buttons separately");
   }
 });
