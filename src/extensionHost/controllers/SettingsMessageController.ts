@@ -1,3 +1,5 @@
+import { isEffectFeatureSettings } from "../../shared/models/effects";
+
 export type SettingsHostMessage =
   | { readonly type: "ready" }
   | { readonly type: "refresh" }
@@ -22,6 +24,14 @@ export type SettingsHostMessage =
   | { readonly type: "remove-empty-editor-logo-image" }
   | { readonly type: "download-empty-editor-logo-image" }
   | { readonly type: "update-empty-editor-logo-opacity"; readonly opacity: unknown }
+  | { readonly type: "update-effect-features"; readonly features: unknown }
+  | {
+    readonly type: "apply-effects";
+    readonly features: unknown;
+    readonly editorBackgroundFit: unknown;
+    readonly editorBackgroundOpacity: unknown;
+    readonly emptyEditorLogoOpacity: unknown;
+  }
   | {
     readonly type: "apply-neon-customizations";
     readonly editorBackgroundFit: unknown;
@@ -49,6 +59,7 @@ export interface SettingsMessageController {
 
 export interface SettingsMessageHandlers {
   applyAllEffects(): Promise<void> | void;
+  applyEffects(message: Extract<SettingsHostMessage, { readonly type: "apply-effects" }>): Promise<void> | void;
   applyNeonCustomizations(message: Extract<SettingsHostMessage, { readonly type: "apply-neon-customizations" }>): Promise<void> | void;
   applySettingsBundle(bundle: unknown): Promise<void> | void;
   changeThemeVariant(themeVariantId: unknown): Promise<void> | void;
@@ -77,6 +88,7 @@ export interface SettingsMessageHandlers {
   updateEditorBackgroundFit(fit: unknown): Promise<void> | void;
   updateEditorBackgroundOpacity(opacity: unknown): Promise<void> | void;
   updateEmptyEditorLogoOpacity(opacity: unknown): Promise<void> | void;
+  updateEffectFeatures(features: unknown): Promise<void> | void;
 }
 
 export interface SettingsMessageControllerDependencies {
@@ -134,6 +146,13 @@ export function isSettingsHostMessage(message: unknown): message is SettingsHost
       return Object.prototype.hasOwnProperty.call(message, "editorBackgroundOpacity")
         && Object.prototype.hasOwnProperty.call(message, "editorBackgroundFit")
         && Object.prototype.hasOwnProperty.call(message, "emptyEditorLogoOpacity");
+    case "apply-effects":
+      return Object.prototype.hasOwnProperty.call(message, "editorBackgroundOpacity")
+        && Object.prototype.hasOwnProperty.call(message, "editorBackgroundFit")
+        && Object.prototype.hasOwnProperty.call(message, "emptyEditorLogoOpacity")
+        && isEffectFeatureSettings(message.features);
+    case "update-effect-features":
+      return isEffectFeatureSettings(message.features);
     case "update-color":
       return Object.prototype.hasOwnProperty.call(message, "section")
         && Object.prototype.hasOwnProperty.call(message, "id")
@@ -296,6 +315,13 @@ class DefaultSettingsMessageController implements SettingsMessageController {
         await handlers.applyNeonCustomizations(message);
         await handlers.applyAllEffects();
         await handlers.postSettingsState();
+        return;
+      case "apply-effects":
+        await handlers.applyEffects(message);
+        await handlers.postSettingsState();
+        return;
+      case "update-effect-features":
+        await handlers.updateEffectFeatures(message.features);
         return;
       case "update-color":
         await handlers.updateColorCustomization(message.section, message.id, message.value, message.themeVariantId);

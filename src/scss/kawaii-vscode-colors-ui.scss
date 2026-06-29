@@ -1,0 +1,9 @@
+@use "generated/editor-chrome.generated" as editorChrome;
+
+.kawaii-vscode-colors-ui.dark-pink-kawaii {
+  @include editorChrome.styles;
+}
+
+.kawaii-vscode-colors-ui.light-pink-pastel-kawaii {
+  @include editorChrome.styles;
+}

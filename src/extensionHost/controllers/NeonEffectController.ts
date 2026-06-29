@@ -1,14 +1,11 @@
 import type { NeonEffectConfiguration, NeonEffectService } from "../services/NeonEffectService";
+import { isThemeName } from "../../shared/models/theme";
+import { normalizeEffectFeatureSettings } from "../../shared/models/effects";
 
 export const COLOR_THEME_SETTING = "workbench.colorTheme";
 
-const KAWAII_VSCODE_COLOR_THEME_LABELS = [
-  "Kawaii VS Code Color",
-  "Kawaii VS Code Color Light"
-] as const;
-
 export interface NeonEffectActions {
-  enableNeon(): Promise<void>;
+  enableNeon(configuration?: NeonEffectConfigurationOverride): Promise<void>;
   disableNeon(): Promise<void>;
   isNeonEnabled(): boolean;
 }
@@ -19,11 +16,13 @@ export interface ConfigurationChangeEventLike {
 
 export interface NeonEffectController {
   disableNeon(): Promise<void>;
-  enableNeon(): Promise<void>;
+  enableNeon(configuration?: NeonEffectConfigurationOverride): Promise<void>;
   getSettingsActions(): NeonEffectActions;
   handleConfigurationChange(event: ConfigurationChangeEventLike): void;
   isNeonEnabled(): boolean;
 }
+
+export type NeonEffectConfigurationOverride = Partial<NeonEffectConfiguration>;
 
 export interface NeonEffectControllerDependencies {
   readonly getActiveColorThemeLabel: () => string;
@@ -37,17 +36,57 @@ export function createNeonEffectController(dependencies: NeonEffectControllerDep
 
 class DefaultNeonEffectController implements NeonEffectController {
   private activeColorThemeLabel: string;
+  private disableInFlight: Promise<void> | undefined;
+  private enableInFlight: Promise<void> | undefined;
+  private enableRerunRequested = false;
+  private pendingEnableConfiguration: NeonEffectConfiguration | undefined;
 
   constructor(private readonly dependencies: NeonEffectControllerDependencies) {
     this.activeColorThemeLabel = dependencies.getActiveColorThemeLabel();
   }
 
-  async enableNeon(): Promise<void> {
-    await this.dependencies.neonEffectService.enable(this.dependencies.getNeonConfiguration());
+  async enableNeon(configuration?: NeonEffectConfigurationOverride): Promise<void> {
+    this.pendingEnableConfiguration = this.createEnableConfiguration(configuration);
+
+    if (this.disableInFlight) {
+      await this.disableInFlight;
+    }
+
+    if (this.enableInFlight) {
+      this.enableRerunRequested = true;
+      return this.enableInFlight;
+    }
+
+    const enableRun = this.runQueuedEnableRequests();
+    this.enableInFlight = enableRun;
+
+    try {
+      await enableRun;
+    } finally {
+      if (this.enableInFlight === enableRun) {
+        this.enableInFlight = undefined;
+      }
+    }
   }
 
   async disableNeon(): Promise<void> {
-    await this.dependencies.neonEffectService.disable();
+    this.pendingEnableConfiguration = undefined;
+    this.enableRerunRequested = false;
+
+    if (this.disableInFlight) {
+      return this.disableInFlight;
+    }
+
+    const disableRun = this.runDisableAfterEnable(this.enableInFlight);
+    this.disableInFlight = disableRun;
+
+    try {
+      await disableRun;
+    } finally {
+      if (this.disableInFlight === disableRun) {
+        this.disableInFlight = undefined;
+      }
+    }
   }
 
   isNeonEnabled(): boolean {
@@ -56,7 +95,7 @@ class DefaultNeonEffectController implements NeonEffectController {
 
   getSettingsActions(): NeonEffectActions {
     return {
-      enableNeon: () => this.enableNeon(),
+      enableNeon: (configuration) => this.enableNeon(configuration),
       disableNeon: () => this.disableNeon(),
       isNeonEnabled: () => this.isNeonEnabled()
     };
@@ -82,8 +121,43 @@ class DefaultNeonEffectController implements NeonEffectController {
 
     void this.enableNeon();
   }
+
+  private async runQueuedEnableRequests(): Promise<void> {
+    do {
+      this.enableRerunRequested = false;
+      const configuration = this.pendingEnableConfiguration || this.dependencies.getNeonConfiguration();
+      this.pendingEnableConfiguration = undefined;
+      await this.dependencies.neonEffectService.enable(configuration);
+    } while (this.enableRerunRequested);
+  }
+
+  private createEnableConfiguration(configuration?: NeonEffectConfigurationOverride): NeonEffectConfiguration {
+    const baseConfiguration = this.dependencies.getNeonConfiguration();
+
+    if (!configuration) {
+      return baseConfiguration;
+    }
+
+    const hasFeatureOverride = Object.prototype.hasOwnProperty.call(configuration, "features");
+
+    return {
+      ...baseConfiguration,
+      ...configuration,
+      features: hasFeatureOverride
+        ? normalizeEffectFeatureSettings(configuration.features)
+        : baseConfiguration.features
+    };
+  }
+
+  private async runDisableAfterEnable(enableRun: Promise<void> | undefined): Promise<void> {
+    if (enableRun) {
+      await enableRun.catch(() => undefined);
+    }
+
+    await this.dependencies.neonEffectService.disable();
+  }
 }
 
 function isKawaiiVsCodeColorTheme(themeLabel: string): boolean {
-  return KAWAII_VSCODE_COLOR_THEME_LABELS.includes(themeLabel as typeof KAWAII_VSCODE_COLOR_THEME_LABELS[number]);
+  return isThemeName(themeLabel);
 }

@@ -21,7 +21,7 @@ test("applyWorkbenchPatchScriptTag inserts a cache-busted script before the clos
 
   assert.match(
     output,
-    /<!-- KAWAII SYNTHWAVE --><script src="neondreams\.js\?v=fixed-version"><\/script><!-- NEON DREAMS -->\n<\/html>/
+    /<!-- KAWAII VSCODE COLORS UI --><script src="kawaii-vscode-colors-ui\.js\?v=fixed-version"><\/script><!-- \/KAWAII VSCODE COLORS UI -->\n<\/html>/
   );
   assert.equal(isWorkbenchPatchEnabled(output), true);
 });
@@ -30,9 +30,23 @@ test("applyWorkbenchPatchScriptTag replaces existing extension marker instead of
   const firstOutput = applyWorkbenchPatchScriptTag("<html></html>", "one");
   const secondOutput = applyWorkbenchPatchScriptTag(firstOutput, "two");
 
-  assert.equal((secondOutput.match(/<!-- KAWAII SYNTHWAVE -->/g) || []).length, 1);
-  assert.match(secondOutput, /neondreams\.js\?v=two/);
-  assert.doesNotMatch(secondOutput, /neondreams\.js\?v=one/);
+  assert.equal((secondOutput.match(/<!-- KAWAII VSCODE COLORS UI -->/g) || []).length, 1);
+  assert.match(secondOutput, /kawaii-vscode-colors-ui\.js\?v=two/);
+  assert.doesNotMatch(secondOutput, /kawaii-vscode-colors-ui\.js\?v=one/);
+});
+
+test("applyWorkbenchPatchScriptTag replaces a legacy Kawaii Neon marker", () => {
+  const legacyHtml = [
+    "<html>",
+    '<!-- KAWAII SYNTHWAVE --><script src="neondreams.js?v=legacy"></script><!-- NEON DREAMS -->',
+    "</html>"
+  ].join("\n");
+
+  const output = applyWorkbenchPatchScriptTag(legacyHtml, "current");
+
+  assert.doesNotMatch(output, /neondreams\.js/);
+  assert.doesNotMatch(output, /<!-- KAWAII SYNTHWAVE -->/);
+  assert.match(output, /kawaii-vscode-colors-ui\.js\?v=current/);
 });
 
 test("removeWorkbenchPatchScriptTag removes only the marked extension script", () => {
@@ -46,8 +60,27 @@ test("removeWorkbenchPatchScriptTag removes only the marked extension script", (
   const output = removeWorkbenchPatchScriptTag(html);
 
   assert.match(output, /<script src="neondreams\.js"><\/script>/);
+  assert.doesNotMatch(output, /<!-- KAWAII VSCODE COLORS UI -->/);
+  assert.doesNotMatch(output, /kawaii-vscode-colors-ui\.js\?v=fixed-version/);
+});
+
+test("isWorkbenchPatchEnabled ignores unmarked legacy script references", () => {
+  const html = '<html><script src="neondreams.js"></script></html>';
+
+  assert.equal(isWorkbenchPatchEnabled(html), false);
+});
+
+test("removeWorkbenchPatchScriptTag removes legacy marked extension script tags", () => {
+  const html = [
+    "<html>",
+    '<!-- KAWAII SYNTHWAVE --><script src="neondreams.js?v=legacy"></script><!-- NEON DREAMS -->',
+    "</html>"
+  ].join("\n");
+
+  const output = removeWorkbenchPatchScriptTag(html);
+
+  assert.doesNotMatch(output, /neondreams\.js/);
   assert.doesNotMatch(output, /<!-- KAWAII SYNTHWAVE -->/);
-  assert.doesNotMatch(output, /neondreams\.js\?v=fixed-version/);
 });
 
 test("resolveWorkbenchPaths prefers electron-browser workbench.html", () => {
@@ -67,6 +100,7 @@ test("resolveWorkbenchPatchPaths resolves electron-sandbox workbench.esm.html", 
 
   assert.deepEqual(result, {
     htmlFile: existingPath,
-    templateFile: path.join(base, "electron-sandbox", "workbench", "neondreams.js")
+    scriptFile: path.join(base, "electron-sandbox", "workbench", "kawaii-vscode-colors-ui.js"),
+    styleFile: path.join(base, "electron-sandbox", "workbench", "kawaii-vscode-colors-ui.min.css")
   });
 });

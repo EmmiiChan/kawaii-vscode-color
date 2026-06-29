@@ -5,12 +5,12 @@ const path = require("node:path");
 const {
     assertWebviewCssVisible,
     assertWebviewPageVisible,
+    closeAllEditors,
     clickWebviewCss,
     getWebviewElementCount,
     getWebviewInputValue,
     getWebviewText,
     postWebviewE2EMessage,
-    runCommand,
     selectWebviewOptionByText,
     setWebviewInputValue,
     takeE2EScreenshot,
@@ -29,10 +29,27 @@ async function openColorSettingsPage() {
     await clickWebviewCss('.nav-button[data-page="color-settings"]');
     await assertWebviewPageVisible("color-settings-page");
     await waitForWebviewTextIncludes("#color-settings-page", "THEME MODE");
-    await selectWebviewOptionByText("#theme-variant", "Dark - Kawaii VS Code Color");
+    await selectWebviewOptionByText("#theme-variant", "Dark - Dark Pink Kawaii");
     await waitForWebviewInputValue("#theme-variant", "dark", 20000);
     await clickWebviewCss('.tab[data-section="workbench"]');
     await setWebviewInputValue("#search", "");
+}
+
+async function openImageCustomizationPage() {
+    await clickWebviewCss('.nav-button[data-page="image-customization"]');
+    await assertWebviewPageVisible("image-customization-page");
+    await waitForWebviewTextIncludes("#image-customization-page", "EDITOR BACKGROUND IMAGE");
+    await assertWebviewCssVisible("#editor-background-upload");
+    await assertWebviewCssVisible("#empty-editor-logo-upload");
+}
+
+async function setControlledE2EFixtures(fixtures) {
+    await postWebviewE2EMessage({
+        type: "e2e-set-test-fixtures",
+        fixtures
+    });
+    await clickWebviewCss("#refresh");
+    await waitForWebviewTextIncludes("#status", "Saved", 20000);
 }
 
 describe("Settings safe flows E2E", function () {
@@ -70,7 +87,7 @@ describe("Settings safe flows E2E", function () {
     it("switches theme variant selector in isolated profile", async function () {
         await withSettingsWebview(async () => {
             await openColorSettingsPage();
-            const selectedValue = await selectWebviewOptionByText("#theme-variant", "Kawaii VS Code Color Light");
+            const selectedValue = await selectWebviewOptionByText("#theme-variant", "Light Pink-Pastel Kawaii");
 
             assert.equal(selectedValue, "light");
             await assertWebviewCssVisible("#theme-variant");
@@ -126,31 +143,32 @@ describe("Settings safe flows E2E", function () {
         try {
             await withSettingsWebview(async () => {
                 await openColorSettingsPage();
-                await postWebviewE2EMessage({
-                    type: "e2e-set-test-fixtures",
-                    fixtures: {
-                        settingsExportPath: exportPath,
-                        settingsImportPath: exportPath,
-                        editorBackgroundImagePath: EDITOR_BACKGROUND_FIXTURE,
-                        emptyEditorLogoImagePath: EMPTY_EDITOR_LOGO_FIXTURE,
-                        editorBackgroundDownloadPath,
-                        emptyEditorLogoDownloadPath,
-                        randomNekoImagePath: EDITOR_BACKGROUND_FIXTURE
-                    }
+                await setControlledE2EFixtures({
+                    settingsExportPath: exportPath,
+                    settingsImportPath: exportPath,
+                    editorBackgroundImagePath: EDITOR_BACKGROUND_FIXTURE,
+                    emptyEditorLogoImagePath: EMPTY_EDITOR_LOGO_FIXTURE,
+                    editorBackgroundDownloadPath,
+                    emptyEditorLogoDownloadPath,
+                    randomNekoImagePath: EDITOR_BACKGROUND_FIXTURE
                 });
 
+                await openImageCustomizationPage();
                 await clickWebviewCss("#editor-background-upload");
                 await waitForWebviewTextIncludes("#editor-background-file", "editor-background.png", 30000);
                 await clickWebviewCss("#empty-editor-logo-upload");
                 await waitForWebviewTextIncludes("#empty-editor-logo-file", "empty-editor-logo.png", 30000);
 
+                await openColorSettingsPage();
                 await setWebviewInputValue("#search", "editor.background");
                 await waitForWebviewTextIncludes("#content", "editor.background");
                 await setWebviewInputValue("#content .row .hex", "#135724");
                 await waitForWebviewInputValue("#content .row .hex", "#135724", 20000);
 
+                await openImageCustomizationPage();
                 await clickWebviewCss("#editor-background-download");
                 await clickWebviewCss("#empty-editor-logo-download");
+                await openColorSettingsPage();
                 await clickWebviewCss("#export-settings");
                 await waitForFile(exportPath, 20000);
 
@@ -161,21 +179,24 @@ describe("Settings safe flows E2E", function () {
                 assert.deepEqual(fs.readFileSync(editorBackgroundDownloadPath), fs.readFileSync(EDITOR_BACKGROUND_FIXTURE));
                 assert.deepEqual(fs.readFileSync(emptyEditorLogoDownloadPath), fs.readFileSync(EMPTY_EDITOR_LOGO_FIXTURE));
 
+                await openImageCustomizationPage();
                 await clickWebviewCss("#editor-background-random-neko");
                 await waitForWebviewTextIncludes("#editor-background-file", "e2e-random-neko-editor-background.png", 30000);
                 await clickWebviewCss("#empty-editor-logo-random-neko");
                 await waitForWebviewTextIncludes("#empty-editor-logo-file", "e2e-random-neko-editor-background.png", 30000);
 
+                await openColorSettingsPage();
                 await setWebviewInputValue("#content .row .hex", "#246813");
                 await waitForWebviewInputValue("#content .row .hex", "#246813", 20000);
                 await clickWebviewCss("#import-settings");
                 await waitForWebviewInputValue("#content .row .hex", "#135724", 30000);
+                await openImageCustomizationPage();
                 await waitForWebviewTextIncludes("#editor-background-file", "editor-background.png", 30000);
                 await waitForWebviewTextIncludes("#empty-editor-logo-file", "empty-editor-logo.png", 30000);
                 await takeE2EScreenshot("settings-controlled-dialog-random-flows");
             });
         } finally {
-            await runCommand("View: Close All Editors").catch(() => undefined);
+            await closeAllEditors().catch(() => undefined);
         }
     });
 
@@ -186,11 +207,18 @@ describe("Settings safe flows E2E", function () {
             await openColorSettingsPage();
 
             for (const css of [
-                "#apply-effects",
                 "#save-vssync",
                 "#import-vssync",
                 "#export-settings",
-                "#import-settings",
+                "#import-settings"
+            ]) {
+                await assertWebviewCssVisible(css);
+            }
+            await takeE2EScreenshot("settings-safe-action-controls-color-settings");
+
+            await openImageCustomizationPage();
+            for (const css of [
+                "#apply-effects",
                 "#editor-background-upload",
                 "#editor-background-random-neko",
                 "#editor-background-remove",
@@ -202,7 +230,7 @@ describe("Settings safe flows E2E", function () {
             ]) {
                 await assertWebviewCssVisible(css);
             }
-            await takeE2EScreenshot("settings-safe-action-controls-color-settings");
+            await takeE2EScreenshot("settings-safe-action-controls-image-customization");
 
             await clickWebviewCss('.nav-button[data-page="neon-effect"]');
             await assertWebviewPageVisible("neon-effect-page");

@@ -17,7 +17,7 @@ const {
 test("settings webview posts editor background image actions", async () => {
   const { document, window, postedMessages } = await renderWebview();
 
-  click(document, '[data-page="color-settings"]');
+  click(document, '[data-page="image-customization"]');
 
   expectElementDisabled(document, "#editor-background-remove", true);
   expectElementDisabled(document, "#editor-background-download", true);
@@ -88,7 +88,7 @@ test("settings webview posts editor background image actions", async () => {
 test("settings webview posts editor background opacity and fit updates", async () => {
   const { document, window, postedMessages } = await renderWebview();
 
-  click(document, '[data-page="color-settings"]');
+  click(document, '[data-page="image-customization"]');
   setInputValue(window, "#editor-background-opacity", "0.2");
 
   assert.equal(document.getElementById("editor-background-opacity-value").textContent, "20%");
@@ -110,7 +110,7 @@ test("settings webview posts editor background opacity and fit updates", async (
 test("settings webview posts empty editor logo actions", async () => {
   const { document, window, postedMessages } = await renderWebview();
 
-  click(document, '[data-page="color-settings"]');
+  click(document, '[data-page="image-customization"]');
 
   expectElementDisabled(document, "#empty-editor-logo-remove", true);
   expectElementDisabled(document, "#empty-editor-logo-download", true);
@@ -166,7 +166,7 @@ test("settings webview posts empty editor logo actions", async () => {
 test("settings webview posts empty editor logo opacity updates", async () => {
   const { document, window, postedMessages } = await renderWebview();
 
-  click(document, '[data-page="color-settings"]');
+  click(document, '[data-page="image-customization"]');
   setInputValue(window, "#empty-editor-logo-opacity", "0.4");
 
   assert.equal(document.getElementById("empty-editor-logo-opacity-value").textContent, "40%");
@@ -182,7 +182,7 @@ test("settings webview posts empty editor logo opacity updates", async () => {
 test("settings webview applies state messages and clears loading indicators", async () => {
   const { document, window } = await renderWebview();
 
-  click(document, '[data-page="color-settings"]');
+  click(document, '[data-page="image-customization"]');
   click(document, "#editor-background-random-neko");
   click(document, "#empty-editor-logo-random-neko");
 

@@ -14,6 +14,11 @@ const effectsPersistence = require("./settingsEffectsPersistence");
 const { resolveExtensionAssetPath } = require("./extensionRoot");
 const { createSettingsStore } = require("./settingsStore");
 const { createSettingsWebviewHtml } = require("./settingsWebview");
+const { KAWAII_THEME_VARIANTS } = require("./shared/models/theme");
+const {
+  DEFAULT_EFFECT_FEATURE_SETTINGS,
+  normalizeEffectFeatureSettings
+} = require("./shared/models/effects");
 const {
   ensurePlainObject,
   findMatchingTokenRuleIndex,
@@ -24,20 +29,12 @@ const {
 const packageManifest = JSON.parse(fs.readFileSync(resolveExtensionAssetPath(__dirname, "package.json"), "utf8"));
 
 const PANEL_VIEW_TYPE = "kawaiiVsCodeColor.settings";
-const THEME_VARIANTS = [
-  {
-    id: "dark",
-    label: "Kawaii VS Code Color",
-    modeLabel: "Dark",
-    generatedThemePath: resolveExtensionAssetPath(__dirname, "themes", "kawaii_synthwave-generated-color-theme.json")
-  },
-  {
-    id: "light",
-    label: "Kawaii VS Code Color Light",
-    modeLabel: "Light",
-    generatedThemePath: resolveExtensionAssetPath(__dirname, "themes", "kawaii_synthwave-generated-color-theme-light.json")
-  }
-];
+const THEME_VARIANTS = KAWAII_THEME_VARIANTS.map(function mapThemeVariant(themeVariant) {
+  return {
+    ...themeVariant,
+    generatedThemePath: resolveExtensionAssetPath(__dirname, ...themeVariant.generatedThemePath.split("/"))
+  };
+});
 const DEFAULT_THEME_VARIANT_ID = "dark";
 const COLOR_THEME_SETTING = "workbench.colorTheme";
 const WORKBENCH_CUSTOMIZATIONS_SETTING = "workbench.colorCustomizations";
@@ -100,7 +97,7 @@ const EDITOR_BACKGROUND_OPACITY_STATE_KEY = "kawaii_synthwave.editorBackgroundOp
 const EDITOR_BACKGROUND_IMAGE_FILE_PREFIX = "editor-background-image";
 const EDITOR_BACKGROUND_ALLOWED_EXTENSIONS = ["png", "jpg", "jpeg", "webp", "svg"];
 const EDITOR_BACKGROUND_SUPPORTED_FORMATS_LABEL = "PNG, JPG/JPEG, WEBP, SVG";
-const IMAGE_DATA_URL_WARNING = "If preview image fails to apply, try a smaller image resolution. Image previews and injected effects use data URLs, so oversized images can make the settings page or VS Code reload unstable.";
+const IMAGE_DATA_URL_WARNING = "Settings previews use data URLs and JSON exports carry base64 image payloads. UI effects copy images into generated workbench assets when effects are applied, but oversized images can still slow reloads; use a smaller image resolution if VS Code feels unstable.";
 const NEKOS_MOE_RANDOM_IMAGE_ENDPOINT = "https://nekos.moe/api/v1/random/image?nsfw=false";
 const NEKOS_MOE_IMAGE_BASE_URL = "https://nekos.moe/image/";
 const NEKOS_MOE_USER_AGENT = "KawaiiVSCodeColor (https://github.com/EmmiiChan/kawaii-vscode-color)";
@@ -136,6 +133,7 @@ const EMPTY_EDITOR_LOGO_IMAGE_FILE_PREFIX = "empty-editor-logo-image";
 const EMPTY_EDITOR_LOGO_MIN_OPACITY = 0;
 const EMPTY_EDITOR_LOGO_MAX_OPACITY = 1;
 const EMPTY_EDITOR_LOGO_OPACITY_STEP = 0.01;
+const EFFECT_FEATURE_SETTINGS_STATE_KEY = "kawaii_synthwave.effectFeatureSettings";
 const MARKDOWN_CODE_FENCE_CHARACTER = "`";
 const TOKEN_DESCRIPTION_RULES = [
   {
@@ -447,8 +445,8 @@ async function handleSettingsMessage(panel, message, context) {
  */
 function createSettingsMessageHandlers(panel, context) {
   const settingsEffectsService = createSettingsEffectsService({
-    applyAllEffects() {
-      return applyAllEffects(panel);
+    applyAllEffects(configuration) {
+      return applyAllEffects(panel, configuration);
     },
     downloadEditorBackgroundImage,
     downloadEmptyEditorLogoImage,
@@ -466,6 +464,14 @@ function createSettingsMessageHandlers(panel, context) {
   return {
     applyAllEffects() {
       return settingsEffectsService.applyAllEffects();
+    },
+    async applyEffects(message) {
+      const features = normalizeEffectFeatureSettings(message.features);
+      await settingsEffectsService.updateEditorBackgroundOpacity(context, message.editorBackgroundOpacity);
+      await settingsEffectsService.updateEditorBackgroundFit(context, message.editorBackgroundFit);
+      await settingsEffectsService.updateEmptyEditorLogoOpacity(context, message.emptyEditorLogoOpacity);
+      await updateEffectFeatures(context, features);
+      await settingsEffectsService.applyAllEffects({ features });
     },
     async applyNeonCustomizations(message) {
       await settingsEffectsService.updateEditorBackgroundOpacity(context, message.editorBackgroundOpacity);
@@ -540,12 +546,15 @@ function createSettingsMessageHandlers(panel, context) {
     },
     updateEmptyEditorLogoOpacity(opacity) {
       return settingsEffectsService.updateEmptyEditorLogoOpacity(context, opacity);
+    },
+    updateEffectFeatures(features) {
+      return updateEffectFeatures(context, features);
     }
   };
 }
 
 /**
- * Normalizes optional Neon Effect actions passed by the extension host.
+ * Normalizes optional Effects actions passed by the extension host.
  *
  * @param {unknown} actions - Action handlers from the extension entry point.
  * @returns {Record<string, Function>} Normalized action handlers.
@@ -598,34 +607,34 @@ function getProjectLinksFromManifest(manifest) {
 }
 
 /**
- * Runs one Neon Effect action.
+ * Runs one Effects action.
  *
  * @param {string} actionName - Action handler name.
  * @returns {Promise<void>} Completes when the action has been requested.
  */
-async function runNeonEffectAction(actionName) {
+async function runNeonEffectAction(actionName, configuration) {
   const action = neonEffectActions[actionName];
 
   if (typeof action !== "function") {
-    throw new Error(`Neon Effect action is unavailable: ${actionName}`);
+    throw new Error(`Effects action is unavailable: ${actionName}`);
   }
 
-  await Promise.resolve(action());
+  await Promise.resolve(action(configuration));
 }
 
 /**
- * Applies all CSS-backed Kawaii VS Code Color effects through the Neon Effect patch.
+ * Applies all CSS-backed Kawaii VS Code Color effects through the Kawaii Neon patch.
  *
  * @param {vscode.WebviewPanel} panel - Active webview panel.
  * @returns {Promise<void>} Completes when the enable action has been requested.
  */
-async function applyAllEffects(panel) {
-  await runNeonEffectAction("enableNeon");
+async function applyAllEffects(panel, configuration) {
+  await runNeonEffectAction("enableNeon", configuration);
   postNeonEffectStatus(panel, "Effects apply request sent. Follow the VS Code notification to restart the editor.");
 }
 
 /**
- * Sends a Neon Effect status message to the webview.
+ * Sends an Effects status message to the webview.
  *
  * @param {vscode.WebviewPanel} panel - Active webview panel.
  * @param {string} message - Status message.
@@ -937,6 +946,7 @@ async function importSettingsBundle(context) {
  */
 async function getEffectsExport(context) {
   return {
+    features: getStoredEffectFeatures(context),
     editorBackground: {
       opacity: getStoredEditorBackgroundOpacity(context),
       fit: getStoredEditorBackgroundFit(context),
@@ -975,6 +985,8 @@ async function getStoredImageExport(context, metadata, resolvePath) {
  * @returns {Promise<void>} Completes when effects are restored.
  */
 async function applyEffectsExport(context, effects) {
+  await updateEffectFeatures(context, effects && effects.features);
+
   return effectsPersistence.applyEffectsExport(effects, {
     updateEditorBackgroundOpacity(opacity) {
       return updateEditorBackgroundOpacity(context, opacity);
@@ -1273,6 +1285,20 @@ async function updateEditorBackgroundFit(context, fit) {
 }
 
 /**
+ * Stores the selected modular effect feature switches.
+ *
+ * @param {vscode.ExtensionContext} context - Extension context.
+ * @param {unknown} features - Candidate feature settings from the settings webview.
+ * @returns {Promise<void>} Completes when feature settings are stored.
+ */
+async function updateEffectFeatures(context, features) {
+  await context.globalState.update(
+    EFFECT_FEATURE_SETTINGS_STATE_KEY,
+    normalizeEffectFeatureSettings(features)
+  );
+}
+
+/**
  * Opens the system image picker and stores the selected empty editor logo.
  *
  * @param {vscode.ExtensionContext} context - Extension context.
@@ -1528,6 +1554,18 @@ function getStoredEditorBackgroundFit(context) {
  */
 function getStoredEmptyEditorLogoOpacity(context) {
   return normalizeEmptyEditorLogoOpacity(context.globalState.get(EMPTY_EDITOR_LOGO_OPACITY_STATE_KEY));
+}
+
+/**
+ * Reads and normalizes stored modular effect feature switches.
+ *
+ * @param {vscode.ExtensionContext} context - Extension context.
+ * @returns {Record<string, boolean>} Safe modular effect feature settings.
+ */
+function getStoredEffectFeatures(context) {
+  return normalizeEffectFeatureSettings(
+    context.globalState.get(EFFECT_FEATURE_SETTINGS_STATE_KEY) || DEFAULT_EFFECT_FEATURE_SETTINGS
+  );
 }
 
 /**
@@ -1939,6 +1977,9 @@ function createSettingsState(context, webview) {
     corruptionWarningLinks: CORRUPTION_WARNING_LINKS,
     checksumFixLink: CHECKSUM_FIX_LINK,
     e2eTestApiEnabled: isSettingsE2ETestHookEnabled(),
+    effects: {
+      features: getStoredEffectFeatures(context)
+    },
     editorBackground: getEditorBackgroundState(context, webview),
     emptyEditorLogo: getEmptyEditorLogoState(context, webview),
     workbenchColors,
@@ -2144,7 +2185,10 @@ function getGeneratedTokenRule(tokenIndex, themeVariant) {
 function getActiveThemeVariant() {
   const activeThemeLabel = vscode.workspace.getConfiguration().get(COLOR_THEME_SETTING);
   const matchingThemeVariant = THEME_VARIANTS.find(function matchThemeVariant(themeVariant) {
-    return themeVariant.label === activeThemeLabel;
+    return (
+      themeVariant.label === activeThemeLabel
+      || themeVariant.legacyLabels.includes(activeThemeLabel)
+    );
   });
 
   return matchingThemeVariant || getThemeVariantById(DEFAULT_THEME_VARIANT_ID);

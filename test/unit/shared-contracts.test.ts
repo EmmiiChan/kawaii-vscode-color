@@ -29,10 +29,92 @@ test("shared opacity normalization clamps incoming numeric values", () => {
   assert.equal(effects.normalizeOpacityValue("bad"), 1);
 });
 
+test("shared effect feature settings default every module to enabled", () => {
+  assert.deepEqual((effects as any).normalizeEffectFeatureSettings(undefined), {
+    foundation: true,
+    editorBackground: true,
+    noPageLogo: true,
+    glow: true
+  });
+  assert.deepEqual((effects as any).normalizeEffectFeatureSettings({ glow: false }), {
+    foundation: true,
+    editorBackground: true,
+    noPageLogo: true,
+    glow: false
+  });
+  assert.deepEqual((effects as any).getEnabledEffectFeatureIds({
+    foundation: true,
+    editorBackground: false,
+    noPageLogo: true,
+    glow: false
+  }), ["foundation", "noPageLogo"]);
+});
+
+test("effect feature combination matrix covers every switch permutation with stable ids", () => {
+  const matrix = effects.getEffectFeatureCombinationMatrix();
+
+  assert.equal(matrix.length, 16);
+  assert.deepEqual(matrix[0], {
+    id: "foundation-off__editor-background-off__no-page-logo-off__glow-off",
+    features: {
+      foundation: false,
+      editorBackground: false,
+      noPageLogo: false,
+      glow: false
+    }
+  });
+  assert.deepEqual(matrix[matrix.length - 1], {
+    id: "foundation-on__editor-background-on__no-page-logo-on__glow-on",
+    features: {
+      foundation: true,
+      editorBackground: true,
+      noPageLogo: true,
+      glow: true
+    }
+  });
+  assert.equal(new Set(matrix.map((combination) => combination.id)).size, 16);
+});
+
 test("shared theme guards identify supported Kawaii theme variants", () => {
+  assert.equal(theme.isThemeName("Dark Pink Kawaii"), true);
+  assert.equal(theme.isThemeName("Light Pink-Pastel Kawaii"), true);
   assert.equal(theme.isThemeName("Kawaii VS Code Color"), true);
   assert.equal(theme.isThemeName("Kawaii VS Code Color Light"), true);
   assert.equal(theme.isThemeName("Other Theme"), false);
+});
+
+test("shared theme variants expose canonical labels, legacy aliases, and wrapper classes", () => {
+  assert.equal(theme.KAWAII_UI_ROOT_CLASS, "kawaii-vscode-colors-ui");
+  assert.equal(theme.sanitizeThemeWrapperClass("Dark Pink Kawaii"), "dark-pink-kawaii");
+  assert.equal(theme.sanitizeThemeWrapperClass("Light Pink-Pastel Kawaii"), "light-pink-pastel-kawaii");
+
+  assert.deepEqual(
+    theme.KAWAII_THEME_VARIANTS.map((variant) => ({
+      id: variant.id,
+      label: variant.label,
+      wrapperClass: variant.wrapperClass,
+      legacyLabels: variant.legacyLabels
+    })),
+    [
+      {
+        id: "dark",
+        label: "Dark Pink Kawaii",
+        wrapperClass: "dark-pink-kawaii",
+        legacyLabels: ["Kawaii VS Code Color"]
+      },
+      {
+        id: "light",
+        label: "Light Pink-Pastel Kawaii",
+        wrapperClass: "light-pink-pastel-kawaii",
+        legacyLabels: ["Kawaii VS Code Color Light"]
+      }
+    ]
+  );
+
+  assert.equal(theme.getThemeVariantByLabel("Dark Pink Kawaii")?.id, "dark");
+  assert.equal(theme.getThemeVariantByLabel("Kawaii VS Code Color")?.id, "dark");
+  assert.equal(theme.getThemeVariantByLabel("Light Pink-Pastel Kawaii")?.id, "light");
+  assert.equal(theme.getThemeVariantByLabel("Kawaii VS Code Color Light")?.id, "light");
 });
 
 test("webview message guard accepts known messages and rejects unknown payloads", () => {
@@ -45,8 +127,34 @@ test("webview message guard accepts known messages and rejects unknown payloads"
     }),
     true
   );
+  assert.equal(
+    webviewMessages.isWebviewToHostMessage({
+      type: "apply-effects",
+      features: {
+        foundation: true,
+        editorBackground: false,
+        noPageLogo: true,
+        glow: false
+      },
+      editorBackgroundOpacity: 0.2,
+      editorBackgroundFit: "left",
+      emptyEditorLogoOpacity: 0.7
+    }),
+    true
+  );
+  assert.equal(
+    webviewMessages.isHostToWebviewMessage({
+      type: "effects-status",
+      tone: "busy",
+      title: "Effects",
+      message: "Applying selected effects",
+      dedupeKey: "effects:apply"
+    }),
+    true
+  );
   assert.equal(webviewMessages.isWebviewToHostMessage({ type: "unknown" }), false);
   assert.equal(webviewMessages.isWebviewToHostMessage(null), false);
+  assert.equal(webviewMessages.isHostToWebviewMessage({ type: "effects-status", tone: "loud" }), false);
 });
 
 test("settings bundle schema constants preserve current and legacy schema names", () => {
@@ -57,7 +165,9 @@ test("settings bundle schema constants preserve current and legacy schema names"
 
 test("renderer placeholder contract includes required Neon placeholders", () => {
   assert.equal(rendererPlaceholders.isRendererPlaceholder("NEON_BRIGHTNESS"), true);
+  assert.equal(rendererPlaceholders.isRendererPlaceholder("KAWAII_UI_STYLE_VERSION"), true);
   assert.equal(rendererPlaceholders.isRendererPlaceholder("EMPTY_EDITOR_LOGO_STYLES"), true);
+  assert.equal(rendererPlaceholders.isRendererPlaceholder("CHROME_STYLES"), false);
   assert.equal(rendererPlaceholders.isRendererPlaceholder("UNKNOWN_PLACEHOLDER"), false);
 });
 

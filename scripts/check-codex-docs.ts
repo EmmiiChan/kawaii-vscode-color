@@ -106,15 +106,15 @@ const DOC_PATHS = {
 };
 
 const THEME_BUILD_PATHS: Record<string, ThemeBuildPath> = {
-  "Kawaii VS Code Color": {
-    baseThemePath: "themes/kawaii_synthwave-color-theme.json",
-    overridesThemePath: "themes/kawaii_synthwave-color-theme-overrides.json",
-    generatedThemePath: "themes/kawaii_synthwave-generated-color-theme.json"
+  "Dark Pink Kawaii": {
+    baseThemePath: "src/core-themes/kawaii_synthwave-color-theme.json",
+    overridesThemePath: "themes/dark-pink-kawaii.json",
+    generatedThemePath: "src/generated-themes/kawaii_synthwave-generated-color-theme.json"
   },
-  "Kawaii VS Code Color Light": {
-    baseThemePath: "themes/kawaii_synthwave-color-theme-light.json",
-    overridesThemePath: "themes/kawaii_synthwave-color-theme-light-overrides.json",
-    generatedThemePath: "themes/kawaii_synthwave-generated-color-theme-light.json"
+  "Light Pink-Pastel Kawaii": {
+    baseThemePath: "src/core-themes/kawaii_synthwave-color-theme-light.json",
+    overridesThemePath: "themes/light-pink-pastel-kawaii.json",
+    generatedThemePath: "src/generated-themes/kawaii_synthwave-generated-color-theme-light.json"
   }
 };
 
@@ -130,8 +130,12 @@ const CRITICAL_FILES = [
   "package-lock.json",
   "scripts/build-color-theme.js",
   "scripts/build-color-theme.ts",
+  "scripts/build-ui-css.js",
+  "scripts/build-ui-css.ts",
   "scripts/check-codex-docs.js",
   "scripts/check-codex-docs.ts",
+  "scripts/clean-test-artifacts.js",
+  "scripts/clean-test-artifacts.ts",
   "scripts/e2e-last-run.js",
   "scripts/e2e-last-run.ts",
   "scripts/increment-package-version.js",
@@ -142,16 +146,23 @@ const CRITICAL_FILES = [
   "scripts/require-e2e-neon-flag.ts",
   "scripts/run-e2e.js",
   "scripts/run-e2e.ts",
+  "scripts/test-process-cleanup-diagnostics.js",
+  "scripts/test-process-cleanup-diagnostics.ts",
   "scripts/run-test-all.js",
   "scripts/run-test-all.ts",
   "src/css/editor_chrome.css",
+  "src/css/kawaii-vscode-colors-ui.min.css",
+  "src/core-themes",
   "src/emptyEditorLogoStyles.ts",
   "src/extension.ts",
   "src/extensionHost",
   "src/extensionRoot.ts",
+  "src/generated-themes",
   "src/js/theme_template.js",
   "src/randomNekoImage.ts",
   "src/renderer",
+  "src/scss/kawaii-vscode-colors-ui.scss",
+  "src/scss/generated/_editor-chrome.generated.scss",
   "src/settings.ts",
   "src/settingsBundle.ts",
   "src/settingsColorService.ts",
@@ -165,6 +176,8 @@ const CRITICAL_FILES = [
   "test/e2e",
   "test/integration",
   "test/unit",
+  "themes/dark-pink-kawaii.json",
+  "themes/light-pink-pastel-kawaii.json",
   "tsconfig.tests.emit.json"
 ];
 
@@ -183,6 +196,7 @@ function collectProjectFacts(workspaceRoot = process.cwd()): ProjectFacts {
   const settingsBundleSource = readTextFile(path.join(workspaceRoot, "src", "settingsBundle.ts"));
   const themeTemplateSource = readTextFile(path.join(workspaceRoot, "src", "js", "theme_template.js"));
   const editorChromeSource = readTextFile(path.join(workspaceRoot, "src", "css", "editor_chrome.css"));
+  const uiCssSource = readTextFile(path.join(workspaceRoot, "src", "css", "kawaii-vscode-colors-ui.min.css"));
 
   return {
     package: collectPackageFacts(packageManifest, packageLock),
@@ -192,7 +206,7 @@ function collectProjectFacts(workspaceRoot = process.cwd()): ProjectFacts {
     hostMessageTypes: collectHostMessageTypes(settingsSource),
     stateKeys: collectKawaiiKeys([settingsSource, extensionSource, settingsBundleSource]),
     schemas: collectSchemaFacts(settingsBundleSource),
-    rendererPlaceholders: collectRendererPlaceholders([themeTemplateSource, editorChromeSource]),
+    rendererPlaceholders: collectRendererPlaceholders([themeTemplateSource, editorChromeSource, uiCssSource]),
     semanticTokenColors: collectSemanticTokenColorFacts(workspaceRoot)
   };
 }
@@ -346,8 +360,8 @@ function collectRendererPlaceholders(sources: readonly string[]): string[] {
 
 function collectSemanticTokenColorFacts(workspaceRoot: string): SemanticTokenColorFacts {
   return {
-    dark: hasSemanticTokenColors(path.join(workspaceRoot, "themes", "kawaii_synthwave-generated-color-theme.json")),
-    light: hasSemanticTokenColors(path.join(workspaceRoot, "themes", "kawaii_synthwave-generated-color-theme-light.json"))
+    dark: hasSemanticTokenColors(path.join(workspaceRoot, "src", "generated-themes", "kawaii_synthwave-generated-color-theme.json")),
+    light: hasSemanticTokenColors(path.join(workspaceRoot, "src", "generated-themes", "kawaii_synthwave-generated-color-theme-light.json"))
   };
 }
 

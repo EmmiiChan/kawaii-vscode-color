@@ -28,8 +28,15 @@ class VscodeNotificationService implements NeonNotificationService {
   constructor(private readonly vscodeApi: VscodeNotificationApi) {}
 
   async requestWorkbenchReload(message: string, actionTitle: string): Promise<void> {
-    await this.vscodeApi.window.showInformationMessage(message, { title: actionTitle });
-    await this.vscodeApi.commands.executeCommand(WORKBENCH_RELOAD_COMMAND);
+    const selection = this.vscodeApi.window.showInformationMessage(message, { title: actionTitle });
+
+    void Promise.resolve(selection).then((selectedAction) => {
+      if (isNotificationActionSelection(selectedAction, actionTitle)) {
+        return this.vscodeApi.commands.executeCommand(WORKBENCH_RELOAD_COMMAND);
+      }
+
+      return undefined;
+    }).catch(() => undefined);
   }
 
   async showErrorMessage(message: string): Promise<void> {
@@ -37,6 +44,13 @@ class VscodeNotificationService implements NeonNotificationService {
   }
 
   async showInformationMessage(message: string): Promise<void> {
-    await this.vscodeApi.window.showInformationMessage(message);
+    void Promise.resolve(this.vscodeApi.window.showInformationMessage(message)).catch(() => undefined);
   }
+}
+
+function isNotificationActionSelection(selection: unknown, actionTitle: string): selection is NotificationAction {
+  return typeof selection === "object"
+    && selection !== null
+    && "title" in selection
+    && selection.title === actionTitle;
 }

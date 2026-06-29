@@ -25,16 +25,61 @@ Use only the sections that matter for a given release:
 
 ## [Unreleased]
 
+### Added
+
+- Add modular Effects switches for Foundation / Runtime Layer, Editor Background, No-Page Logo, and Glow Effects, all enabled by default.
+- Add `apply-effects`, `update-effect-features`, and structured `effects-status` webview messages for a selected patch stack.
+- Add public theme color packs under `themes/` with numeric color version metadata and a generated internal theme catalog.
+- Add `colorVersion` to settings exports, starting at `0.0.1` and incrementing through Settings Sync and JSON export flows.
+
+### Changed
+
+- Rename the settings page from Neon Effect to Effects and refer to the injected runtime as Kawaii Neon in user-facing docs.
+- Move editor background image, no-tab logo, and Apply Effects controls from Color Settings to Image Customization.
+- Gate generated workbench CSS and renderer token glow by module classes so each Effects module can be applied independently.
+- Apply Effects now persists selected modules, cleans previous generated modifications/assets, and applies the new stack in one flow.
+- Move protected base theme JSON into `src/core-themes` and generated VS Code theme JSON into `src/generated-themes`.
+- Make `npm run build:theme` read public `themes/*.json` color packs before generating native theme contributions and the internal catalog.
+
 ### Fixed
 
-- Restore custom no-tab logo rendering on VS Code builds that wrap the empty editor watermark in `.editor-group-watermark-wrapper`.
-- Keep compatibility with the older empty editor watermark DOM used by VS Code 1.111/1.124 while adding support for VS Code 1.125-style markup.
+- Fix a legacy lightbulb selector separator in the generated workbench CSS source.
+- Make Apply Effects pass the selected module stack directly to the controller so late switch persistence messages cannot apply a stale combination.
+- Avoid blocking Apply Effects when a passive information notification remains open after a no-op or already-removed patch cleanup.
+- Avoid stale settings webview refreshes after Effects switch changes so rapid multi-switch combinations are not overwritten before Apply.
 
 ### Tests
 
-- Add unit coverage for generated no-tab logo selectors, old/new synthetic watermark DOM shapes, data URI output, and opacity output.
-- Extend gated Neon E2E coverage to assert the active VS Code workbench still exposes a watermark target for the shared selector list.
-- Validate `images/dev-images/logo-nopage.png` visually in a disposable VS Code test environment.
+- Expand gated Kawaii Neon E2E validation to apply all 16 Effects switch combinations with before/after screenshots, generated asset checks, runtime module class checks, and a `neon-effects-combination-matrix.json` report.
+- Cover public color pack validation, generated internal theme catalog output, and settings export color version increments in unit tests.
+
+## [0.2.7] - 2026-06-25
+
+### Added
+
+- Add a clean local build workflow for removing generated test artifacts before packaging.
+- Add current TypeScript architecture documentation and consolidate historical README material into one chronological legacy archive.
+- Add disposable VS Code cleanup diagnostics through `npm run test:cleanup-diagnostics` and `npm run test:cleanup-processes`.
+
+### Changed
+
+- Scope injected Neon UI assets by active Kawaii theme wrapper and keep the generated workbench runtime asset names Kawaii-specific.
+- Bound the renderer bootstrap observer, keep post-bootstrap token/theme observers narrow, and rebuild glow styles only when the relevant workbench signatures change.
+- Coalesce repeated Neon apply/enable/disable requests so overlapping settings UI actions do not stack concurrent workbench patch writes.
+- Copy stored editor background and no-tab logo images into generated workbench assets instead of embedding large image `data:` payloads in generated CSS.
+- Remove packaged VSIX artifacts from source control.
+
+### Fixed
+
+- Restore no-tab logo and editor background behavior across older and newer VS Code empty-editor DOM shapes.
+- Align settings webview contracts with the safe DOM and E2E flows.
+- Remove generated Kawaii workbench JS, CSS, and image assets when Neon Effect is disabled.
+- Clean stale marked Kawaii/legacy workbench script tags and generated UI assets before the gated Neon E2E baseline launch.
+
+### Tests
+
+- Harden unit, DOM, package, and E2E coverage for theme wrappers, settings webview contracts, image/logo states, and disposable Neon patch behavior.
+- Cover renderer observer lifecycle, runtime image asset URLs, generated asset cleanup after disable, single-flight Neon request handling, and disposable process cleanup diagnostics.
 
 ## [0.2.0] - 2026-06-22
 

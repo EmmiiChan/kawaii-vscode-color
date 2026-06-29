@@ -8,8 +8,10 @@ import { createVscodeNotificationService } from "./extensionHost/adapters/Vscode
 import { createNeonEffectService, type NeonEffectConfiguration, type NeonEffectLogger } from "./extensionHost/services/NeonEffectService";
 import { createWorkbenchPatchService } from "./extensionHost/services/WorkbenchPatchService";
 import { resolveExtensionRoot } from "./extensionRoot";
+import { normalizeEffectFeatureSettings } from "./shared/models/effects";
 
 let neonEffectController: NeonEffectController | undefined;
+const EFFECT_FEATURE_SETTINGS_STATE_KEY = "kawaii_synthwave.effectFeatureSettings";
 const settingsCommandController = createSettingsCommandController({
   configureSettingsSync: (context) => settings.configureSettingsSync(context as vscode.ExtensionContext),
   openSettings: (context, actions) => settings.openSettings(context as vscode.ExtensionContext, actions)
@@ -60,17 +62,18 @@ function createController(context: vscode.ExtensionContext): NeonEffectControlle
 
   return createNeonEffectController({
     getActiveColorThemeLabel,
-    getNeonConfiguration,
+    getNeonConfiguration: () => getNeonConfiguration(context),
     neonEffectService
   });
 }
 
-function getNeonConfiguration(): NeonEffectConfiguration {
+function getNeonConfiguration(context: vscode.ExtensionContext): NeonEffectConfiguration {
   const config = vscode.workspace.getConfiguration("kawaii_synthwave");
 
   return {
     brightness: config.get("brightness"),
-    disableGlow: config.get("disableGlow")
+    disableGlow: config.get("disableGlow"),
+    features: normalizeEffectFeatureSettings(context.globalState.get(EFFECT_FEATURE_SETTINGS_STATE_KEY))
   };
 }
 
@@ -81,7 +84,7 @@ function getActiveColorThemeLabel(): string {
 
 function getActiveController(): NeonEffectController {
   if (!neonEffectController) {
-    throw new Error("Neon Effect controller is unavailable before extension activation.");
+    throw new Error("Effects controller is unavailable before extension activation.");
   }
 
   return neonEffectController;

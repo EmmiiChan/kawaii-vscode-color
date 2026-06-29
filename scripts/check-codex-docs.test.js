@@ -32,12 +32,12 @@ test("validateCodexDocFacts reports missing webview message contracts", () => {
 
 test("validateCodexDocFacts reports missing renderer placeholders", () => {
   const documents = createDocuments({
-    systemMap: createBaseDocs().systemMap.replace("- `CHROME_STYLES`", "- `OTHER_PLACEHOLDER`")
+    systemMap: createBaseDocs().systemMap.replace("- `KAWAII_UI_STYLE_VERSION`", "- `OTHER_PLACEHOLDER`")
   });
 
   const result = validateCodexDocFacts(createFacts(), documents);
 
-  assert.match(result.errors.join("\n"), /renderer placeholder.*CHROME_STYLES/);
+  assert.match(result.errors.join("\n"), /renderer placeholder.*KAWAII_UI_STYLE_VERSION/);
 });
 
 function createFacts() {
@@ -59,24 +59,24 @@ function createFacts() {
     },
     themes: [
       {
-        label: "Kawaii VS Code Color",
+        label: "Dark Pink Kawaii",
         uiTheme: "vs-dark",
-        manifestPath: "./themes/kawaii_synthwave-generated-color-theme.json",
-        baseThemePath: "themes/kawaii_synthwave-color-theme.json",
-        overridesThemePath: "themes/kawaii_synthwave-color-theme-overrides.json",
-        generatedThemePath: "themes/kawaii_synthwave-generated-color-theme.json",
-        generatedName: "Kawaii VS Code Color",
+        manifestPath: "./src/generated-themes/kawaii_synthwave-generated-color-theme.json",
+        baseThemePath: "src/core-themes/kawaii_synthwave-color-theme.json",
+        overridesThemePath: "themes/dark-pink-kawaii.json",
+        generatedThemePath: "src/generated-themes/kawaii_synthwave-generated-color-theme.json",
+        generatedName: "Dark Pink Kawaii",
         type: "dark",
         hasSemanticTokenColors: true
       },
       {
-        label: "Kawaii VS Code Color Light",
+        label: "Light Pink-Pastel Kawaii",
         uiTheme: "vs",
-        manifestPath: "./themes/kawaii_synthwave-generated-color-theme-light.json",
-        baseThemePath: "themes/kawaii_synthwave-color-theme-light.json",
-        overridesThemePath: "themes/kawaii_synthwave-color-theme-light-overrides.json",
-        generatedThemePath: "themes/kawaii_synthwave-generated-color-theme-light.json",
-        generatedName: "Kawaii VS Code Color Light",
+        manifestPath: "./src/generated-themes/kawaii_synthwave-generated-color-theme-light.json",
+        baseThemePath: "src/core-themes/kawaii_synthwave-color-theme-light.json",
+        overridesThemePath: "themes/light-pink-pastel-kawaii.json",
+        generatedThemePath: "src/generated-themes/kawaii_synthwave-generated-color-theme-light.json",
+        generatedName: "Light Pink-Pastel Kawaii",
         type: "light",
         hasSemanticTokenColors: true
       }
@@ -84,6 +84,8 @@ function createFacts() {
     criticalFiles: [
       "src/settings.ts",
       "src/settingsWebview.ts",
+      "scripts/build-ui-css.js",
+      "scripts/clean-test-artifacts.js",
       "scripts/check-codex-docs.js"
     ],
     webviewMessageTypes: [
@@ -105,7 +107,7 @@ function createFacts() {
     },
     rendererPlaceholders: [
       "DISABLE_GLOW",
-      "CHROME_STYLES"
+      "KAWAII_UI_STYLE_VERSION"
     ],
     semanticTokenColors: {
       dark: true,
@@ -151,12 +153,14 @@ function createBaseDocs() {
       "mocha 11.7.6"
     ].join("\n"),
     structure: [
-      "Kawaii VS Code Color",
-      "Kawaii VS Code Color Light",
+      "Dark Pink Kawaii",
+      "Light Pink-Pastel Kawaii",
       "vs-dark",
       "vs",
       "src/settings.ts",
       "src/settingsWebview.ts",
+      "scripts/build-ui-css.js",
+      "scripts/clean-test-artifacts.js",
       "scripts/check-codex-docs.js",
       "onStartupFinished",
       "onCommand:kawaii_synthwave.openSettings",
@@ -165,33 +169,35 @@ function createBaseDocs() {
     ].join("\n"),
     colorReference: [
       "Kawaii VS Code Color Scheme Reference",
-      "Kawaii VS Code Color",
-      "Kawaii VS Code Color Light",
+      "Dark Pink Kawaii",
+      "Light Pink-Pastel Kawaii",
       "semanticTokenColors are defined",
-      "themes/kawaii_synthwave-color-theme.json",
-      "themes/kawaii_synthwave-color-theme-light.json",
-      "themes/kawaii_synthwave-color-theme-overrides.json",
-      "themes/kawaii_synthwave-color-theme-light-overrides.json",
-      "themes/kawaii_synthwave-generated-color-theme.json",
-      "themes/kawaii_synthwave-generated-color-theme-light.json",
+      "src/core-themes/kawaii_synthwave-color-theme.json",
+      "src/core-themes/kawaii_synthwave-color-theme-light.json",
+      "themes/dark-pink-kawaii.json",
+      "themes/light-pink-pastel-kawaii.json",
+      "src/generated-themes/kawaii_synthwave-generated-color-theme.json",
+      "src/generated-themes/kawaii_synthwave-generated-color-theme-light.json",
       ".codex/color_scheme_reference.md is read by src/settings.ts"
     ].join("\n"),
     systemMap: [
       "src/settings.ts",
       "src/settingsWebview.ts",
+      "scripts/build-ui-css.js",
+      "scripts/clean-test-artifacts.js",
       "scripts/check-codex-docs.js",
-      "Kawaii VS Code Color",
-      "Kawaii VS Code Color Light",
+      "Dark Pink Kawaii",
+      "Light Pink-Pastel Kawaii",
       "vs-dark",
       "vs",
-      "./themes/kawaii_synthwave-generated-color-theme.json",
-      "./themes/kawaii_synthwave-generated-color-theme-light.json",
-      "themes/kawaii_synthwave-color-theme.json",
-      "themes/kawaii_synthwave-color-theme-light.json",
-      "themes/kawaii_synthwave-color-theme-overrides.json",
-      "themes/kawaii_synthwave-color-theme-light-overrides.json",
-      "themes/kawaii_synthwave-generated-color-theme.json",
-      "themes/kawaii_synthwave-generated-color-theme-light.json",
+      "./src/generated-themes/kawaii_synthwave-generated-color-theme.json",
+      "./src/generated-themes/kawaii_synthwave-generated-color-theme-light.json",
+      "src/core-themes/kawaii_synthwave-color-theme.json",
+      "src/core-themes/kawaii_synthwave-color-theme-light.json",
+      "themes/dark-pink-kawaii.json",
+      "themes/light-pink-pastel-kawaii.json",
+      "src/generated-themes/kawaii_synthwave-generated-color-theme.json",
+      "src/generated-themes/kawaii_synthwave-generated-color-theme-light.json",
       "- `ready`",
       "- `reset-all`",
       "- `state`",
@@ -202,7 +208,7 @@ function createBaseDocs() {
       "- `kawaii-synthwave-settings`",
       "- `schemaVersion: 1`",
       "- `DISABLE_GLOW`",
-      "- `CHROME_STYLES`",
+      "- `KAWAII_UI_STYLE_VERSION`",
       "semanticTokenColors: dark true, light true"
     ].join("\n"),
     changeImpact: [

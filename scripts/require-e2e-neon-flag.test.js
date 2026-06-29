@@ -5,7 +5,7 @@ const test = require("node:test");
 
 const SCRIPT_PATH = path.join(__dirname, "require-e2e-neon-flag.js");
 const REQUIRED_FLAG = "1";
-const REFUSAL_MESSAGE = "Refusing to run real Neon Effect E2E";
+const REFUSAL_MESSAGE = "Refusing to run real Kawaii Neon E2E";
 
 test("require-e2e-neon-flag rejects Neon E2E without explicit acknowledgement", () => {
     const env = createChildProcessEnv();

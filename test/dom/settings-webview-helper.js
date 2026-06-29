@@ -4,18 +4,18 @@ const { JSDOM } = require("jsdom");
 const { createSettingsWebviewHtml } = require("../../out/src/settingsWebview");
 
 const baseState = {
-  themeLabel: "Kawaii VS Code Color",
+  themeLabel: "Dark Pink Kawaii",
   activeThemeVariantId: "dark",
   themeVariants: [
     {
       id: "dark",
       modeLabel: "Dark",
-      label: "Kawaii VS Code Color"
+      label: "Dark Pink Kawaii"
     },
     {
       id: "light",
       modeLabel: "Light",
-      label: "Kawaii VS Code Color Light"
+      label: "Light Pink-Pastel Kawaii"
     }
   ],
   documentationLinks: [
@@ -111,6 +111,14 @@ const baseState = {
     dataUrlWarning: "",
     supportedFormats: "PNG, JPG/JPEG, WEBP, SVG",
     maxImageSizeLabel: "2 MB"
+  },
+  effects: {
+    features: {
+      foundation: true,
+      editorBackground: true,
+      noPageLogo: true,
+      glow: true
+    }
   },
   workbenchColors: [
     {
@@ -283,10 +291,18 @@ function expectPostedMessage(postedMessages, type, expectedPayload = {}) {
   assert.equal(message.type, type);
 
   Object.entries(expectedPayload).forEach(([key, expectedValue]) => {
-    assert.deepEqual(message[key], expectedValue, `Expected "${type}.${key}" to match`);
+    assert.deepEqual(toAssertableValue(message[key]), expectedValue, `Expected "${type}.${key}" to match`);
   });
 
   return message;
+}
+
+function toAssertableValue(value) {
+  if (value && typeof value === "object") {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  return value;
 }
 
 function assertNoPostedMessage(postedMessages, type) {

@@ -13,7 +13,7 @@
 
 - No patch marker, runtime style id, theme wrapper selector, placeholder name, or injected template file was intentionally changed.
 - `src/renderer/ThemeTemplate.ts` mirrors the current token replacement contracts so they can be tested while the injected browser script remains inline.
-- The extension host still writes `neondreams.js` through the existing workbench patch service.
+- The extension host now writes `kawaii-vscode-colors-ui.js`; compatibility cleanup for older `neondreams.js` markers remains in the workbench patch helpers.
 - Gated Neon E2E was not run because `src/js/theme_template.js`, `src/css/editor_chrome.css`, and the workbench patch marker were not changed. Generated output behavior is covered by `NeonEffectService` unit tests, `WorkbenchPatchService` unit tests from the full unit gate, and safe E2E.
 - `.codex/change-impact.md` remains a pre-existing local change and is intentionally outside this step.
 

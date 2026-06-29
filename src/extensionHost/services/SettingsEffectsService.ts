@@ -1,5 +1,5 @@
 export interface SettingsEffectsService {
-  applyAllEffects(): Promise<void>;
+  applyAllEffects(configuration?: unknown): Promise<void>;
   downloadEditorBackgroundImage(context: unknown): Promise<void>;
   downloadEmptyEditorLogoImage(context: unknown): Promise<void>;
   removeEditorBackgroundImage(context: unknown): Promise<boolean>;
@@ -14,7 +14,7 @@ export interface SettingsEffectsService {
 }
 
 export interface SettingsEffectsServiceDependencies {
-  readonly applyAllEffects: () => Promise<void> | void;
+  readonly applyAllEffects: (configuration?: unknown) => Promise<void> | void;
   readonly downloadEditorBackgroundImage: (context: unknown) => Promise<void> | void;
   readonly downloadEmptyEditorLogoImage: (context: unknown) => Promise<void> | void;
   readonly removeEditorBackgroundImage: (context: unknown) => Promise<boolean>;
@@ -35,8 +35,8 @@ export function createSettingsEffectsService(dependencies: SettingsEffectsServic
 class DefaultSettingsEffectsService implements SettingsEffectsService {
   constructor(private readonly dependencies: SettingsEffectsServiceDependencies) {}
 
-  async applyAllEffects(): Promise<void> {
-    await this.dependencies.applyAllEffects();
+  async applyAllEffects(configuration?: unknown): Promise<void> {
+    await this.dependencies.applyAllEffects(configuration);
   }
 
   async downloadEditorBackgroundImage(context: unknown): Promise<void> {

@@ -59,6 +59,17 @@ test("editor chrome CSS applies page background variables to every theme wrapper
   }
 });
 
+test("compiled Kawaii UI CSS scopes editor chrome selectors under full inner theme wrappers", () => {
+  const uiCss = fs.readFileSync(path.join(process.cwd(), "src", "css", "kawaii-vscode-colors-ui.min.css"), "utf8");
+
+  assert.match(uiCss, /\.kawaii-vscode-colors-ui\.dark-pink-kawaii\.kawaii-effect-editor-background \.monaco-editor/);
+  assert.match(uiCss, /\.kawaii-vscode-colors-ui\.light-pink-pastel-kawaii\.kawaii-effect-editor-background \.monaco-editor/);
+  assert.match(uiCss, /\.kawaii-vscode-colors-ui\.dark-pink-kawaii\[class~=vs-dark\]/);
+  assert.match(uiCss, /\.kawaii-vscode-colors-ui\.light-pink-pastel-kawaii\[class~=vs\]/);
+  assert.doesNotMatch(uiCss, /\.kawaii-vscode-colors-ui \.monaco-editor/);
+  assert.doesNotMatch(uiCss, /^\.monaco-editor/m);
+});
+
 test("editor background theme wrapper fallbacks match legacy, renamed, and current theme classes", () => {
   const dom = new JSDOM(`
     <div id="dark-legacy-underscore" class="vs-dark kawaii_synthwave-generated-color-theme-json"></div>

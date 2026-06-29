@@ -1,9 +1,14 @@
 {
   "schema": "kawaii-vscode-color-settings",
   "schemaVersion": 1,
+  "colorVersion": {
+    "major": 0,
+    "minor": 0,
+    "patch": 1
+  },
   "exportedAt": "2026-06-17T12:00:00.000Z",
   "activeThemeVariantId": "light",
-  "activeThemeLabel": "Kawaii VS Code Color Light",
+  "activeThemeLabel": "Light Pink-Pastel Kawaii",
   "extensionConfiguration": {
     "brightness": 0.72,
     "disableGlow": true

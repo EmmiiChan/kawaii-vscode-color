@@ -19,7 +19,7 @@ function getButtonByText(document, selector, text) {
   return button;
 }
 
-test("settings webview posts ready and can request Neon Effect actions", async () => {
+test("settings webview posts ready and can request effect actions", async () => {
   const { document, postedMessages } = await renderWebview();
 
   assert.equal(postedMessages[0].type, "ready");
@@ -39,7 +39,7 @@ test("settings webview exposes app-specific navigation and help links", async ()
   assert.deepEqual(navLabels, [
     "Home",
     "Color Settings",
-    "Neon Effect",
+    "Effects",
     "Image Customization",
     "Sync / Files",
     "Help"
@@ -74,6 +74,35 @@ test("settings webview toggles each app page and keeps one active nav item", asy
     assert.equal(countActiveNavItems(document), 1);
     assert.equal(document.querySelector(".nav-button.active").dataset.page, pageId);
   });
+});
+
+test("settings webview owns image controls on image customization page", async () => {
+  const { document } = await renderWebview();
+  const imagePage = document.getElementById("image-customization-page");
+  const colorPage = document.getElementById("color-settings-page");
+
+  for (const selector of [
+    "#apply-effects",
+    "#editor-background-preview",
+    "#editor-background-upload",
+    "#editor-background-random-neko",
+    "#editor-background-remove",
+    "#editor-background-download",
+    "#editor-background-opacity",
+    "#editor-background-fit",
+    "#empty-editor-logo-preview",
+    "#empty-editor-logo-upload",
+    "#empty-editor-logo-random-neko",
+    "#empty-editor-logo-remove",
+    "#empty-editor-logo-download",
+    "#empty-editor-logo-opacity"
+  ]) {
+    const element = document.querySelector(selector);
+
+    assert.ok(element, `Expected ${selector} to exist`);
+    assert.equal(imagePage.contains(element), true, `Expected ${selector} to be owned by Image Customization`);
+    assert.equal(colorPage.contains(element), false, `Expected ${selector} to be outside Color Settings`);
+  }
 });
 
 test("settings webview renders home and help metadata links", async () => {

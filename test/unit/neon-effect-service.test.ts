@@ -53,20 +53,24 @@ test("NeonEffectService generates the runtime script with typed configuration an
   const storageRoot = path.join(extensionRoot, ".storage");
   const workbenchBase = path.normalize("C:/VSCode/resources/app/out/vs/code");
   const htmlFile = path.join(workbenchBase, "electron-sandbox", "workbench", "workbench.esm.html");
-  const scriptFile = path.join(workbenchBase, "electron-sandbox", "workbench", "neondreams.js");
+  const scriptFile = path.join(workbenchBase, "electron-sandbox", "workbench", "kawaii-vscode-colors-ui.js");
+  const styleFile = path.join(workbenchBase, "electron-sandbox", "workbench", "kawaii-vscode-colors-ui.min.css");
+  const workbenchDir = path.dirname(htmlFile);
+  const editorAssetFile = path.join(workbenchDir, "kawaii-vscode-colors-editor-background-image.png");
+  const logoAssetFile = path.join(workbenchDir, "kawaii-vscode-colors-empty-editor-logo-image.svg");
   const editorImagePath = path.join(storageRoot, "editor-background-image.png");
   const logoPath = path.join(storageRoot, "empty-editor-logo-image.svg");
   const files = new Map<string, MemoryFileValue>([
-    [path.join(extensionRoot, "src", "css", "editor_chrome.css"), [
+    [path.join(extensionRoot, "src", "css", "kawaii-vscode-colors-ui.min.css"), [
       "image=[EDITOR_BACKGROUND_IMAGE]",
       "opacity=[EDITOR_BACKGROUND_IMAGE_OPACITY]",
       "area=[EDITOR_BACKGROUND_AREA_TOP],[EDITOR_BACKGROUND_AREA_RIGHT],[EDITOR_BACKGROUND_AREA_BOTTOM],[EDITOR_BACKGROUND_AREA_LEFT],[EDITOR_BACKGROUND_AREA_WIDTH],[EDITOR_BACKGROUND_AREA_HEIGHT]",
       "logo=[EMPTY_EDITOR_LOGO_STYLES]"
     ].join("\n")],
-    [path.join(extensionRoot, "src", "js", "theme_template.js"), "brightness=[NEON_BRIGHTNESS];glow=[DISABLE_GLOW];styles=[CHROME_STYLES]"],
+    [path.join(extensionRoot, "src", "js", "theme_template.js"), "brightness=[NEON_BRIGHTNESS];glow=[DISABLE_GLOW];href=kawaii-vscode-colors-ui.min.css?v=[KAWAII_UI_STYLE_VERSION]"],
     [htmlFile, "<html><body>Workbench</body></html>\n"],
-    [editorImagePath, Buffer.from("editor image").toString("binary")],
-    [logoPath, "<svg></svg>"]
+    [editorImagePath, Buffer.from("editor image")],
+    [logoPath, Buffer.from("<svg></svg>")]
   ]);
   const notificationCalls: NotificationCall[] = [];
   const service = createNeonEffectService({
@@ -99,32 +103,144 @@ test("NeonEffectService generates the runtime script with typed configuration an
   });
 
   const script = String(files.get(scriptFile) || "");
+  const styles = String(files.get(styleFile) || "");
   assert.match(script, /brightness=7F/);
   assert.match(script, /glow=true/);
-  assert.match(script, /data:image\/png;base64,/);
-  assert.match(script, /opacity=0\.2/);
-  assert.match(script, /area=auto,0,0,auto,50%,50%/);
-  assert.match(script, /data:image\/svg\+xml;base64,/);
-  assert.match(String(files.get(htmlFile) || ""), /neondreams\.js\?v=neon/);
+  assert.match(script, /kawaii-vscode-colors-ui\.min\.css\?v=neon/);
+  assert.doesNotMatch(styles, /data:image\/(?:png|jpeg|webp|svg\+xml);base64/);
+  assert.match(styles, /image=url\("kawaii-vscode-colors-editor-background-image\.png\?v=neon"\)/);
+  assert.match(styles, /opacity=0\.2/);
+  assert.match(styles, /area=auto,0,0,auto,50%,50%/);
+  assert.match(styles, /background-image: url\("kawaii-vscode-colors-empty-editor-logo-image\.svg\?v=neon"\) !important;/);
+  assert.ok(styles.length < 2000, `Expected generated CSS to stay small, got ${styles.length} bytes`);
+  assert.deepEqual(files.get(editorAssetFile), Buffer.from("editor image"));
+  assert.deepEqual(files.get(logoAssetFile), Buffer.from("<svg></svg>"));
+  assert.doesNotMatch(styles, /\[(?:EDITOR_BACKGROUND_IMAGE|EMPTY_EDITOR_LOGO_STYLES)\]/);
+  assert.match(String(files.get(htmlFile) || ""), /kawaii-vscode-colors-ui\.js\?v=neon/);
   assert.deepEqual(notificationCalls, [{
     type: "reload",
-    message: "Neon Dreams enabled. VS code must reload for this change to take effect. Code may display a warning that it is corrupted, this is normal. You can dismiss this message by choosing 'Don't show this again' on the notification.",
+    message: "Kawaii VS Code Color UI effects enabled. VS code must reload for this change to take effect. Code may display a warning that it is corrupted, this is normal. You can dismiss this message by choosing 'Don't show this again' on the notification.",
     actionTitle: "Restart editor to complete"
   }]);
 });
 
+test("NeonEffectService applies only selected effect modules and removes disabled module assets", async () => {
+  const extensionRoot = path.normalize("C:/extension");
+  const appRoot = path.normalize("C:/VSCode/resources/app");
+  const storageRoot = path.join(extensionRoot, ".storage");
+  const workbenchBase = path.normalize("C:/VSCode/resources/app/out/vs/code");
+  const htmlFile = path.join(workbenchBase, "electron-sandbox", "workbench", "workbench.esm.html");
+  const scriptFile = path.join(workbenchBase, "electron-sandbox", "workbench", "kawaii-vscode-colors-ui.js");
+  const styleFile = path.join(workbenchBase, "electron-sandbox", "workbench", "kawaii-vscode-colors-ui.min.css");
+  const workbenchDir = path.dirname(htmlFile);
+  const editorAssetFile = path.join(workbenchDir, "kawaii-vscode-colors-editor-background-image.png");
+  const logoAssetFile = path.join(workbenchDir, "kawaii-vscode-colors-empty-editor-logo-image.svg");
+  const files = new Map<string, MemoryFileValue>([
+    [path.join(extensionRoot, "src", "css", "kawaii-vscode-colors-ui.min.css"), [
+      "classes=[EFFECT_ROOT_CLASSES]",
+      "image=[EDITOR_BACKGROUND_IMAGE]",
+      "logo=[EMPTY_EDITOR_LOGO_STYLES]"
+    ].join("\n")],
+    [path.join(extensionRoot, "src", "js", "theme_template.js"), "classes=[EFFECT_ROOT_CLASSES];brightness=[NEON_BRIGHTNESS];glow=[DISABLE_GLOW]"],
+    [htmlFile, "<html><body>Workbench</body></html>\n"],
+    [path.join(storageRoot, "editor-background-image.png"), Buffer.from("editor image")],
+    [path.join(storageRoot, "empty-editor-logo-image.svg"), Buffer.from("<svg></svg>")],
+    [editorAssetFile, Buffer.from("old editor image")],
+    [logoAssetFile, Buffer.from("old logo")]
+  ]);
+  const notificationCalls: NotificationCall[] = [];
+  const service = createNeonEffectService({
+    appRoot,
+    extensionRoot,
+    fileSystem: createMemoryFileSystem(files),
+    storage: createStorage(storageRoot, new Map<string, unknown>([
+      ["kawaii_synthwave.editorBackgroundImage", {
+        fileName: "editor-background-image.png",
+        mimeType: "image/png"
+      }],
+      ["kawaii_synthwave.emptyEditorLogoImage", {
+        fileName: "empty-editor-logo-image.svg",
+        mimeType: "image/svg+xml"
+      }]
+    ])),
+    notifications: createNotificationService(notificationCalls),
+    workbenchPatchService: createWorkbenchPatchService({
+      fileSystem: createMemoryFileSystem(files),
+      versionToken: () => "modules"
+    })
+  });
+
+  await service.enable({
+    brightness: 0.5,
+    disableGlow: false,
+    features: {
+      foundation: true,
+      editorBackground: false,
+      noPageLogo: false,
+      glow: false
+    }
+  });
+
+  const script = String(files.get(scriptFile) || "");
+  const styles = String(files.get(styleFile) || "");
+
+  assert.match(script, /classes=kawaii-effect-foundation/);
+  assert.doesNotMatch(script, /kawaii-effect-editor-background/);
+  assert.doesNotMatch(script, /kawaii-effect-no-page-logo/);
+  assert.doesNotMatch(script, /kawaii-effect-glow/);
+  assert.match(styles, /classes=kawaii-effect-foundation/);
+  assert.match(styles, /image=none/);
+  assert.doesNotMatch(styles, /kawaii-vscode-colors-editor-background-image/);
+  assert.doesNotMatch(styles, /kawaii-vscode-colors-empty-editor-logo-image/);
+  assert.equal(files.has(editorAssetFile), false);
+  assert.equal(files.has(logoAssetFile), false);
+  assert.doesNotMatch(styles, /\[(?:EFFECT_ROOT_CLASSES|EDITOR_BACKGROUND_IMAGE|EMPTY_EDITOR_LOGO_STYLES)\]/);
+});
+
+test("NeonEffectService treats a disabled foundation module as full patch removal", async () => {
+  const harness = createMinimalServiceHarness("<html></html>\n");
+  const generatedAssetPaths = getGeneratedPatchAssetPaths();
+
+  await harness.service.enable({ brightness: 0.4, disableGlow: false });
+  assert.equal(harness.files.has(generatedAssetPaths.scriptFile), true);
+  assert.equal(harness.files.has(generatedAssetPaths.styleFile), true);
+
+  await harness.service.enable({
+    brightness: 0.4,
+    disableGlow: false,
+    features: {
+      foundation: false,
+      editorBackground: true,
+      noPageLogo: true,
+      glow: true
+    }
+  });
+
+  assert.equal(harness.files.has(generatedAssetPaths.scriptFile), false);
+  assert.equal(harness.files.has(generatedAssetPaths.styleFile), false);
+  assert.deepEqual(harness.notificationCalls.map((call) => call.message), [
+    "Kawaii VS Code Color UI effects enabled. VS code must reload for this change to take effect. Code may display a warning that it is corrupted, this is normal. You can dismiss this message by choosing 'Don't show this again' on the notification.",
+    "Kawaii VS Code Color UI effects disabled. VS code must reload for this change to take effect"
+  ]);
+});
+
 test("NeonEffectService disables active patches and reports inactive patches", async () => {
   const harness = createMinimalServiceHarness("<html></html>\n");
+  const generatedAssetPaths = getGeneratedPatchAssetPaths();
 
   await harness.service.enable({ brightness: 2, disableGlow: false });
+  assert.equal(harness.files.has(generatedAssetPaths.scriptFile), true);
+  assert.equal(harness.files.has(generatedAssetPaths.styleFile), true);
   await harness.service.disable();
+  assert.equal(harness.files.has(generatedAssetPaths.scriptFile), false);
+  assert.equal(harness.files.has(generatedAssetPaths.styleFile), false);
   await harness.service.disable();
 
   assert.equal(harness.service.isEnabled(), false);
   assert.deepEqual(harness.notificationCalls.map((call) => call.message), [
-    "Neon Dreams enabled. VS code must reload for this change to take effect. Code may display a warning that it is corrupted, this is normal. You can dismiss this message by choosing 'Don't show this again' on the notification.",
-    "Neon Dreams disabled. VS code must reload for this change to take effect",
-    "Neon dreams isn't running."
+    "Kawaii VS Code Color UI effects enabled. VS code must reload for this change to take effect. Code may display a warning that it is corrupted, this is normal. You can dismiss this message by choosing 'Don't show this again' on the notification.",
+    "Kawaii VS Code Color UI effects disabled. VS code must reload for this change to take effect",
+    "Kawaii VS Code Color UI effects are not running."
   ]);
 });
 
@@ -145,13 +261,13 @@ test("NeonEffectService reports file access failures while disabling the patch",
     notifications: createNotificationService(notificationCalls),
     storage: createStorage(path.normalize("C:/extension/.storage"), new Map()),
     workbenchPatchService: {
-      applyScriptTag() {
+      applyAssets() {
         return { status: "workbench-not-found", paths: null };
       },
       isEnabled() {
         return false;
       },
-      removeScriptTag() {
+      removePatch() {
         throw error;
       },
       resolvePatchPaths() {
@@ -164,7 +280,7 @@ test("NeonEffectService reports file access failures while disabling the patch",
 
   assert.deepEqual(notificationCalls, [{
     type: "info",
-    message: "Neon Dreams was unable to modify the core VS code files needed to launch the extension. You may need to run VS code with admin privileges in order to enable Neon Dreams."
+    message: "Kawaii VS Code Color was unable to modify the core VS code files needed to launch UI effects. You may need to run VS code with admin privileges in order to enable them."
   }]);
   assert.equal(logCalls.length, 1);
   assert.equal(logCalls[0]!.methodName, "disableNeon");
@@ -186,13 +302,13 @@ test("NeonEffectService logs unexpected isEnabled failures and returns false", (
     notifications: createNotificationService([]),
     storage: createStorage(path.normalize("C:/extension/.storage"), new Map()),
     workbenchPatchService: {
-      applyScriptTag() {
+      applyAssets() {
         return { status: "workbench-not-found", paths: null };
       },
       isEnabled() {
         throw error;
       },
-      removeScriptTag() {
+      removePatch() {
         return { status: "workbench-not-found", paths: null };
       },
       resolvePatchPaths() {
@@ -226,8 +342,8 @@ test("NeonEffectService normalizes supported editor background fit values", () =
 test("NeonEffectService reports missing workbench files without writing the patch", async () => {
   const extensionRoot = path.normalize("C:/extension");
   const files = new Map<string, MemoryFileValue>([
-    [path.join(extensionRoot, "src", "css", "editor_chrome.css"), "styles"],
-    [path.join(extensionRoot, "src", "js", "theme_template.js"), "brightness=[NEON_BRIGHTNESS];styles=[CHROME_STYLES]"]
+    [path.join(extensionRoot, "src", "css", "kawaii-vscode-colors-ui.min.css"), "styles"],
+    [path.join(extensionRoot, "src", "js", "theme_template.js"), "brightness=[NEON_BRIGHTNESS];styles=[KAWAII_UI_STYLE_VERSION]"]
   ]);
   const notificationCalls: NotificationCall[] = [];
   const service = createNeonEffectService({
@@ -245,9 +361,9 @@ test("NeonEffectService reports missing workbench files without writing the patc
 
   assert.deepEqual(notificationCalls, [{
     type: "error",
-    message: "Neon Dreams could not find the workbench HTML file. This is likely due to a change in VS Code's internal structure. Please open an issue on the Kawaii VS Code Color GitHub repository to report this."
+    message: "Kawaii VS Code Color could not find the workbench HTML file. This is likely due to a change in VS Code's internal structure. Please open an issue on the Kawaii VS Code Color GitHub repository to report this."
   }]);
-  assert.equal([...files.keys()].some((filePath) => filePath.endsWith("neondreams.js")), false);
+  assert.equal([...files.keys()].some((filePath) => filePath.endsWith("kawaii-vscode-colors-ui.js")), false);
 });
 
 function createMinimalServiceHarness(html: string): MemoryHarness {
@@ -256,8 +372,8 @@ function createMinimalServiceHarness(html: string): MemoryHarness {
   const workbenchBase = path.normalize("C:/VSCode/resources/app/out/vs/code");
   const htmlFile = path.join(workbenchBase, "electron-browser", "workbench", "workbench.html");
   const files = new Map<string, MemoryFileValue>([
-    [path.join(extensionRoot, "src", "css", "editor_chrome.css"), "styles=[EDITOR_BACKGROUND_IMAGE]"],
-    [path.join(extensionRoot, "src", "js", "theme_template.js"), "brightness=[NEON_BRIGHTNESS];glow=[DISABLE_GLOW];styles=[CHROME_STYLES]"],
+    [path.join(extensionRoot, "src", "css", "kawaii-vscode-colors-ui.min.css"), "styles=[EDITOR_BACKGROUND_IMAGE]"],
+    [path.join(extensionRoot, "src", "js", "theme_template.js"), "brightness=[NEON_BRIGHTNESS];glow=[DISABLE_GLOW];styles=[KAWAII_UI_STYLE_VERSION]"],
     [htmlFile, html]
   ]);
   const notificationCalls: NotificationCall[] = [];
@@ -280,6 +396,16 @@ function createMinimalServiceHarness(html: string): MemoryHarness {
   };
 }
 
+function getGeneratedPatchAssetPaths() {
+  const workbenchBase = path.normalize("C:/VSCode/resources/app/out/vs/code");
+  const workbenchDir = path.join(workbenchBase, "electron-browser", "workbench");
+
+  return {
+    scriptFile: path.join(workbenchDir, "kawaii-vscode-colors-ui.js"),
+    styleFile: path.join(workbenchDir, "kawaii-vscode-colors-ui.min.css")
+  };
+}
+
 function createMemoryFileSystem(files: Map<string, MemoryFileValue>) {
   return {
     exists(filePath: string): boolean {
@@ -296,6 +422,12 @@ function createMemoryFileSystem(files: Map<string, MemoryFileValue>) {
     },
     writeTextFile(filePath: string, content: string): void {
       files.set(filePath, content);
+    },
+    writeFile(filePath: string, content: Buffer): void {
+      files.set(filePath, Buffer.from(content));
+    },
+    deleteFile(filePath: string): void {
+      files.delete(filePath);
     },
     readFile(filePath: string): Buffer {
       if (!files.has(filePath)) {

@@ -41,18 +41,54 @@
     '2b1d29': "color: #2b1d29; text-shadow: 0 0 2px #fffafd, 0 0 4px #ff7edb33, 0 0 8px #ff7edb22; backface-visibility: hidden;"
   };
   const tokenReplacementSets = [darkTokenReplacements, lightTokenReplacements];
-  const kawaiiVsCodeColorThemeWrapperSelectors = [
-    '[class~="vs-dark"][class*="kawaii_synthwave-generated-color-theme-json"]',
-    '[class~="vs-dark"][class*="kawaii-synthwave-generated-color-theme-json"]',
-    '[class~="vs-dark"][class*="kawaii-vscode-color-generated-color-theme-json"]',
-    '[class~="vs"][class*="kawaii_synthwave-generated-color-theme-light-json"]',
-    '[class~="vs"][class*="kawaii-synthwave-generated-color-theme-light-json"]',
-    '[class~="vs"][class*="kawaii-vscode-color-generated-color-theme-light-json"]'
+  const innerThemeConfigs = [
+    {
+      id: 'dark',
+      wrapperClass: 'dark-pink-kawaii',
+      selectors: [
+        '[class~="vs-dark"][class*="kawaii_synthwave-generated-color-theme-json"]',
+        '[class~="vs-dark"][class*="kawaii-synthwave-generated-color-theme-json"]',
+        '[class~="vs-dark"][class*="kawaii-vscode-color-generated-color-theme-json"]'
+      ]
+    },
+    {
+      id: 'light',
+      wrapperClass: 'light-pink-pastel-kawaii',
+      selectors: [
+        '[class~="vs"][class*="kawaii_synthwave-generated-color-theme-light-json"]',
+        '[class~="vs"][class*="kawaii-synthwave-generated-color-theme-light-json"]',
+        '[class~="vs"][class*="kawaii-vscode-color-generated-color-theme-light-json"]'
+      ]
+    }
   ];
-  const themeStylesId = 'kawaii_synthwave-theme-styles';
-  const chromeStylesId = 'kawaii_synthwave-chrome-styles';
-  const chromeStyles = `[CHROME_STYLES]`;
+  const innerThemeWrapperClasses = innerThemeConfigs.map((innerTheme) => innerTheme.wrapperClass);
+  const UI_ROOT_CLASS = 'kawaii-vscode-colors-ui';
+  const EFFECT_ROOT_CLASSES = {
+    foundation: 'kawaii-effect-foundation',
+    editorBackground: 'kawaii-effect-editor-background',
+    noPageLogo: 'kawaii-effect-no-page-logo',
+    glow: 'kawaii-effect-glow'
+  };
+  const allEffectRootClasses = Object.values(EFFECT_ROOT_CLASSES);
+  const enabledEffectRootClasses = '[EFFECT_ROOT_CLASSES]'
+    .split(/\s+/)
+    .map((className) => className.trim())
+    .filter(Boolean);
+  const UI_STYLESHEET_ID = 'kawaii-vscode-colors-ui-stylesheet';
+  const TOKEN_STYLES_ID = 'kawaii-vscode-colors-ui-token-styles';
+  const UI_STYLESHEET_HREF = 'kawaii-vscode-colors-ui.min.css?v=[KAWAII_UI_STYLE_VERSION]';
+  const BOOTSTRAP_OBSERVER_TIMEOUT_MS = 15000;
+  const MUTATION_REFRESH_DEBOUNCE_MS = 50;
   let activeTokenStylesSignature = '';
+  let pendingRefreshTimer = null;
+  let bootstrapObserver = null;
+  let bootstrapObserverTimeout = null;
+  let themeClassObserver = null;
+  let themeMarkerObserver = null;
+  let observedThemeMarkerElement = null;
+  let tokenContainerObserver = null;
+  let tokenStylesObserver = null;
+  let observedTokenStylesElement = null;
 
   //=============================
   // Helper functions
@@ -144,23 +180,57 @@
   };
 
   /**
-   * @summary Search and replace colours within a CSS definition
+   * @summary Creates one additive token override rule scoped by the Kawaii UI root class.
+   * @param {string} selector VS Code token selector
+   * @param {string} replacement replacement glow declaration block
+   * @param {object} innerTheme active inner theme config
+   * @returns {string}
+   */
+  const createScopedTokenRule = (selector, replacement, innerTheme) => `.${UI_ROOT_CLASS}.${EFFECT_ROOT_CLASSES.glow}.${innerTheme.wrapperClass} ${selector.trim()} {${replacement}}`;
+
+  /**
+   * @summary Builds scoped token glow CSS without copying VS Code's original token stylesheet.
    * @param {string} styles the text content of the style tag
    * @param {object[]} replacementSets key/value pairs of colour hex and the glow styles to replace them with
-   * @returns 
+   * @param {object} innerTheme active inner theme config
+   * @returns {string}
    */
-  const replaceTokens = (styles, replacementSets) => styles.replace(
-    /color\s*:\s*#([0-9a-f]{6}(?:[0-9a-f]{2})?)\s*;/gi,
-    (match, color) => getTokenColorReplacement(color, replacementSets) || match
-  );
+  const createScopedTokenRules = (styles, replacementSets, innerTheme) => {
+    const scopedRules = [];
+
+    styles.replace(/([^{}]+)\{[^{}]*?color\s*:\s*#([0-9a-f]{6}(?:[0-9a-f]{2})?)\s*;[^{}]*\}/gi, (match, selectorList, color) => {
+      const replacement = getTokenColorReplacement(color, replacementSets);
+
+      if (!replacement) {
+        return match;
+      }
+
+      selectorList
+        .split(',')
+        .map((selector) => selector.trim())
+        .filter(Boolean)
+        .forEach((selector) => scopedRules.push(createScopedTokenRule(selector, replacement, innerTheme)));
+
+      return match;
+    });
+
+    return scopedRules.join('');
+  };
+
+  /**
+   * @summary Checks whether the modular glow effect is enabled for this patch.
+   * @returns {boolean}
+   */
+  const isGlowEffectEnabled = () => enabledEffectRootClasses.includes(EFFECT_ROOT_CLASSES.glow);
 
   /**
    * @summary Builds a stable signature for the current token CSS and glow setting.
    * @param {string} styles the text content of the style tag
    * @param {boolean} disableGlow current glow disable flag
+   * @param {object} innerTheme active inner theme config
    * @returns {string}
    */
-  const getTokenStylesSignature = (styles, disableGlow) => `${disableGlow}:${styles}`;
+  const getTokenStylesSignature = (styles, disableGlow, innerTheme) => `${innerTheme.wrapperClass}:${disableGlow}:${isGlowEffectEnabled()}:${styles}`;
 
   /**
    * @summary Safely removes an injected style tag when it exists.
@@ -178,134 +248,275 @@
   };
 
   /**
-   * @summary Removes runtime CSS when the active theme is outside the Kawaii VS Code Color family.
+   * @summary Safely removes an injected linked stylesheet when it exists.
+   * @param {string} stylesheetId stylesheet link id
    * @returns {void}
    */
-  const cleanupInactiveThemeStyles = () => {
-    if (usingKawaiiVsCodeColor()) {
+  const removeLinkedStylesheet = (stylesheetId) => {
+    const stylesheet = document.querySelector(`#${stylesheetId}`);
+
+    if (!stylesheet || !stylesheet.parentNode) {
       return;
     }
 
-    removeInjectedStyle(themeStylesId);
-    removeInjectedStyle(chromeStylesId);
-    activeTokenStylesSignature = '';
+    stylesheet.parentNode.removeChild(stylesheet);
   };
 
   /**
-   * @summary Checks if a theme is applied, and that the theme belongs to the Kawaii VS Code Color family
-   * @returns {boolean}
+   * @summary Removes runtime CSS when the active theme is outside the Kawaii VS Code Color family.
+   * @returns {object | null}
    */
-  const usingKawaiiVsCodeColor = () => Boolean(getKawaiiVsCodeColorThemeWrapper());
+  const cleanupInactiveThemeStyles = () => {
+    const activeInnerTheme = syncUiRootClass();
+
+    if (activeInnerTheme) {
+      return activeInnerTheme;
+    }
+
+    removeInjectedStyle(TOKEN_STYLES_ID);
+    removeLinkedStylesheet(UI_STYLESHEET_ID);
+    activeTokenStylesSignature = '';
+    return null;
+  };
 
   /**
-   * @summary Finds the VS Code workbench wrapper for an active Kawaii VS Code Color theme.
-   * @returns {Element | null} Active Kawaii VS Code Color theme wrapper when present
+   * @summary Finds the active Kawaii inner theme from VS Code's current theme classes.
+   * @returns {object | null} Active inner theme config when present.
    */
-  const getKawaiiVsCodeColorThemeWrapper = () => document.querySelector(kawaiiVsCodeColorThemeWrapperSelectors.join(', '));
+  const getActiveInnerTheme = () => innerThemeConfigs.find((innerTheme) => (
+    Boolean(document.querySelector(innerTheme.selectors.join(', ')))
+  )) || null;
+
+  /**
+   * @summary Gets the highest DOM node available for scoping Kawaii UI effects.
+   * @returns {HTMLElement | null}
+   */
+  const getHighestWorkbenchRoot = () => document.documentElement || document.body;
+
+  /**
+   * @summary Synchronizes the high-level Kawaii UI wrapper class with the active theme state.
+   * @returns {object | null} active inner theme when Kawaii UI styles should be active
+   */
+  const syncUiRootClass = () => {
+    const root = getHighestWorkbenchRoot();
+    const activeInnerTheme = getActiveInnerTheme();
+
+    if (!root) {
+      return null;
+    }
+
+    [...innerThemeWrapperClasses, ...allEffectRootClasses].forEach((wrapperClass) => root.classList.remove(wrapperClass));
+
+    if (!activeInnerTheme) {
+      root.classList.remove(UI_ROOT_CLASS);
+      return null;
+    }
+
+    root.classList.add(UI_ROOT_CLASS, activeInnerTheme.wrapperClass, ...enabledEffectRootClasses);
+    return activeInnerTheme;
+  };
 
   /**
    * @summary Checks if the theme is Kawaii VS Code Color, and that the styles exist, ready for replacement
    * @param {HTMLElement} tokensEl the style tag
-   * @param {object[]} replacementSets key/value pairs of colour hex and the glow styles to replace them with
+   * @param {object | null} activeInnerTheme active inner theme config
    * @returns 
    */
-  const readyForReplacement = (tokensEl) => tokensEl
+  const readyForReplacement = (tokensEl, activeInnerTheme) => tokensEl
     ? (
       // only init if we're using a Kawaii VS Code Color subtheme
-      usingKawaiiVsCodeColor() &&
+      Boolean(activeInnerTheme) &&
       // does it have content ?
       themeStylesExist(tokensEl)
     )
     : false;
 
   /**
-   * @summary Adds workbench chrome styles without waiting for token glow styles.
+   * @summary Adds the static Kawaii UI stylesheet without waiting for token glow styles.
    * @returns {void}
    */
-  const appendChromeStyles = () => {
-    if (!usingKawaiiVsCodeColor() || document.querySelector(`#${chromeStylesId}`)) {
+  const ensureUiStylesheet = () => {
+    if (!syncUiRootClass() || document.querySelector(`#${UI_STYLESHEET_ID}`)) {
       return;
     }
 
-    const chromeStyleTag = document.createElement('style');
-    chromeStyleTag.setAttribute("id", chromeStylesId);
-    chromeStyleTag.innerText = chromeStyles.replace(/(\r\n|\n|\r)/gm, '');
-    document.body.appendChild(chromeStyleTag);
+    const stylesheet = document.createElement('link');
+    stylesheet.setAttribute('id', UI_STYLESHEET_ID);
+    stylesheet.setAttribute('rel', 'stylesheet');
+    stylesheet.setAttribute('href', UI_STYLESHEET_HREF);
+    document.head.appendChild(stylesheet);
 
-    console.log('Kawaii VS Code Color: chrome styles initialised!');
+    console.log('Kawaii VS Code Color: UI stylesheet initialised!');
   };
 
   /**
    * @summary Attempts to bootstrap the theme
    * @param {boolean} disableGlow 
-   * @param {MutationObserver} obs 
+   * @returns {boolean} true when required theme/token state has been initialized
    */
-  const initNeonDreams = (disableGlow, obs) => {
+  const initKawaiiVsCodeColorsUi = (disableGlow) => {
     const tokensEl = document.querySelector('.vscode-tokens-styles');
 
-    cleanupInactiveThemeStyles();
-    appendChromeStyles();
+    const activeInnerTheme = cleanupInactiveThemeStyles();
+    ensureUiStylesheet();
 
-    if (!tokensEl || !readyForReplacement(tokensEl)) {
-      return;
+    if (!tokensEl || !readyForReplacement(tokensEl, activeInnerTheme)) {
+      return false;
     }
 
     const initialThemeStyles = tokensEl.innerText;
-    const tokenStylesSignature = getTokenStylesSignature(initialThemeStyles, disableGlow);
+    const tokenStylesSignature = getTokenStylesSignature(initialThemeStyles, disableGlow, activeInnerTheme);
 
     if (activeTokenStylesSignature === tokenStylesSignature) {
-      return;
+      return true;
     }
 
     const orderedTokenReplacements = getOrderedTokenReplacementSets(tokensEl);
-    const updatedThemeStyles = !disableGlow
-      ? replaceTokens(initialThemeStyles, orderedTokenReplacements)
-      : initialThemeStyles;
+    const updatedThemeStyles = !disableGlow && isGlowEffectEnabled()
+      ? createScopedTokenRules(initialThemeStyles, orderedTokenReplacements, activeInnerTheme)
+      : '';
 
-    let themeStyleTag = document.querySelector(`#${themeStylesId}`);
+    let themeStyleTag = document.querySelector(`#${TOKEN_STYLES_ID}`);
 
-    if (!themeStyleTag) {
+    if (!updatedThemeStyles) {
+      removeInjectedStyle(TOKEN_STYLES_ID);
+    } else if (!themeStyleTag) {
       themeStyleTag = document.createElement('style');
-      themeStyleTag.setAttribute("id", themeStylesId);
+      themeStyleTag.setAttribute("id", TOKEN_STYLES_ID);
       document.body.appendChild(themeStyleTag);
     }
 
-    themeStyleTag.innerText = updatedThemeStyles.replace(/(\r\n|\n|\r)/gm, '');
+    if (themeStyleTag && updatedThemeStyles) {
+      themeStyleTag.innerText = updatedThemeStyles.replace(/(\r\n|\n|\r)/gm, '');
+    }
+
     activeTokenStylesSignature = tokenStylesSignature;
 
-    console.log('Kawaii VS Code Color: NEON DREAMS initialised!');
+    console.log('Kawaii VS Code Color: UI effects initialised!');
+    return true;
   };
 
   /**
-   * @summary A MutationObserver callback that attempts to bootstrap the theme and assigns a retry attempt if it fails
+   * @summary Disconnects the broad startup observer after success or timeout.
+   * @returns {void}
    */
-  const watchForBootstrap = function(mutationsList, observer) {
-    for(let mutation of mutationsList) {
-      if (mutation.type === 'attributes' || mutation.type === 'childList') {
-        cleanupInactiveThemeStyles();
-        appendChromeStyles();
-
-        // does the style div exist yet?
-        const tokensEl = document.querySelector('.vscode-tokens-styles');
-        if (readyForReplacement(tokensEl)) {
-          // If everything we need is ready, then initialise
-          initNeonDreams([DISABLE_GLOW], observer);
-        }
-      }
+  const disconnectBootstrapObserver = () => {
+    if (bootstrapObserver) {
+      bootstrapObserver.disconnect();
+      bootstrapObserver = null;
     }
+
+    if (bootstrapObserverTimeout) {
+      clearTimeout(bootstrapObserverTimeout);
+      bootstrapObserverTimeout = null;
+    }
+  };
+
+  const getActiveInnerThemeElement = () => document.querySelector(
+    innerThemeConfigs.flatMap((innerTheme) => innerTheme.selectors).join(', ')
+  );
+
+  const observeActiveThemeMarkerElement = () => {
+    const activeThemeMarkerElement = getActiveInnerThemeElement();
+
+    if (observedThemeMarkerElement === activeThemeMarkerElement) {
+      return;
+    }
+
+    if (themeMarkerObserver) {
+      themeMarkerObserver.disconnect();
+      themeMarkerObserver = null;
+    }
+
+    observedThemeMarkerElement = activeThemeMarkerElement;
+
+    if (!activeThemeMarkerElement) {
+      return;
+    }
+
+    themeMarkerObserver = new MutationObserver(scheduleRuntimeRefresh);
+    themeMarkerObserver.observe(activeThemeMarkerElement, { attributes: true, attributeFilter: ['class'] });
+  };
+
+  const observeTokenStylesElement = () => {
+    const tokensEl = document.querySelector('.vscode-tokens-styles');
+
+    if (observedTokenStylesElement === tokensEl) {
+      return;
+    }
+
+    if (tokenStylesObserver) {
+      tokenStylesObserver.disconnect();
+      tokenStylesObserver = null;
+    }
+
+    observedTokenStylesElement = tokensEl;
+
+    if (!tokensEl) {
+      return;
+    }
+
+    tokenStylesObserver = new MutationObserver(scheduleRuntimeRefresh);
+    tokenStylesObserver.observe(tokensEl, { childList: true, characterData: true, subtree: true });
+  };
+
+  const observeNarrowRuntimeTargets = () => {
+    if (!themeClassObserver) {
+      themeClassObserver = new MutationObserver(scheduleRuntimeRefresh);
+      [document.documentElement, document.body].filter(Boolean).forEach((target) => {
+        themeClassObserver.observe(target, { attributes: true, attributeFilter: ['class'] });
+      });
+    }
+
+    if (!tokenContainerObserver) {
+      tokenContainerObserver = new MutationObserver(scheduleRuntimeRefresh);
+      [document.head, document.body].filter(Boolean).forEach((target) => {
+        tokenContainerObserver.observe(target, { childList: true });
+      });
+    }
+
+    observeActiveThemeMarkerElement();
+    observeTokenStylesElement();
+  };
+
+  const runRuntimeRefresh = () => {
+    pendingRefreshTimer = null;
+    const initialized = initKawaiiVsCodeColorsUi([DISABLE_GLOW]);
+    observeNarrowRuntimeTargets();
+
+    if (initialized) {
+      disconnectBootstrapObserver();
+    }
+  };
+
+  function scheduleRuntimeRefresh() {
+    if (pendingRefreshTimer) {
+      clearTimeout(pendingRefreshTimer);
+    }
+
+    pendingRefreshTimer = setTimeout(runRuntimeRefresh, MUTATION_REFRESH_DEBOUNCE_MS);
+  }
+
+  const startBoundedBootstrapObserver = () => {
+    const bootstrapTarget = document.body || document.documentElement;
+
+    if (!bootstrapTarget || bootstrapObserver) {
+      return;
+    }
+
+    bootstrapObserver = new MutationObserver(scheduleRuntimeRefresh);
+    bootstrapObserver.observe(bootstrapTarget, { attributes: true, childList: true, subtree: true });
+    bootstrapObserverTimeout = setTimeout(disconnectBootstrapObserver, BOOTSTRAP_OBSERVER_TIMEOUT_MS);
   };
 
   //=============================
   // Start bootstrapping!
   //=============================
-  // Grab body node
-  const bodyNode = document.querySelector('body');
-  // Use a mutation observer to check when we can bootstrap the theme
-  const observer = new MutationObserver(watchForBootstrap);
-  /* watch for both attribute and childList changes because, depending on 
-  the VS code version, the mutations might happen on the body, or they might 
-  happen on a nested div */
-  observer.observe(bodyNode, { attributes: true, childList: true, subtree: true });
-  appendChromeStyles();
-  initNeonDreams([DISABLE_GLOW], observer);
+  observeNarrowRuntimeTargets();
+
+  if (!initKawaiiVsCodeColorsUi([DISABLE_GLOW])) {
+    startBoundedBootstrapObserver();
+  } else {
+    disconnectBootstrapObserver();
+  }
 })();

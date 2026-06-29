@@ -46,14 +46,45 @@ test("renderer token replacement keeps dark and light glow maps explicit", () =>
   assert.doesNotMatch(replaced, /color:#fe4450;/);
 });
 
+test("renderer token helpers create additive scoped token rules", () => {
+  const styles = ".mtk1, .mtk2 { color: #fe4450; } .unknown { color: #123456; }";
+  const darkInnerTheme = themeTemplate.RENDERER_INNER_THEME_CONFIGS[0];
+
+  if (!darkInnerTheme) {
+    throw new Error("Expected dark renderer inner theme config.");
+  }
+
+  const scopedRules = themeTemplate.createScopedRendererTokenRules(styles, [
+    themeTemplate.DARK_RENDERER_TOKEN_REPLACEMENTS
+  ], darkInnerTheme);
+
+  assert.match(scopedRules, /\.kawaii-vscode-colors-ui\.kawaii-effect-glow\.dark-pink-kawaii \.mtk1 \{color: #fffafd;/);
+  assert.match(scopedRules, /\.kawaii-vscode-colors-ui\.kawaii-effect-glow\.dark-pink-kawaii \.mtk2 \{color: #fffafd;/);
+  assert.doesNotMatch(scopedRules, /\.kawaii-vscode-colors-ui \.mtk/);
+  assert.doesNotMatch(scopedRules, /\.unknown/);
+});
+
 test("renderer template module keeps browser boundary identifiers and no Node imports", () => {
   assert.deepEqual(themeTemplate.RENDERER_STYLE_IDS, {
-    chrome: "kawaii_synthwave-chrome-styles",
-    theme: "kawaii_synthwave-theme-styles"
+    stylesheet: "kawaii-vscode-colors-ui-stylesheet",
+    token: "kawaii-vscode-colors-ui-token-styles"
   });
+  assert.equal(themeTemplate.RENDERER_UI_ROOT_CLASS, "kawaii-vscode-colors-ui");
+  assert.deepEqual(themeTemplate.RENDERER_EFFECT_ROOT_CLASSES, {
+    foundation: "kawaii-effect-foundation",
+    editorBackground: "kawaii-effect-editor-background",
+    noPageLogo: "kawaii-effect-no-page-logo",
+    glow: "kawaii-effect-glow"
+  });
+  assert.deepEqual(themeTemplate.RENDERER_INNER_THEME_WRAPPER_CLASSES, [
+    "dark-pink-kawaii",
+    "light-pink-pastel-kawaii"
+  ]);
+  assert.equal(themeTemplate.RENDERER_STYLESHEET_HREF, "kawaii-vscode-colors-ui.min.css?v=[KAWAII_UI_STYLE_VERSION]");
   assert.ok(
-    themeTemplate.KAWAII_THEME_WRAPPER_SELECTORS.some((selector: string) =>
-      selector.includes("kawaii-vscode-color-generated-color-theme-json")
+    themeTemplate.RENDERER_INNER_THEME_CONFIGS.some((innerTheme) =>
+      innerTheme.wrapperClass === "dark-pink-kawaii"
+      && innerTheme.selectors.some((selector) => selector.includes("kawaii-vscode-color-generated-color-theme-json"))
     )
   );
 
@@ -63,17 +94,39 @@ test("renderer template module keeps browser boundary identifiers and no Node im
 });
 
 test("renderer placeholder helpers replace only known placeholders", () => {
-  const template = "brightness=[NEON_BRIGHTNESS];glow=[DISABLE_GLOW];unknown=[UNKNOWN_PLACEHOLDER]";
+  const template = "brightness=[NEON_BRIGHTNESS];classes=[EFFECT_ROOT_CLASSES];glow=[DISABLE_GLOW];style=[KAWAII_UI_STYLE_VERSION];unknown=[UNKNOWN_PLACEHOLDER]";
 
   assert.deepEqual(rendererPlaceholders.findRendererPlaceholders(template), [
     "DISABLE_GLOW",
+    "EFFECT_ROOT_CLASSES",
+    "KAWAII_UI_STYLE_VERSION",
     "NEON_BRIGHTNESS"
   ]);
   assert.equal(
     rendererPlaceholders.replaceRendererPlaceholders(template, {
       DISABLE_GLOW: "false",
+      EFFECT_ROOT_CLASSES: "kawaii-effect-foundation kawaii-effect-glow",
+      KAWAII_UI_STYLE_VERSION: "v1",
       NEON_BRIGHTNESS: "7F"
     }),
-    "brightness=7F;glow=false;unknown=[UNKNOWN_PLACEHOLDER]"
+    "brightness=7F;classes=kawaii-effect-foundation kawaii-effect-glow;glow=false;style=v1;unknown=[UNKNOWN_PLACEHOLDER]"
+  );
+});
+
+
+test("renderer observer runtime limits are explicit and token signatures include the active inner theme", () => {
+  assert.deepEqual(themeTemplate.RENDERER_OBSERVER_RUNTIME_LIMITS, {
+    bootstrapTimeoutMs: 15000,
+    mutationDebounceMs: 50
+  });
+
+  const darkInnerTheme = themeTemplate.RENDERER_INNER_THEME_CONFIGS[0];
+  if (!darkInnerTheme) {
+    throw new Error("Expected dark renderer inner theme config.");
+  }
+
+  assert.equal(
+    themeTemplate.getRendererTokenStylesSignature(".mtk1{color:#fe4450;}", false, darkInnerTheme),
+    "dark-pink-kawaii:false:true:.mtk1{color:#fe4450;}"
   );
 });
