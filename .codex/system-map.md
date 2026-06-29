@@ -68,10 +68,12 @@ Dev dependency contract:
 - `scripts/run-test-all.ts`
 - `src/css/editor_chrome.css`
 - `src/css/kawaii-vscode-colors-ui.min.css`
+- `src/core-themes`
 - `src/emptyEditorLogoStyles.ts`
 - `src/extension.ts`
 - `src/extensionHost`
 - `src/extensionRoot.ts`
+- `src/generated-themes`
 - `src/js/theme_template.js`
 - `src/randomNekoImage.ts`
 - `src/renderer`
@@ -91,6 +93,8 @@ Dev dependency contract:
 - `test/e2e`
 - `test/integration`
 - `test/unit`
+- `themes/dark-pink-kawaii.json`
+- `themes/light-pink-pastel-kawaii.json`
 - `tsconfig.tests.emit.json`
 - `tsconfig.base.json`
 - `tsconfig.extension.json`
@@ -102,15 +106,16 @@ Dev dependency contract:
 
 | Variant | uiTheme | Base | Overrides | Generated |
 | --- | --- | --- | --- | --- |
-| `Dark Pink Kawaii` | `vs-dark` | `themes/kawaii_synthwave-color-theme.json` | `themes/kawaii_synthwave-color-theme-overrides.json` | `./themes/kawaii_synthwave-generated-color-theme.json` / `themes/kawaii_synthwave-generated-color-theme.json` |
-| `Light Pink-Pastel Kawaii` | `vs` | `themes/kawaii_synthwave-color-theme-light.json` | `themes/kawaii_synthwave-color-theme-light-overrides.json` | `./themes/kawaii_synthwave-generated-color-theme-light.json` / `themes/kawaii_synthwave-generated-color-theme-light.json` |
+| `Dark Pink Kawaii` | `vs-dark` | `src/core-themes/kawaii_synthwave-color-theme.json` | `themes/dark-pink-kawaii.json` | `./src/generated-themes/kawaii_synthwave-generated-color-theme.json` / `src/generated-themes/kawaii_synthwave-generated-color-theme.json` |
+| `Light Pink-Pastel Kawaii` | `vs` | `src/core-themes/kawaii_synthwave-color-theme-light.json` | `themes/light-pink-pastel-kawaii.json` | `./src/generated-themes/kawaii_synthwave-generated-color-theme-light.json` / `src/generated-themes/kawaii_synthwave-generated-color-theme-light.json` |
 
 Build behavior:
 
-- `scripts/build-color-theme.ts` reads base and override JSON/JSONC sources for both variants; `scripts/build-color-theme.js` is the stable wrapper entrypoint.
+- `scripts/build-color-theme.ts` reads every public `themes/*.json` color pack plus the matching protected core base; `scripts/build-color-theme.js` is the stable wrapper entrypoint.
+- Public color packs require `id`, `name`, `mode`, and non-null numeric `version.major`, `version.minor`, and `version.patch`.
 - `colors` and `semanticTokenColors` merge by object key.
 - `tokenColors` replace matching base rules by `name` or `scope`; unmatched override rules append.
-- Generated theme files are strict JSON written by `npm run build:theme`.
+- Generated native theme files and `src/generated-themes/internal-themes.json` are strict JSON written by `npm run build:theme`.
 - Current generated themes define `semanticTokenColors`: dark true, light true.
 
 ## Runtime Modules
@@ -196,6 +201,7 @@ Rules:
 VS Code settings and extension/global state keys:
 
 - `kawaii_synthwave.brightness`
+- `kawaii_synthwave.colorExportVersion`
 - `kawaii_synthwave.disableGlow`
 - `kawaii_synthwave.editorBackgroundFit`
 - `kawaii_synthwave.editorBackgroundImage`
@@ -217,6 +223,7 @@ Settings bundle contract:
 - Current schema: `kawaii-vscode-color-settings`
 - Legacy accepted schema: `kawaii-synthwave-settings`
 - Current `schemaVersion: 1`
+- Export color version: `colorVersion` with numeric `major`, `minor`, and `patch`; first export starts at `0.0.1`, then increments globally for Settings Sync and JSON exports.
 - Export file default: `kawaii-vscode-color-settings.json`
 - Apply order: extension configuration, color customizations, effects, then active theme variant.
 

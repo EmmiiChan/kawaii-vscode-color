@@ -83,12 +83,12 @@
             {
                 "label": "Dark Pink Kawaii",
                 "uiTheme": "vs-dark",
-                "path": "./themes/kawaii_synthwave-generated-color-theme.json"
+                "path": "./src/generated-themes/kawaii_synthwave-generated-color-theme.json"
             },
             {
                 "label": "Light Pink-Pastel Kawaii",
                 "uiTheme": "vs",
-                "path": "./themes/kawaii_synthwave-generated-color-theme-light.json"
+                "path": "./src/generated-themes/kawaii_synthwave-generated-color-theme-light.json"
             }
         ],
         "commands": [

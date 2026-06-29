@@ -1,6 +1,11 @@
 {
   "schema": "kawaii-vscode-color-settings",
   "schemaVersion": 1,
+  "colorVersion": {
+    "major": 0,
+    "minor": 0,
+    "patch": 1
+  },
   "exportedAt": "2026-06-17T12:00:00.000Z",
   "activeThemeVariantId": "light",
   "activeThemeLabel": "Light Pink-Pastel Kawaii",

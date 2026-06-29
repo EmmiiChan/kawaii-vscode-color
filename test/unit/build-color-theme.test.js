@@ -6,8 +6,13 @@ const test = require("node:test");
 
 const {
   buildGeneratedTheme,
+  buildGeneratedThemeFromColorPack,
   buildThemeVariant,
+  createInternalThemeCatalog,
+  getColorVersionLabel,
+  normalizeThemeColorPack,
   readJsoncFile,
+  readThemeColorPacks,
   removeJsonComments,
   removeTrailingCommas
 } = require("../../scripts/build-color-theme");
@@ -179,6 +184,125 @@ test("readJsoncFile reports contextual parse failures", (t) => {
     () => readJsoncFile(invalidThemePath),
     /Failed to parse .*invalid-theme\.json/
   );
+});
+
+test("theme color packs require metadata and numeric version", () => {
+  const colorPack = normalizeThemeColorPack("themes/example-dark.json", {
+    id: "example-dark",
+    name: "Example Dark",
+    mode: "dark",
+    version: {
+      major: 0,
+      minor: 0,
+      patch: 7
+    },
+    colors: {
+      "editor.background": "#101010"
+    },
+    tokenColors: [
+      {
+        name: "Keyword",
+        scope: "keyword",
+        settings: {
+          foreground: "#ff00ff"
+        }
+      }
+    ]
+  });
+
+  assert.deepEqual(colorPack.version, { major: 0, minor: 0, patch: 7 });
+  assert.equal(getColorVersionLabel(colorPack.version), "0.0.7");
+  assert.equal(colorPack.fileName, "example-dark.json");
+  assert.equal(colorPack.mode, "dark");
+
+  assert.throws(
+    () => normalizeThemeColorPack("themes/invalid.json", {
+      id: "Invalid Name",
+      name: "Invalid",
+      mode: "dark",
+      version: { major: 0, minor: 0, patch: 1 }
+    }),
+    /id must use lowercase kebab-case/
+  );
+  assert.throws(
+    () => normalizeThemeColorPack("themes/invalid.json", {
+      id: "invalid",
+      name: "Invalid",
+      mode: "dark",
+      version: { major: 0, minor: 0, patch: 1000 }
+    }),
+    /version\.patch must be an integer from 0 to 999/
+  );
+});
+
+test("readThemeColorPacks reads public theme packs in a stable order", (t) => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "kawaii-theme-packs-"));
+  t.after(() => {
+    fs.rmSync(tempRoot, { force: true, recursive: true });
+  });
+
+  fs.writeFileSync(path.join(tempRoot, "z-light.json"), JSON.stringify({
+    id: "z-light",
+    name: "Z Light",
+    mode: "light",
+    version: { major: 0, minor: 0, patch: 2 },
+    colors: {}
+  }), "utf8");
+  fs.writeFileSync(path.join(tempRoot, "a-dark.json"), JSON.stringify({
+    id: "a-dark",
+    name: "A Dark",
+    mode: "dark",
+    version: { major: 0, minor: 0, patch: 1 },
+    colors: {}
+  }), "utf8");
+
+  assert.deepEqual(readThemeColorPacks(tempRoot).map((colorPack) => colorPack.id), [
+    "a-dark",
+    "z-light"
+  ]);
+});
+
+test("internal theme catalog embeds generated themes from color packs", () => {
+  const colorPack = normalizeThemeColorPack("themes/example-dark.json", {
+    id: "example-dark",
+    name: "Example Dark",
+    mode: "dark",
+    version: {
+      major: 0,
+      minor: 1,
+      patch: 0
+    },
+    colors: {
+      "editor.background": "#101010"
+    },
+    tokenColors: [
+      {
+        name: "Keyword",
+        scope: "keyword",
+        settings: {
+          foreground: "#ff00ff"
+        }
+      }
+    ]
+  });
+  const generatedTheme = buildGeneratedThemeFromColorPack(colorPack);
+  const catalog = createInternalThemeCatalog([colorPack]);
+
+  assert.equal(generatedTheme.name, "Example Dark");
+  assert.equal(generatedTheme.type, "dark");
+  assert.equal(generatedTheme.colors["editor.background"], "#101010");
+  assert.equal(catalog.schemaVersion, 1);
+  assert.deepEqual(catalog.themes.map((theme) => ({
+    id: theme.id,
+    versionLabel: theme.versionLabel,
+    generatedName: theme.theme.name
+  })), [
+    {
+      id: "example-dark",
+      versionLabel: "0.1.0",
+      generatedName: "Example Dark"
+    }
+  ]);
 });
 
 test("buildGeneratedTheme merges semantic token colors by key", () => {

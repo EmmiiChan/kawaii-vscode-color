@@ -152,7 +152,9 @@ const {
   createSettingsBundleActions,
   getColorCustomizationsExportFromStore,
   getExtensionConfigurationExportFromStore,
+  incrementColorVersion,
   normalizeBrightnessSetting,
+  normalizeColorVersion,
   normalizeSettingsBundle
 } = requireOut<SettingsBundleModule>("settingsBundle");
 
@@ -161,6 +163,7 @@ const DISABLE_GLOW_SETTING = "kawaii_synthwave.disableGlow";
 const WORKBENCH_SETTING = "workbench.colorCustomizations";
 const TOKEN_SETTING = "editor.tokenColorCustomizations";
 const SYNC_SETTINGS_STATE_KEY = "kawaii_synthwave.syncedSettingsBundle";
+const COLOR_EXPORT_VERSION_STATE_KEY = "kawaii_synthwave.colorExportVersion";
 const EXPORT_FILE_NAME = "kawaii-vscode-color-settings.json";
 const FIXTURES_DIR = path.join(process.cwd(), "test", "fixtures", "settings");
 const darkVariant: ThemeVariant = { id: "dark", label: "Dark Pink Kawaii", legacyLabels: ["Kawaii VS Code Color"] };
@@ -578,6 +581,11 @@ test("normalizeSettingsBundle validates schema and supported versions", () => {
 
   assert.equal(normalizeSettingsBundle({ schema: "kawaii-vscode-color-settings", schemaVersion: 1 }).schema, "kawaii-vscode-color-settings");
   assert.equal(normalizeSettingsBundle({ schema: "kawaii-synthwave-settings", schemaVersion: 1 }).schema, "kawaii-synthwave-settings");
+  assert.deepEqual(normalizeSettingsBundle({ schema: "kawaii-vscode-color-settings", schemaVersion: 1 }).colorVersion, {
+    major: 0,
+    minor: 0,
+    patch: 1
+  });
 });
 
 test("normalizeSettingsBundle accepts current fixtures and rejects invalid fixture inputs", () => {
@@ -591,6 +599,15 @@ test("normalizeSettingsBundle accepts current fixtures and rejects invalid fixtu
     () => normalizeSettingsBundle(unsupportedVersionBundle),
     /Unsupported Kawaii VS Code Color settings version: 999/
   );
+});
+
+test("color export version normalizes and increments as a bounded numeric triplet", () => {
+  assert.deepEqual(normalizeColorVersion(undefined), { major: 0, minor: 0, patch: 1 });
+  assert.deepEqual(normalizeColorVersion({ major: 7, minor: 8, patch: 9 }), { major: 7, minor: 8, patch: 9 });
+  assert.deepEqual(normalizeColorVersion({ major: 1, minor: 1000, patch: 0 }), { major: 0, minor: 0, patch: 1 });
+  assert.deepEqual(incrementColorVersion({ major: 0, minor: 0, patch: 1 }), { major: 0, minor: 0, patch: 2 });
+  assert.deepEqual(incrementColorVersion({ major: 0, minor: 0, patch: 999 }), { major: 0, minor: 1, patch: 0 });
+  assert.deepEqual(incrementColorVersion({ major: 0, minor: 999, patch: 999 }), { major: 1, minor: 0, patch: 0 });
 });
 
 test("extension configuration export prefers explicit global values and falls back to effective values", () => {
@@ -700,6 +717,7 @@ test("createSettingsBundle exports active theme, configuration, colors, and effe
 
   assert.equal(bundle.schema, "kawaii-vscode-color-settings");
   assert.equal(bundle.schemaVersion, 1);
+  assert.deepEqual(bundle.colorVersion, { major: 0, minor: 0, patch: 1 });
   assert.equal(bundle.exportedAt, "2026-06-17T12:00:00.000Z");
   assert.equal(bundle.activeThemeVariantId, "light");
   assert.equal(bundle.activeThemeLabel, "Light Pink-Pastel Kawaii");
@@ -877,9 +895,17 @@ test("settings bundle actions save/import settings sync state", async () => {
   actions.configureSettingsSync(context);
   await actions.saveSettingsToVsSync(context);
 
-  assert.deepEqual(syncedKeys, [[SYNC_SETTINGS_STATE_KEY]]);
+  assert.deepEqual(syncedKeys, [[SYNC_SETTINGS_STATE_KEY, COLOR_EXPORT_VERSION_STATE_KEY]]);
+  assert.deepEqual(state.get(COLOR_EXPORT_VERSION_STATE_KEY), { major: 0, minor: 0, patch: 1 });
   assert.equal(state.get(SYNC_SETTINGS_STATE_KEY).schema, "kawaii-vscode-color-settings");
+  assert.deepEqual(state.get(SYNC_SETTINGS_STATE_KEY).colorVersion, { major: 0, minor: 0, patch: 1 });
+
+  await actions.saveSettingsToVsSync(context);
+
+  assert.deepEqual(state.get(COLOR_EXPORT_VERSION_STATE_KEY), { major: 0, minor: 0, patch: 2 });
+  assert.deepEqual(state.get(SYNC_SETTINGS_STATE_KEY).colorVersion, { major: 0, minor: 0, patch: 2 });
   assert.deepEqual(dependencies.window.informationMessages, [
+    "Kawaii VS Code Color settings saved to VS Code Settings Sync state.",
     "Kawaii VS Code Color settings saved to VS Code Settings Sync state."
   ]);
 

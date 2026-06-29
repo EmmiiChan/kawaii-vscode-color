@@ -220,7 +220,7 @@ The extension runtime is compiled from TypeScript into `out/src`, and `package.j
 | Settings webview | `src/settings.ts`, `src/settingsWebview.ts`, and `src/webview/settings` own the settings editor tab, view model contracts, messages, and VS Code webview token styling. |
 | Shared contracts | `src/shared` contains typed models, message contracts, renderer placeholders, schemas, guards, and validation helpers. |
 | Injected renderer | `src/js/theme_template.js` remains the workbench runtime template; `src/renderer/ThemeTemplate.ts` mirrors renderer contracts for TypeScript tests. |
-| Theme generation | `themes/*-overrides.json` files are edited by hand; `scripts/build-color-theme.ts` generates the VS Code-loaded theme files. |
+| Theme generation | `themes/*.json` color packs are edited by hand; `src/core-themes` stores protected bases; `scripts/build-color-theme.ts` generates `src/generated-themes` outputs loaded by VS Code. |
 | Workbench CSS | `src/scss/kawaii-vscode-colors-ui.scss` and `scripts/build-ui-css.ts` generate the scoped CSS linked by the injected runtime. |
 | Build scripts | `scripts/*.ts` hold implementations; matching `scripts/*.js` files stay as stable command wrappers. |
 
@@ -325,11 +325,12 @@ code-insiders --install-extension .\dist\kawaii-vscode-color-<version>.vsix --fo
 
 ### Theme Color Workflow
 
-- Keep `themes/kawaii_synthwave-color-theme.json` as the protected dark base theme.
-- Keep `themes/kawaii_synthwave-color-theme-light.json` as the protected light base theme.
-- Put dark palette changes in `themes/kawaii_synthwave-color-theme-overrides.json`.
-- Put light palette changes in `themes/kawaii_synthwave-color-theme-light-overrides.json`.
-- Run `npm run build:theme` to regenerate both generated theme JSON files.
+- Keep `src/core-themes/kawaii_synthwave-color-theme.json` as the protected dark base theme.
+- Keep `src/core-themes/kawaii_synthwave-color-theme-light.json` as the protected light base theme.
+- Put dark palette changes in `themes/dark-pink-kawaii.json`.
+- Put light palette changes in `themes/light-pink-pastel-kawaii.json`.
+- Keep every public color pack in `themes/` as `theme-id.json` with non-null numeric `version.major`, `version.minor`, and `version.patch`.
+- Run `npm run build:theme` to regenerate the native theme JSON files and internal catalog under `src/generated-themes`.
 - VS Code loads generated themes through `package.json.contributes.themes`.
 
 ### Manual Theme Test
