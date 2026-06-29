@@ -431,6 +431,47 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
       margin-top: 12px;
     }
 
+    .sync-file-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .sync-file-group {
+      min-width: 0;
+      padding: 12px;
+      background: var(--vscode-editorWidget-background);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+    }
+
+    .sync-file-title {
+      margin: 0 0 6px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .sync-file-description {
+      margin: 0;
+      color: var(--muted-color);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .sync-file-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .sync-file-buttons .button {
+      width: 100%;
+      min-width: 0;
+      white-space: normal;
+    }
+
     .effects-warning {
       margin-top: 12px;
       min-width: 0;
@@ -833,6 +874,11 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
         grid-template-columns: 1fr;
       }
 
+      .sync-file-actions,
+      .sync-file-buttons {
+        grid-template-columns: 1fr;
+      }
+
       .editor-background-header,
       .editor-background-details,
       .editor-background-options {
@@ -887,7 +933,7 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
             </div>
           </div>
           <p class="home-text">Kawaii VS Code Color focuses on dark pink and light green pastel-pink themes. It is inspired by SynthWave '84 and Sakura Theme, and was originally forked from SynthWave '84. This setup page keeps local user customization in VS Code settings and preserves the repository theme files as source assets.</p>
-          <p class="home-text">Use Color Settings to edit theme-specific colors and run Settings Sync or JSON import/export actions. Use Image Customization to manage image-backed effects. Random Neko image inputs use Nekos.moe and were inspired by CatgirlDownloader.</p>
+          <p class="home-text">Use Color Settings to edit theme-specific colors, Sync / Files to move settings between installs, and Image Customization to manage image-backed effects. Random Neko image inputs use Nekos.moe and were inspired by CatgirlDownloader.</p>
           <section class="home-section" aria-labelledby="references-title">
             <h3 id="references-title" class="home-section-title">References</h3>
             <div id="documentation-links" class="link-list"></div>
@@ -1056,6 +1102,24 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
           <h2 class="home-title">Settings Sync and JSON import/export</h2>
           <p class="home-text">Save a Kawaii VS Code Color settings bundle to VS Code Settings Sync, restore it on another synced installation, or use JSON import/export for explicit file transfer.</p>
           <p class="home-text">These actions preserve repository theme files and write user-local customization to VS Code settings only.</p>
+          <div class="sync-file-actions" aria-label="Settings Sync and file actions">
+            <section class="sync-file-group" aria-labelledby="settings-sync-actions-title">
+              <h3 id="settings-sync-actions-title" class="sync-file-title">Settings Sync</h3>
+              <p class="sync-file-description">Store or restore the current bundle through VS Code synced extension state.</p>
+              <div class="sync-file-buttons">
+                <button id="save-vssync" class="button" type="button">Save to VSSync</button>
+                <button id="import-vssync" class="button secondary" type="button">Import VSSync</button>
+              </div>
+            </section>
+            <section class="sync-file-group" aria-labelledby="settings-file-actions-title">
+              <h3 id="settings-file-actions-title" class="sync-file-title">JSON Files</h3>
+              <p class="sync-file-description">Export a portable settings file or import a previously saved bundle.</p>
+              <div class="sync-file-buttons">
+                <button id="export-settings" class="button" type="button">Export As</button>
+                <button id="import-settings" class="button secondary" type="button">Import</button>
+              </div>
+            </section>
+          </div>
         </div>
       </section>
       <section id="help-page" class="page hidden">
@@ -1073,12 +1137,6 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
             <select id="theme-variant" class="select"></select>
           </div>
           <p class="theme-mode-description">Dark and light customizations are stored separately in their own VS Code theme blocks.</p>
-          <div class="theme-mode-actions">
-            <button id="save-vssync" class="button secondary" type="button">Save to VSSync</button>
-            <button id="import-vssync" class="button secondary" type="button">Import VSSync</button>
-            <button id="export-settings" class="button secondary" type="button">Export As</button>
-            <button id="import-settings" class="button secondary" type="button">Import</button>
-          </div>
         </section>
         <hr class="section-divider">
         <div class="toolbar">

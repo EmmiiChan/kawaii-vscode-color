@@ -195,6 +195,7 @@ Rules:
 - Incoming settings webview messages are dispatched through `src/extensionHost/controllers/SettingsMessageController.ts`; legacy handlers in `src/settings.ts` preserve existing payload names and side effects.
 - Color messages write VS Code settings, never repository theme JSON.
 - Image Customization owns editor background/no-tab logo inputs, opacity, fit area, and the `Apply Effects` action. Image and opacity messages update `globalState`/global storage and require `apply-effects` to clean previous generated assets and refresh the selected modular Effects stack. `apply-neon-customizations` remains a legacy compatibility message.
+- Sync / Files owns Settings Sync and JSON bundle actions for `save-settings-to-vssync`, `import-settings-from-vssync`, `export-settings`, and `import-settings`.
 - `e2e-apply-settings-bundle` is test-only and must remain gated by `KAWAII_E2E_ALLOW_NEON_PATCH=1`.
 - `e2e-set-test-fixtures` is test-only and must remain gated by `KAWAII_E2E_TEST_HOOKS=1` or `KAWAII_E2E_ALLOW_NEON_PATCH=1`; it replaces native dialogs and Random Neko network calls with deterministic local fixture paths during E2E.
 - Host errors are surfaced to both webview `error` messages and VS Code error notifications.

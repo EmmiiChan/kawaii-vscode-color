@@ -84,6 +84,7 @@ Command Palette
   -> side menu switches between Home, Settings, Color Settings, Effects, Image Customization, Sync/Files, and Help
   -> Color Settings reads colors from the active generated dark or light theme file
   -> Image Customization manages editor background/no-tab logo image inputs, opacity, fit area, and Apply Effects
+  -> Sync/Files manages Settings Sync save/import plus JSON export/import actions
   -> user changes a color field
   -> webview posts update-color to the extension host
   -> extension host validates the hex color

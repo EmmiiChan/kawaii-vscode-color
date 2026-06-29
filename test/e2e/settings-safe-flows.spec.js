@@ -43,6 +43,16 @@ async function openImageCustomizationPage() {
     await assertWebviewCssVisible("#empty-editor-logo-upload");
 }
 
+async function openSyncFilesPage() {
+    await clickWebviewCss('.nav-button[data-page="sync-files"]');
+    await assertWebviewPageVisible("sync-files-page");
+    await waitForWebviewTextIncludes("#sync-files-page", "Settings Sync");
+    await assertWebviewCssVisible("#save-vssync");
+    await assertWebviewCssVisible("#import-vssync");
+    await assertWebviewCssVisible("#export-settings");
+    await assertWebviewCssVisible("#import-settings");
+}
+
 async function setControlledE2EFixtures(fixtures) {
     await postWebviewE2EMessage({
         type: "e2e-set-test-fixtures",
@@ -168,7 +178,7 @@ describe("Settings safe flows E2E", function () {
                 await openImageCustomizationPage();
                 await clickWebviewCss("#editor-background-download");
                 await clickWebviewCss("#empty-editor-logo-download");
-                await openColorSettingsPage();
+                await openSyncFilesPage();
                 await clickWebviewCss("#export-settings");
                 await waitForFile(exportPath, 20000);
 
@@ -188,7 +198,9 @@ describe("Settings safe flows E2E", function () {
                 await openColorSettingsPage();
                 await setWebviewInputValue("#content .row .hex", "#246813");
                 await waitForWebviewInputValue("#content .row .hex", "#246813", 20000);
+                await openSyncFilesPage();
                 await clickWebviewCss("#import-settings");
+                await openColorSettingsPage();
                 await waitForWebviewInputValue("#content .row .hex", "#135724", 30000);
                 await openImageCustomizationPage();
                 await waitForWebviewTextIncludes("#editor-background-file", "editor-background.png", 30000);
@@ -204,17 +216,8 @@ describe("Settings safe flows E2E", function () {
         await withSettingsWebview(async () => {
             await assertWebviewCssVisible("#home-apply-effects");
 
-            await openColorSettingsPage();
-
-            for (const css of [
-                "#save-vssync",
-                "#import-vssync",
-                "#export-settings",
-                "#import-settings"
-            ]) {
-                await assertWebviewCssVisible(css);
-            }
-            await takeE2EScreenshot("settings-safe-action-controls-color-settings");
+            await openSyncFilesPage();
+            await takeE2EScreenshot("settings-safe-action-controls-sync-files");
 
             await openImageCustomizationPage();
             for (const css of [

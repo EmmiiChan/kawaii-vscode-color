@@ -37,6 +37,7 @@ Use only the sections that matter for a given release:
 
 - Rename the settings page from Neon Effect to Effects and refer to the injected runtime as Kawaii Neon in user-facing docs.
 - Move editor background image, no-tab logo, and Apply Effects controls from Color Settings to Image Customization.
+- Move Settings Sync and JSON import/export actions from Color Settings into the Sync / Files page with grouped action controls.
 - Gate generated workbench CSS and renderer token glow by module classes so each Effects module can be applied independently.
 - Apply Effects now persists selected modules, cleans previous generated modifications/assets, and applies the new stack in one flow.
 - Move protected base theme JSON into `src/core-themes` and generated VS Code theme JSON into `src/generated-themes`.
