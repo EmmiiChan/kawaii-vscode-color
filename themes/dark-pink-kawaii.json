@@ -1,5 +1,12 @@
 {
+  "id": "dark-pink-kawaii",
   "name": "Dark Pink Kawaii",
+  "mode": "dark",
+  "version": {
+    "major": 0,
+    "minor": 0,
+    "patch": 1
+  },
   "colors": {
     "foreground": "#fffafd",
     "selection.background": "#fffafd20",

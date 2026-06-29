@@ -12,10 +12,19 @@ const SETTINGS_EXPORT_SCHEMA = "kawaii-vscode-color-settings";
 const LEGACY_SETTINGS_EXPORT_SCHEMA = "kawaii-synthwave-settings";
 const SETTINGS_EXPORT_SCHEMA_VERSION = 1;
 const SYNC_SETTINGS_STATE_KEY = "kawaii_synthwave.syncedSettingsBundle";
+const COLOR_EXPORT_VERSION_STATE_KEY = "kawaii_synthwave.colorExportVersion";
+const INITIAL_COLOR_EXPORT_VERSION: ColorVersion = { major: 0, minor: 0, patch: 1 };
+
+interface ColorVersion {
+  readonly major: number;
+  readonly minor: number;
+  readonly patch: number;
+}
 
 interface SettingsBundle {
   readonly schema: string;
   readonly schemaVersion: number;
+  readonly colorVersion?: unknown;
   readonly exportedAt?: string;
   readonly activeThemeVariantId?: unknown;
   readonly activeThemeLabel?: string;
@@ -106,7 +115,60 @@ export function normalizeSettingsBundle(bundle: unknown): SettingsBundle {
     throw new Error(`Unsupported Kawaii VS Code Color settings version: ${String(normalizedBundle.schemaVersion)}`);
   }
 
-  return normalizedBundle;
+  return {
+    ...normalizedBundle,
+    colorVersion: normalizeColorVersion(normalizedBundle.colorVersion)
+  };
+}
+
+export function normalizeColorVersion(value: unknown): ColorVersion {
+  const candidate = ensurePlainObject(value);
+  const major = normalizeColorVersionPart(candidate.major);
+  const minor = normalizeColorVersionPart(candidate.minor, 999);
+  const patch = normalizeColorVersionPart(candidate.patch, 999);
+
+  if (major === undefined || minor === undefined || patch === undefined) {
+    return INITIAL_COLOR_EXPORT_VERSION;
+  }
+
+  return { major, minor, patch };
+}
+
+function normalizeColorVersionPart(value: unknown, maximum?: number): number | undefined {
+  return typeof value === "number"
+    && Number.isInteger(value)
+    && value >= 0
+    && (maximum === undefined || value <= maximum)
+    ? value
+    : undefined;
+}
+
+export function incrementColorVersion(value: unknown): ColorVersion {
+  const version = normalizeColorVersion(value);
+
+  if (version.patch < 999) {
+    return { ...version, patch: version.patch + 1 };
+  }
+
+  if (version.minor < 999) {
+    return { major: version.major, minor: version.minor + 1, patch: 0 };
+  }
+
+  return { major: version.major + 1, minor: 0, patch: 0 };
+}
+
+async function getNextColorExportVersion(context: unknown): Promise<ColorVersion> {
+  const globalState = (context as { readonly globalState?: GlobalStateLike } | undefined)?.globalState;
+
+  if (!globalState || typeof globalState.get !== "function" || typeof globalState.update !== "function") {
+    return INITIAL_COLOR_EXPORT_VERSION;
+  }
+
+  const currentVersion = globalState.get(COLOR_EXPORT_VERSION_STATE_KEY);
+  const nextVersion = currentVersion ? incrementColorVersion(currentVersion) : INITIAL_COLOR_EXPORT_VERSION;
+
+  await globalState.update(COLOR_EXPORT_VERSION_STATE_KEY, nextVersion);
+  return nextVersion;
 }
 
 export function getExtensionConfigurationExportFromStore(
@@ -220,6 +282,7 @@ export async function createSettingsBundle(context: unknown, dependencies: Setti
   return {
     schema: SETTINGS_EXPORT_SCHEMA,
     schemaVersion: SETTINGS_EXPORT_SCHEMA_VERSION,
+    colorVersion: await getNextColorExportVersion(context),
     exportedAt: getIsoTimestamp(dependencies),
     activeThemeVariantId: activeThemeVariant.id,
     activeThemeLabel: activeThemeVariant.label,
@@ -266,7 +329,7 @@ export function createSettingsBundleActions(dependencies: SettingsBundleDependen
       && context.globalState
       && typeof context.globalState.setKeysForSync === "function"
     ) {
-      context.globalState.setKeysForSync([SYNC_SETTINGS_STATE_KEY]);
+      context.globalState.setKeysForSync([SYNC_SETTINGS_STATE_KEY, COLOR_EXPORT_VERSION_STATE_KEY]);
     }
   }
 

@@ -36,7 +36,7 @@ export const KAWAII_THEME_VARIANTS: readonly ThemeVariant[] = [
         legacyLabels: [KAWAII_LEGACY_DARK_THEME_NAME],
         modeLabel: "Dark",
         wrapperClass: sanitizeThemeWrapperClass(KAWAII_DARK_THEME_NAME),
-        generatedThemePath: "themes/kawaii_synthwave-generated-color-theme.json"
+        generatedThemePath: "src/generated-themes/kawaii_synthwave-generated-color-theme.json"
     },
     {
         id: "light",
@@ -44,7 +44,7 @@ export const KAWAII_THEME_VARIANTS: readonly ThemeVariant[] = [
         legacyLabels: [KAWAII_LEGACY_LIGHT_THEME_NAME],
         modeLabel: "Light",
         wrapperClass: sanitizeThemeWrapperClass(KAWAII_LIGHT_THEME_NAME),
-        generatedThemePath: "themes/kawaii_synthwave-generated-color-theme-light.json"
+        generatedThemePath: "src/generated-themes/kawaii_synthwave-generated-color-theme-light.json"
     }
 ] as const;
 

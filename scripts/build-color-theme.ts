@@ -10,6 +10,33 @@ interface ThemeVariant {
   readonly generatedThemePath: string;
 }
 
+interface NativeThemeVariant {
+  readonly colorPackId: string;
+  readonly generatedThemePath: string;
+  readonly label: string;
+  readonly mode: ThemeMode;
+}
+
+interface ColorVersion {
+  readonly major: number;
+  readonly minor: number;
+  readonly patch: number;
+}
+
+type ThemeMode = "dark" | "light";
+
+interface ThemeColorPack {
+  readonly colors?: PlainRecord;
+  readonly fileName: string;
+  readonly id: string;
+  readonly mode: ThemeMode;
+  readonly name: string;
+  readonly semanticTokenColors?: PlainRecord;
+  readonly tokenColors?: unknown[];
+  readonly type?: string;
+  readonly version: ColorVersion;
+}
+
 interface TokenRuleLike {
   readonly name?: unknown;
   readonly scope?: unknown;
@@ -17,18 +44,39 @@ interface TokenRuleLike {
 
 const WORKSPACE_ROOT = resolveWorkspaceRoot(__dirname);
 const FILE_ENCODING = "utf8";
+const PUBLIC_THEMES_DIR = path.join(WORKSPACE_ROOT, "themes");
+const CORE_THEME_PATH_BY_MODE: Record<ThemeMode, string> = {
+  dark: path.join(WORKSPACE_ROOT, "src", "core-themes", "kawaii_synthwave-color-theme.json"),
+  light: path.join(WORKSPACE_ROOT, "src", "core-themes", "kawaii_synthwave-color-theme-light.json")
+};
+const GENERATED_THEMES_DIR = path.join(WORKSPACE_ROOT, "src", "generated-themes");
+const INTERNAL_THEME_CATALOG_PATH = path.join(GENERATED_THEMES_DIR, "internal-themes.json");
+const NATIVE_THEME_VARIANTS: readonly NativeThemeVariant[] = [
+  {
+    colorPackId: "dark-pink-kawaii",
+    generatedThemePath: path.join(GENERATED_THEMES_DIR, "kawaii_synthwave-generated-color-theme.json"),
+    label: "Dark Pink Kawaii",
+    mode: "dark"
+  },
+  {
+    colorPackId: "light-pink-pastel-kawaii",
+    generatedThemePath: path.join(GENERATED_THEMES_DIR, "kawaii_synthwave-generated-color-theme-light.json"),
+    label: "Light Pink-Pastel Kawaii",
+    mode: "light"
+  }
+];
 const THEME_VARIANTS: readonly ThemeVariant[] = [
   {
     label: "Dark Pink Kawaii",
-    baseThemePath: path.join(WORKSPACE_ROOT, "themes", "kawaii_synthwave-color-theme.json"),
-    overridesThemePath: path.join(WORKSPACE_ROOT, "themes", "kawaii_synthwave-color-theme-overrides.json"),
-    generatedThemePath: path.join(WORKSPACE_ROOT, "themes", "kawaii_synthwave-generated-color-theme.json")
+    baseThemePath: CORE_THEME_PATH_BY_MODE.dark,
+    overridesThemePath: path.join(PUBLIC_THEMES_DIR, "dark-pink-kawaii.json"),
+    generatedThemePath: path.join(GENERATED_THEMES_DIR, "kawaii_synthwave-generated-color-theme.json")
   },
   {
     label: "Light Pink-Pastel Kawaii",
-    baseThemePath: path.join(WORKSPACE_ROOT, "themes", "kawaii_synthwave-color-theme-light.json"),
-    overridesThemePath: path.join(WORKSPACE_ROOT, "themes", "kawaii_synthwave-color-theme-light-overrides.json"),
-    generatedThemePath: path.join(WORKSPACE_ROOT, "themes", "kawaii_synthwave-generated-color-theme-light.json")
+    baseThemePath: CORE_THEME_PATH_BY_MODE.light,
+    overridesThemePath: path.join(PUBLIC_THEMES_DIR, "light-pink-pastel-kawaii.json"),
+    generatedThemePath: path.join(GENERATED_THEMES_DIR, "kawaii_synthwave-generated-color-theme-light.json")
   }
 ];
 
@@ -194,6 +242,95 @@ function ensureObject(value: unknown, propertyName: string): PlainRecord {
   return value as PlainRecord;
 }
 
+function normalizeThemeMode(value: unknown, propertyName: string): ThemeMode {
+  if (value === "dark" || value === "light") {
+    return value;
+  }
+
+  throw new TypeError(`${propertyName} must be "dark" or "light".`);
+}
+
+function normalizeColorVersion(value: unknown, propertyName: string): ColorVersion {
+  const version = ensureObject(value, propertyName);
+  const major = normalizeColorVersionPart(version.major, `${propertyName}.major`);
+  const minor = normalizeColorVersionPart(version.minor, `${propertyName}.minor`);
+  const patch = normalizeColorVersionPart(version.patch, `${propertyName}.patch`);
+
+  return { major, minor, patch };
+}
+
+function normalizeColorVersionPart(value: unknown, propertyName: string): number {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value > 999) {
+    throw new TypeError(`${propertyName} must be an integer from 0 to 999.`);
+  }
+
+  return value;
+}
+
+function getColorVersionLabel(version: ColorVersion): string {
+  return `${version.major}.${version.minor}.${version.patch}`;
+}
+
+function normalizeThemeColorPack(filePath: string, value: PlainRecord): ThemeColorPack {
+  const id = typeof value.id === "string" ? value.id.trim() : "";
+  const name = typeof value.name === "string" ? value.name.trim() : "";
+
+  if (!id) {
+    throw new TypeError(`${formatRelativePath(filePath)} must define a non-empty id.`);
+  }
+
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id)) {
+    throw new TypeError(`${formatRelativePath(filePath)} id must use lowercase kebab-case.`);
+  }
+
+  if (!name) {
+    throw new TypeError(`${formatRelativePath(filePath)} must define a non-empty name.`);
+  }
+
+  const mode = normalizeThemeMode(value.mode, `${formatRelativePath(filePath)}.mode`);
+  const version = normalizeColorVersion(value.version, `${formatRelativePath(filePath)}.version`);
+  const colors = value.colors === undefined ? undefined : ensureObject(value.colors, `${formatRelativePath(filePath)}.colors`);
+  const semanticTokenColors = value.semanticTokenColors === undefined
+    ? undefined
+    : ensureObject(value.semanticTokenColors, `${formatRelativePath(filePath)}.semanticTokenColors`);
+
+  if (value.tokenColors !== undefined && !Array.isArray(value.tokenColors)) {
+    throw new TypeError(`${formatRelativePath(filePath)}.tokenColors must be an array.`);
+  }
+
+  return {
+    ...(colors ? { colors } : {}),
+    fileName: path.basename(filePath),
+    id,
+    mode,
+    name,
+    ...(semanticTokenColors ? { semanticTokenColors } : {}),
+    ...(value.tokenColors ? { tokenColors: value.tokenColors } : {}),
+    ...(typeof value.type === "string" ? { type: value.type } : {}),
+    version
+  };
+}
+
+function getThemeColorPackThemeData(colorPack: ThemeColorPack): PlainRecord {
+  return {
+    name: colorPack.name,
+    type: colorPack.type || colorPack.mode,
+    colors: colorPack.colors || {},
+    tokenColors: colorPack.tokenColors || [],
+    ...(colorPack.semanticTokenColors ? { semanticTokenColors: colorPack.semanticTokenColors } : {})
+  };
+}
+
+function readThemeColorPacks(themesDirectory = PUBLIC_THEMES_DIR): ThemeColorPack[] {
+  return fs.readdirSync(themesDirectory)
+    .filter((fileName) => fileName.endsWith(".json"))
+    .sort((left, right) => left.localeCompare(right))
+    .map((fileName) => {
+      const filePath = path.join(themesDirectory, fileName);
+      return normalizeThemeColorPack(filePath, readJsoncFile(filePath));
+    });
+}
+
 /**
  * Merges theme object properties where override values replace base values by key.
  *
@@ -342,6 +479,7 @@ function buildGeneratedTheme(baseTheme: PlainRecord, overridesTheme: PlainRecord
  * @returns {void}
  */
 function writeThemeFile(filePath: string, themeData: PlainRecord): void {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, `${JSON.stringify(themeData, null, 2)}\n`, FILE_ENCODING);
 }
 
@@ -377,6 +515,58 @@ function buildThemeVariant(themeVariant: ThemeVariant): string[] {
   ];
 }
 
+function buildGeneratedThemeFromColorPack(colorPack: ThemeColorPack): PlainRecord {
+  const baseTheme = readJsoncFile(CORE_THEME_PATH_BY_MODE[colorPack.mode]);
+
+  return buildGeneratedTheme(baseTheme, getThemeColorPackThemeData(colorPack));
+}
+
+function createInternalThemeCatalog(colorPacks: readonly ThemeColorPack[]): PlainRecord {
+  return {
+    schemaVersion: 1,
+    themes: colorPacks.map((colorPack) => ({
+      id: colorPack.id,
+      name: colorPack.name,
+      mode: colorPack.mode,
+      type: colorPack.type || colorPack.mode,
+      fileName: colorPack.fileName,
+      version: colorPack.version,
+      versionLabel: getColorVersionLabel(colorPack.version),
+      theme: buildGeneratedThemeFromColorPack(colorPack)
+    }))
+  };
+}
+
+function buildInternalThemeOutputs(colorPacks = readThemeColorPacks()): string[] {
+  const summaryLines: string[] = [];
+  const colorPackById = new Map(colorPacks.map((colorPack) => [colorPack.id, colorPack]));
+  const catalog = createInternalThemeCatalog(colorPacks);
+
+  writeThemeFile(INTERNAL_THEME_CATALOG_PATH, catalog);
+  summaryLines.push(`Generated ${formatRelativePath(INTERNAL_THEME_CATALOG_PATH)}`);
+  summaryLines.push(`Internal color packs: ${colorPacks.length}`);
+
+  for (const nativeThemeVariant of NATIVE_THEME_VARIANTS) {
+    const colorPack = colorPackById.get(nativeThemeVariant.colorPackId);
+
+    if (!colorPack) {
+      throw new Error(`Missing native color pack: ${nativeThemeVariant.colorPackId}`);
+    }
+
+    if (colorPack.mode !== nativeThemeVariant.mode) {
+      throw new Error(`Native color pack ${colorPack.id} must use mode ${nativeThemeVariant.mode}.`);
+    }
+
+    const generatedTheme = buildGeneratedThemeFromColorPack(colorPack);
+
+    writeThemeFile(nativeThemeVariant.generatedThemePath, generatedTheme);
+    summaryLines.push(`Generated ${formatRelativePath(nativeThemeVariant.generatedThemePath)}`);
+    summaryLines.push(`Color pack: ${formatRelativePath(path.join(PUBLIC_THEMES_DIR, colorPack.fileName))}`);
+  }
+
+  return summaryLines;
+}
+
 /**
  * Logs contextual build failures.
  *
@@ -399,7 +589,7 @@ function logBuildError(error: unknown): void {
           generatedThemePath: formatRelativePath(themeVariant.generatedThemePath)
         };
       }),
-      expectedBehavior: "Merge base theme first, then apply override colors and merge override token rules.",
+      expectedBehavior: "Read public themes/*.json color packs, merge each over the matching core base theme, then generate native themes and the internal catalog.",
       actualBehavior: normalizedError.message
     },
     stack: normalizedError.stack
@@ -412,7 +602,7 @@ function logBuildError(error: unknown): void {
  * @returns {void}
  */
 function main(): void {
-  const summaryLines = THEME_VARIANTS.flatMap((themeVariant) => buildThemeVariant(themeVariant));
+  const summaryLines = buildInternalThemeOutputs();
 
   console.log(summaryLines.join("\n"));
 }
@@ -432,9 +622,16 @@ if (require.main === module) {
 
 export {
   buildGeneratedTheme,
+  buildGeneratedThemeFromColorPack,
+  buildInternalThemeOutputs,
   buildThemeVariant,
+  createInternalThemeCatalog,
+  getColorVersionLabel,
+  normalizeColorVersion,
+  normalizeThemeColorPack,
   main,
   readJsoncFile,
+  readThemeColorPacks,
   removeJsonComments,
   removeTrailingCommas,
   runCli

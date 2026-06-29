@@ -1,5 +1,12 @@
 {
+  "id": "light-pink-pastel-kawaii",
   "name": "Light Pink-Pastel Kawaii",
+  "mode": "light",
+  "version": {
+    "major": 0,
+    "minor": 0,
+    "patch": 1
+  },
   "type": "light",
   "colors": {
     "activityBar.background": "#9db79a",
