@@ -140,7 +140,7 @@ Implementation caution:
 | `src/settingsPersistence.ts` | Pure color customization block mutation, TextMate scope comparison, and hex validation | `test/unit/settings-persistence.test.js` |
 | `src/settingsStore.ts` | VS Code configuration get/inspect/update adapter for global and workspace targets | `test/unit/settings-store.test.js` |
 | `src/settingsColorService.ts` | Generated-theme-aware color update/reset/theme-switch orchestration | `test/unit/settings-color-service.test.js` |
-| `src/settingsBundle.ts` | Portable bundle creation/application, Settings Sync state, and JSON import/export actions | `test/unit/settings-bundle.test.js`, including chained state-model coverage for Save VSSync, Import VSSync, Export As, and Import |
+| `src/settingsBundle.ts` | Portable bundle creation/application, application settings export/import, Settings Sync state, and JSON import/export actions | `test/unit/settings-bundle.test.js`, including chained state-model coverage for Save VSSync, Import VSSync, Export As, and Import |
 | `src/settingsEffectsPersistence.ts` | Effect/image normalization, safe storage paths, metadata/state, export/restore/store/remove helpers | `test/unit/settings-effects-persistence.test.js` |
 | `src/settings.ts` message chain | Mocked `openSettings -> onDidReceiveMessage -> persistence` wiring | `test/unit/settings-message-persistence.test.js` |
 | `src/webview/settings` | Typed settings webview view model, CSP helper, page ids, style token names, and client message names while the legacy inline renderer remains in `src/settingsWebview.ts` | `test/dom/settings-webview-split.test.js` |

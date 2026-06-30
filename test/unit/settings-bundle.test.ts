@@ -94,6 +94,7 @@ interface BundleDependencyHarness {
 
 interface BundleSnapshot {
   readonly activeThemeVariantId: string;
+  readonly applicationSettings: ApplicationSettingsSnapshot;
   readonly extensionConfiguration: {
     readonly brightness: number;
     readonly disableGlow: boolean;
@@ -115,6 +116,7 @@ interface BundleSnapshot {
 
 interface BundleSnapshotOverrides {
   readonly activeThemeVariantId?: string;
+  readonly applicationSettings?: ApplicationSettingsSnapshot;
   readonly brightness?: number;
   readonly disableGlow?: boolean;
   readonly editorBackgroundOpacity?: number;
@@ -126,6 +128,14 @@ interface BundleOverrides {
   readonly activeThemeVariant?: ThemeVariant;
   readonly effectsExport?: unknown;
   readonly settingsStore?: SettingsStore | any;
+}
+
+interface ApplicationSettingsSnapshot {
+  readonly startupEditor: string;
+  readonly editorShowTabs: string;
+  readonly editorWrapTabs: boolean;
+  readonly openFoldersInNewWindow: string;
+  readonly restoreWindows: string;
 }
 
 interface StatefulBundleHarness {
@@ -146,11 +156,13 @@ function requireOut<TModule>(...segments: readonly string[]): TModule {
 const { createSettingsStore } = requireOut<SettingsStoreModule>("settingsStore");
 const {
   applyColorCustomizationsExportToStore,
+  applyApplicationSettingsExportToStore,
   applyExtensionConfigurationExportToStore,
   applySettingsBundle,
   createSettingsBundle,
   createSettingsBundleActions,
   getColorCustomizationsExportFromStore,
+  getApplicationSettingsExportFromStore,
   getExtensionConfigurationExportFromStore,
   incrementColorVersion,
   normalizeBrightnessSetting,
@@ -162,6 +174,11 @@ const BRIGHTNESS_SETTING = "kawaii_synthwave.brightness";
 const DISABLE_GLOW_SETTING = "kawaii_synthwave.disableGlow";
 const WORKBENCH_SETTING = "workbench.colorCustomizations";
 const TOKEN_SETTING = "editor.tokenColorCustomizations";
+const STARTUP_EDITOR_SETTING = "workbench.startupEditor";
+const EDITOR_SHOW_TABS_SETTING = "workbench.editor.showTabs";
+const EDITOR_WRAP_TABS_SETTING = "workbench.editor.wrapTabs";
+const OPEN_FOLDERS_IN_NEW_WINDOW_SETTING = "window.openFoldersInNewWindow";
+const RESTORE_WINDOWS_SETTING = "window.restoreWindows";
 const SYNC_SETTINGS_STATE_KEY = "kawaii_synthwave.syncedSettingsBundle";
 const COLOR_EXPORT_VERSION_STATE_KEY = "kawaii_synthwave.colorExportVersion";
 const EXPORT_FILE_NAME = "kawaii-vscode-color-settings.json";
@@ -312,6 +329,11 @@ function createStatefulBundleHarness(initialSnapshot: BundleSnapshot): StatefulB
   function applySnapshot(snapshot: BundleSnapshot): void {
     activeThemeVariantId = snapshot.activeThemeVariantId;
     effectsState = clone(snapshot.effects);
+    setSettingValue(STARTUP_EDITOR_SETTING, snapshot.applicationSettings.startupEditor);
+    setSettingValue(EDITOR_SHOW_TABS_SETTING, snapshot.applicationSettings.editorShowTabs);
+    setSettingValue(EDITOR_WRAP_TABS_SETTING, snapshot.applicationSettings.editorWrapTabs);
+    setSettingValue(OPEN_FOLDERS_IN_NEW_WINDOW_SETTING, snapshot.applicationSettings.openFoldersInNewWindow);
+    setSettingValue(RESTORE_WINDOWS_SETTING, snapshot.applicationSettings.restoreWindows);
     setSettingValue(BRIGHTNESS_SETTING, snapshot.extensionConfiguration.brightness);
     setSettingValue(DISABLE_GLOW_SETTING, snapshot.extensionConfiguration.disableGlow);
     setSettingValue(WORKBENCH_SETTING, createThemeSettingsObject(snapshot.colorCustomizations.workbench, snapshot.unrelatedWorkbench));
@@ -461,6 +483,13 @@ function createThemeSettingsObject(blocks: Record<string, PlainRecord>, unrelate
 function createBundleSnapshot(marker: string, overrides: BundleSnapshotOverrides = {}): BundleSnapshot {
   return {
     activeThemeVariantId: overrides.activeThemeVariantId || "dark",
+    applicationSettings: overrides.applicationSettings || {
+      startupEditor: "welcomePage",
+      editorShowTabs: "multiple",
+      editorWrapTabs: true,
+      openFoldersInNewWindow: "on",
+      restoreWindows: "preserve"
+    },
     extensionConfiguration: {
       brightness: overrides.brightness === undefined ? 0.21 : overrides.brightness,
       disableGlow: Boolean(overrides.disableGlow)
@@ -540,6 +569,7 @@ function assertBundleMatchesSnapshot(bundle: any, expectedSnapshot: BundleSnapsh
   assert.equal(bundle.schema, "kawaii-vscode-color-settings");
   assert.equal(bundle.schemaVersion, 1);
   assert.equal(bundle.activeThemeVariantId, expectedSnapshot.activeThemeVariantId);
+  assert.deepEqual(bundle.applicationSettings, expectedSnapshot.applicationSettings);
   assert.deepEqual(bundle.extensionConfiguration, expectedSnapshot.extensionConfiguration);
   assert.deepEqual(bundle.colorCustomizations, expectedSnapshot.colorCustomizations);
   assert.deepEqual(bundle.effects, expectedSnapshot.effects);
@@ -648,6 +678,57 @@ test("extension configuration import writes normalized values", async () => {
   ]);
 });
 
+test("application settings export preserves explicit VS Code values", () => {
+  const { settingsStore } = createWorkspaceMock({
+    values: {
+      [STARTUP_EDITOR_SETTING]: "readme",
+      [EDITOR_SHOW_TABS_SETTING]: "single",
+      [EDITOR_WRAP_TABS_SETTING]: false,
+      [OPEN_FOLDERS_IN_NEW_WINDOW_SETTING]: "default",
+      [RESTORE_WINDOWS_SETTING]: "preserve"
+    }
+  });
+
+  assert.deepEqual(getApplicationSettingsExportFromStore(settingsStore), {
+    startupEditor: "readme",
+    editorShowTabs: "single",
+    editorWrapTabs: false,
+    openFoldersInNewWindow: "default",
+    restoreWindows: "preserve"
+  });
+});
+
+test("application settings import writes valid values and skips invalid partial fields", async () => {
+  const { settingsStore, updates } = createWorkspaceMock();
+
+  await applyApplicationSettingsExportToStore(settingsStore, {
+    startupEditor: "welcomePage",
+    editorShowTabs: "none",
+    editorWrapTabs: true,
+    openFoldersInNewWindow: "off",
+    restoreWindows: "one"
+  });
+
+  assert.deepEqual(updates, [
+    { settingName: STARTUP_EDITOR_SETTING, value: "welcomePage", target: true },
+    { settingName: EDITOR_SHOW_TABS_SETTING, value: "none", target: true },
+    { settingName: EDITOR_WRAP_TABS_SETTING, value: true, target: true },
+    { settingName: OPEN_FOLDERS_IN_NEW_WINDOW_SETTING, value: "off", target: true },
+    { settingName: RESTORE_WINDOWS_SETTING, value: "one", target: true }
+  ]);
+
+  updates.length = 0;
+  await applyApplicationSettingsExportToStore(settingsStore, {
+    startupEditor: "unsupported-startup-editor",
+    editorShowTabs: "tabs",
+    editorWrapTabs: "true",
+    openFoldersInNewWindow: "maybe",
+    restoreWindows: 1
+  });
+
+  assert.deepEqual(updates, []);
+});
+
 test("color customization export and import handle dark and light blocks while preserving unrelated customizations", async () => {
   const { settingsStore, updates } = createWorkspaceMock({
     inspections: {
@@ -710,8 +791,19 @@ test("color customization export and import handle dark and light blocks while p
   ]);
 });
 
-test("createSettingsBundle exports active theme, configuration, colors, and effects", async () => {
-  const { dependencies, calls } = createBundleDependencies();
+test("createSettingsBundle exports active theme, application settings, configuration, colors, and effects", async () => {
+  const { settingsStore } = createWorkspaceMock({
+    values: {
+      [STARTUP_EDITOR_SETTING]: "welcomePage",
+      [EDITOR_SHOW_TABS_SETTING]: "multiple",
+      [EDITOR_WRAP_TABS_SETTING]: true,
+      [OPEN_FOLDERS_IN_NEW_WINDOW_SETTING]: "on",
+      [RESTORE_WINDOWS_SETTING]: "folders"
+    }
+  });
+  const { dependencies, calls } = createBundleDependencies({
+    settingsStore
+  });
 
   const bundle = await createSettingsBundle({ id: "ctx" }, dependencies) as any;
 
@@ -721,6 +813,13 @@ test("createSettingsBundle exports active theme, configuration, colors, and effe
   assert.equal(bundle.exportedAt, "2026-06-17T12:00:00.000Z");
   assert.equal(bundle.activeThemeVariantId, "light");
   assert.equal(bundle.activeThemeLabel, "Light Pink-Pastel Kawaii");
+  assert.deepEqual(bundle.applicationSettings, {
+    startupEditor: "welcomePage",
+    editorShowTabs: "multiple",
+    editorWrapTabs: true,
+    openFoldersInNewWindow: "on",
+    restoreWindows: "folders"
+  });
   assert.deepEqual(bundle.effects, { editorBackground: { opacity: 0.12 } });
   assert.deepEqual(calls, ["effects-export:ctx"]);
 });
@@ -729,6 +828,11 @@ test("createSettingsBundle exports dark/light colors and image-backed effects", 
   const fixtureBundle = readSettingsFixture("settings-dark-light-customized.json");
   const { settingsStore } = createWorkspaceMock({
     values: {
+      [STARTUP_EDITOR_SETTING]: fixtureBundle.applicationSettings.startupEditor,
+      [EDITOR_SHOW_TABS_SETTING]: fixtureBundle.applicationSettings.editorShowTabs,
+      [EDITOR_WRAP_TABS_SETTING]: fixtureBundle.applicationSettings.editorWrapTabs,
+      [OPEN_FOLDERS_IN_NEW_WINDOW_SETTING]: fixtureBundle.applicationSettings.openFoldersInNewWindow,
+      [RESTORE_WINDOWS_SETTING]: fixtureBundle.applicationSettings.restoreWindows,
       [BRIGHTNESS_SETTING]: 0.72,
       [DISABLE_GLOW_SETTING]: true
     },
@@ -758,6 +862,7 @@ test("createSettingsBundle exports dark/light colors and image-backed effects", 
   const bundle = await createSettingsBundle({ id: "ctx" }, dependencies) as any;
 
   assert.equal(bundle.activeThemeVariantId, "light");
+  assert.deepEqual(bundle.applicationSettings, fixtureBundle.applicationSettings);
   assert.deepEqual(bundle.extensionConfiguration, fixtureBundle.extensionConfiguration);
   assert.deepEqual(bundle.colorCustomizations, fixtureBundle.colorCustomizations);
   assert.equal(bundle.effects.editorBackground.image.originalName, "editor-background.png");
@@ -765,7 +870,7 @@ test("createSettingsBundle exports dark/light colors and image-backed effects", 
   assert.match(bundle.effects.editorBackground.image.dataBase64, /^iVBORw0KGgo/);
 });
 
-test("applySettingsBundle applies config, colors, effects, then active theme", async () => {
+test("applySettingsBundle applies config, application settings, colors, effects, then active theme", async () => {
   const order: string[] = [];
   const settingsStore = {
     getTargetSettingsObject() {
@@ -791,6 +896,13 @@ test("applySettingsBundle applies config, colors, effects, then active theme", a
   await applySettingsBundle({ id: "ctx" }, {
     schema: "kawaii-vscode-color-settings",
     schemaVersion: 1,
+    applicationSettings: {
+      startupEditor: "welcomePage",
+      editorShowTabs: "multiple",
+      editorWrapTabs: true,
+      openFoldersInNewWindow: "on",
+      restoreWindows: "preserve"
+    },
     extensionConfiguration: { brightness: 0.3, disableGlow: true },
     colorCustomizations: { workbench: {}, token: {} },
     effects: { marker: "restored" },
@@ -800,6 +912,11 @@ test("applySettingsBundle applies config, colors, effects, then active theme", a
   assert.deepEqual(order, [
     `setting:${BRIGHTNESS_SETTING}`,
     `setting:${DISABLE_GLOW_SETTING}`,
+    `setting:${STARTUP_EDITOR_SETTING}`,
+    `setting:${EDITOR_SHOW_TABS_SETTING}`,
+    `setting:${EDITOR_WRAP_TABS_SETTING}`,
+    `setting:${OPEN_FOLDERS_IN_NEW_WINDOW_SETTING}`,
+    `setting:${RESTORE_WINDOWS_SETTING}`,
     `setting:${WORKBENCH_SETTING}`,
     `setting:${TOKEN_SETTING}`,
     "effects",
@@ -848,12 +965,19 @@ test("applySettingsBundle restores fixture config, dark/light colors, effects, a
 
   assert.deepEqual(updates[0], { settingName: BRIGHTNESS_SETTING, value: 0.72, target: true });
   assert.deepEqual(updates[1], { settingName: DISABLE_GLOW_SETTING, value: true, target: true });
-  assert.deepEqual(updates[2]?.value, {
+  assert.deepEqual(updates.slice(2, 7), [
+    { settingName: STARTUP_EDITOR_SETTING, value: fixtureBundle.applicationSettings.startupEditor, target: true },
+    { settingName: EDITOR_SHOW_TABS_SETTING, value: fixtureBundle.applicationSettings.editorShowTabs, target: true },
+    { settingName: EDITOR_WRAP_TABS_SETTING, value: fixtureBundle.applicationSettings.editorWrapTabs, target: true },
+    { settingName: OPEN_FOLDERS_IN_NEW_WINDOW_SETTING, value: fixtureBundle.applicationSettings.openFoldersInNewWindow, target: true },
+    { settingName: RESTORE_WINDOWS_SETTING, value: fixtureBundle.applicationSettings.restoreWindows, target: true }
+  ]);
+  assert.deepEqual(updates[7]?.value, {
     "[Unrelated Theme]": { "editor.background": "#000000" },
     "[Dark Pink Kawaii]": fixtureBundle.colorCustomizations.workbench.dark,
     "[Light Pink-Pastel Kawaii]": fixtureBundle.colorCustomizations.workbench.light
   });
-  assert.deepEqual(updates[3]?.value, {
+  assert.deepEqual(updates[8]?.value, {
     "[Unrelated Theme]": { textMateRules: [{ scope: "comment" }] },
     "[Dark Pink Kawaii]": fixtureBundle.colorCustomizations.token.dark,
     "[Light Pink-Pastel Kawaii]": fixtureBundle.colorCustomizations.token.light
@@ -869,6 +993,50 @@ test("applySettingsBundle restores fixture config, dark/light colors, effects, a
     },
     "theme:light"
   ]);
+});
+
+test("applySettingsBundle leaves application settings untouched for legacy bundles", async () => {
+  const { settingsStore, values, updates } = createWorkspaceMock({
+    values: {
+      [STARTUP_EDITOR_SETTING]: "readme",
+      [EDITOR_SHOW_TABS_SETTING]: "single",
+      [EDITOR_WRAP_TABS_SETTING]: false,
+      [OPEN_FOLDERS_IN_NEW_WINDOW_SETTING]: "default",
+      [RESTORE_WINDOWS_SETTING]: "preserve"
+    }
+  });
+  const { dependencies } = createBundleDependencies({
+    settingsStore
+  });
+
+  await applySettingsBundle({ id: "ctx" }, {
+    schema: "kawaii-vscode-color-settings",
+    schemaVersion: 1,
+    extensionConfiguration: {},
+    colorCustomizations: { workbench: {}, token: {} },
+    effects: { marker: "legacy" }
+  }, dependencies);
+
+  assert.deepEqual({
+    startupEditor: values[STARTUP_EDITOR_SETTING],
+    editorShowTabs: values[EDITOR_SHOW_TABS_SETTING],
+    editorWrapTabs: values[EDITOR_WRAP_TABS_SETTING],
+    openFoldersInNewWindow: values[OPEN_FOLDERS_IN_NEW_WINDOW_SETTING],
+    restoreWindows: values[RESTORE_WINDOWS_SETTING]
+  }, {
+    startupEditor: "readme",
+    editorShowTabs: "single",
+    editorWrapTabs: false,
+    openFoldersInNewWindow: "default",
+    restoreWindows: "preserve"
+  });
+  assert.equal(updates.some((update) => [
+    STARTUP_EDITOR_SETTING,
+    EDITOR_SHOW_TABS_SETTING,
+    EDITOR_WRAP_TABS_SETTING,
+    OPEN_FOLDERS_IN_NEW_WINDOW_SETTING,
+    RESTORE_WINDOWS_SETTING
+  ].includes(update.settingName)), false);
 });
 
 test("settings bundle actions save/import settings sync state", async () => {
@@ -948,6 +1116,13 @@ test("settings bundle file actions handle cancellations and read/write JSON file
 test("settings sync and file actions restore complete snapshots across chained operations", async () => {
   const snapshotA = createBundleSnapshot("aa", {
     activeThemeVariantId: "dark",
+    applicationSettings: {
+      startupEditor: "welcomePage",
+      editorShowTabs: "multiple",
+      editorWrapTabs: true,
+      openFoldersInNewWindow: "on",
+      restoreWindows: "preserve"
+    },
     brightness: 0.21,
     disableGlow: false,
     editorBackgroundOpacity: 0.11,
@@ -956,6 +1131,13 @@ test("settings sync and file actions restore complete snapshots across chained o
   });
   const snapshotB = createBundleSnapshot("bb", {
     activeThemeVariantId: "light",
+    applicationSettings: {
+      startupEditor: "none",
+      editorShowTabs: "single",
+      editorWrapTabs: false,
+      openFoldersInNewWindow: "off",
+      restoreWindows: "none"
+    },
     brightness: 0.82,
     disableGlow: true,
     editorBackgroundOpacity: 0.22,
@@ -964,6 +1146,13 @@ test("settings sync and file actions restore complete snapshots across chained o
   });
   const snapshotC = createBundleSnapshot("cc", {
     activeThemeVariantId: "dark",
+    applicationSettings: {
+      startupEditor: "readme",
+      editorShowTabs: "none",
+      editorWrapTabs: true,
+      openFoldersInNewWindow: "default",
+      restoreWindows: "one"
+    },
     brightness: 0.43,
     disableGlow: true,
     editorBackgroundOpacity: 0.33,
@@ -1017,6 +1206,13 @@ test("settings sync and file actions restore complete snapshots across chained o
 test("settings sync and file actions match the state model for every four-step chain", async () => {
   const snapshotA = createBundleSnapshot("da", {
     activeThemeVariantId: "dark",
+    applicationSettings: {
+      startupEditor: "welcomePage",
+      editorShowTabs: "multiple",
+      editorWrapTabs: true,
+      openFoldersInNewWindow: "on",
+      restoreWindows: "all"
+    },
     brightness: 0.19,
     disableGlow: false,
     editorBackgroundOpacity: 0.18,
@@ -1025,6 +1221,13 @@ test("settings sync and file actions match the state model for every four-step c
   });
   const snapshotB = createBundleSnapshot("db", {
     activeThemeVariantId: "light",
+    applicationSettings: {
+      startupEditor: "none",
+      editorShowTabs: "single",
+      editorWrapTabs: false,
+      openFoldersInNewWindow: "off",
+      restoreWindows: "folders"
+    },
     brightness: 0.79,
     disableGlow: true,
     editorBackgroundOpacity: 0.29,
@@ -1033,6 +1236,13 @@ test("settings sync and file actions match the state model for every four-step c
   });
   const snapshotC = createBundleSnapshot("dc", {
     activeThemeVariantId: "dark",
+    applicationSettings: {
+      startupEditor: "readme",
+      editorShowTabs: "none",
+      editorWrapTabs: true,
+      openFoldersInNewWindow: "default",
+      restoreWindows: "preserve"
+    },
     brightness: 0.39,
     disableGlow: true,
     editorBackgroundOpacity: 0.39,

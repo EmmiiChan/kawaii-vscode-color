@@ -2,7 +2,7 @@
 
 ![Kawaii VS Code Color logo](icon.png)
 
-Kawaii VS Code Color is a TypeScript-based VS Code theme extension with dark pink and light green pastel-pink themes, optional modular Effects workbench styling, image-backed editor customization, Settings Sync support, and JSON import/export.
+Kawaii VS Code Color is a TypeScript-based VS Code theme extension with dark pink and light green pastel-pink themes, VS Code application settings, optional modular Effects workbench styling, image-backed editor customization, Settings Sync support, and JSON import/export.
 
 The current extension has grown into a standalone codebase with a compiled TypeScript extension host, typed settings/effects services, a settings webview, generated theme assets, local VSIX packaging, and automated unit, DOM, integration, package, and E2E validation.
 
@@ -11,14 +11,14 @@ The current extension has grown into a standalone codebase with a compiled TypeS
 | Area | Current behavior |
 | --- | --- |
 | Themes | Ships `Dark Pink Kawaii` and `Light Pink-Pastel Kawaii`, generated from protected base themes plus Kawaii override files. |
-| Settings UI | Opens `Kawaii VS Code Color: Settings` as an editor tab for color overrides, Effects controls, image customization, Settings Sync, JSON export/import, and help links. |
+| Settings UI | Opens `Kawaii VS Code Color: Settings` as an editor tab for VS Code application preferences, color overrides, Effects controls, image customization, Settings Sync, JSON export/import, and help links. |
 | Customization | Writes user-specific VS Code settings instead of mutating packaged theme files at runtime. |
 | Effects | Optionally patches VS Code workbench files to add modular runtime, editor background images, no-tab logo replacement, and glow effects. |
 | Development | Uses strict TypeScript source, stable JavaScript wrappers for scripts, and project-owned validation commands. |
 
 ## Release Notes
 
-User-facing and maintainer release notes are tracked in [CHANGELOG.md](./CHANGELOG.md). The current performance cleanup release focuses on bounded renderer observers, repeated Effects apply safety, generated workbench asset cleanup, copied image assets instead of injected image payloads, modular patch switches, and disposable VS Code cleanup diagnostics.
+User-facing and maintainer release notes are tracked in [CHANGELOG.md](./CHANGELOG.md). The current release work focuses on bounded renderer observers, repeated Effects apply safety, generated workbench asset cleanup, copied image assets instead of injected image payloads, modular patch switches, public theme color packs, VS Code application settings defaults, and Settings Sync / JSON bundle coverage.
 
 ## Preview
 
@@ -78,7 +78,7 @@ Open the extension settings:
 
 1. Open the Command Palette.
 2. Run `Kawaii VS Code Color: Settings`.
-3. Use the side menu to switch between `Home`, `Color Settings`, `Effects`, `Image Customization`, `Sync/Files`, and `Help`.
+3. Use the side menu to switch between `Home`, `Settings`, `Color Settings`, `Effects`, `Image Customization`, `Sync/Files`, and `Help`.
 
 The settings window opens as a normal editor tab.
 
@@ -87,6 +87,7 @@ The settings window opens as a normal editor tab.
 | Area | Purpose |
 | --- | --- |
 | `Home` | Shows project links and extension information. |
+| `Settings` | Controls VS Code startup, tab, folder-window, and session restore preferences from the extension UI. |
 | `Color Settings` | Changes theme mode and workbench or syntax color overrides. |
 | `Effects` | Enables, disables, and selects the unsupported VS Code workbench patch modules used for runtime, editor background, no-tab logo, and glow effects. |
 | `Image Customization` | Stores editor background and no-tab logo image inputs, opacity/fit controls, and the `Apply Effects` action used by the Effects patch. |
@@ -94,6 +95,19 @@ The settings window opens as a normal editor tab.
 | `Help` | Shows repository, issue tracker, README/homepage, and publisher/contact links from project metadata. |
 
 The settings webview must use the active editor theme for its own UI. Its CSS consumes VS Code webview tokens such as `--vscode-editor-background`, `--vscode-foreground`, `--vscode-button-background`, and `--vscode-panel-border`; it must not define a separate hardcoded product palette for page surfaces, text, controls, panels, or states.
+
+### Application Settings
+
+On first activation in a VS Code profile, the extension applies these user-scope VS Code application defaults:
+
+- Open the native VS Code Welcome page on startup.
+- Show editor tabs as multiple tabs.
+- Wrap editor tabs instead of scrolling.
+- Open new project or folder selections in another window.
+
+The first activation setup preserves the user's existing `window.restoreWindows` value. Its local marker is not registered for VS Code Settings Sync, so another synced machine/profile can run its own first-profile setup.
+
+The `Settings` page reads the current VS Code values every time the settings UI opens. Saving from that page writes explicit user-scope VS Code settings for startup editor behavior, editor tab display, tab wrapping, new-folder window behavior, and session restore behavior.
 
 ### Color Settings
 
@@ -145,6 +159,7 @@ Image changes do not auto-apply. Click `Apply Effects`, then reload VS Code when
 
 The settings bundle includes:
 
+- VS Code application settings controlled by the `Settings` page.
 - Active theme mode.
 - Dark and light workbench color overrides.
 - Dark and light token color overrides.
@@ -215,7 +230,7 @@ The extension runtime is compiled from TypeScript into `out/src`, and `package.j
 
 | Area | Source of truth |
 | --- | --- |
-| Extension activation | `src/extension.ts` registers commands, Settings Sync keys, theme-change handling, and service composition. |
+| Extension activation | `src/extension.ts` registers commands, applies first-profile application settings defaults, configures Settings Sync keys, handles theme changes, and composes services. |
 | Extension host services | `src/extensionHost` contains typed controllers, adapters, and services for Settings and Effects workflows. |
 | Settings webview | `src/settings.ts`, `src/settingsWebview.ts`, and `src/webview/settings` own the settings editor tab, view model contracts, messages, and VS Code webview token styling. |
 | Shared contracts | `src/shared` contains typed models, message contracts, renderer placeholders, schemas, guards, and validation helpers. |
@@ -254,7 +269,7 @@ The project has four regular automated test layers, plus one gated Effects E2E l
 | Command | Layer | Purpose |
 | --- | --- | --- |
 | `npm run test:check` | Static project check | Runs TypeScript no-emit checks, the Codex docs drift guard, compile checks, and `node --check` against runtime and build JavaScript files. |
-| `npm run test:unit` | Unit tests without UI | Uses Node's built-in test runner for build logic, workbench patch helpers, settings persistence modules, chained Settings Sync / JSON import-export state matrices, and mocked settings message chains. |
+| `npm run test:unit` | Unit tests without UI | Uses Node's built-in test runner for build logic, workbench patch helpers, settings persistence modules, first-profile application settings, chained Settings Sync / JSON import-export state matrices, and mocked settings message chains. |
 | `npm run test:dom` | DOM UI tests | Uses `jsdom` to load the settings webview HTML and verify safe `postMessage` events, app navigation, Help metadata, Color Settings inputs/debounce, Image Customization image/logo state, incoming webview messages, warnings/errors, and `--vscode-*` token usage. |
 | `npm run test:integration` | VS Code integration | Uses `@vscode/test-cli` and `@vscode/test-electron` to activate the extension in an Extension Development Host and execute the settings command. |
 | `npm run test:package` | Local package check | Compiles script wrappers and runs the TypeScript-backed local VSIX package helper without bumping the package version. |

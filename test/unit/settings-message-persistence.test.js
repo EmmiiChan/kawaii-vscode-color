@@ -136,6 +136,10 @@ function createSettingsHarness(options = {}) {
             };
           },
           update(settingName, value) {
+            if (options.failSettingUpdate === settingName) {
+              return Promise.reject(new Error(`Simulated settings update failure for ${settingName}`));
+            }
+
             if (value === undefined) {
               configurationValues.delete(settingName);
             } else {
@@ -232,6 +236,83 @@ function createSettingsHarness(options = {}) {
     warningMessages
   };
 }
+
+test("initial application settings apply once and preserve restore windows", async () => {
+  const restoreValues = ["folders", "all", "none", "one", "preserve"];
+
+  for (const restoreWindows of restoreValues) {
+    const harness = createSettingsHarness();
+
+    try {
+      harness.configurationValues.set("workbench.startupEditor", "none");
+      harness.configurationValues.set("workbench.editor.showTabs", "single");
+      harness.configurationValues.set("workbench.editor.wrapTabs", false);
+      harness.configurationValues.set("window.openFoldersInNewWindow", "default");
+      harness.configurationValues.set("window.restoreWindows", restoreWindows);
+
+      await harness.settings.applyInitialApplicationSettings(harness.context);
+
+      assert.equal(harness.configurationValues.get("workbench.startupEditor"), "welcomePage");
+      assert.equal(harness.configurationValues.get("workbench.editor.showTabs"), "multiple");
+      assert.equal(harness.configurationValues.get("workbench.editor.wrapTabs"), true);
+      assert.equal(harness.configurationValues.get("window.openFoldersInNewWindow"), "on");
+      assert.equal(harness.configurationValues.get("window.restoreWindows"), restoreWindows);
+      assert.equal(harness.globalStateValues.get("kawaii_synthwave.initialApplicationSettingsVersion"), 1);
+
+      harness.configurationValues.set("workbench.startupEditor", "none");
+      harness.configurationValues.set("workbench.editor.showTabs", "none");
+      harness.configurationValues.set("workbench.editor.wrapTabs", false);
+      harness.configurationValues.set("window.openFoldersInNewWindow", "off");
+
+      await harness.settings.applyInitialApplicationSettings(harness.context);
+
+      assert.equal(harness.configurationValues.get("workbench.startupEditor"), "none");
+      assert.equal(harness.configurationValues.get("workbench.editor.showTabs"), "none");
+      assert.equal(harness.configurationValues.get("workbench.editor.wrapTabs"), false);
+      assert.equal(harness.configurationValues.get("window.openFoldersInNewWindow"), "off");
+      assert.equal(harness.configurationValues.get("window.restoreWindows"), restoreWindows);
+    } finally {
+      harness.cleanup();
+    }
+  }
+});
+
+test("initial application settings skip existing marker and retry after failures", async () => {
+  const initializedHarness = createSettingsHarness();
+
+  try {
+    initializedHarness.globalStateValues.set("kawaii_synthwave.initialApplicationSettingsVersion", 1);
+    initializedHarness.configurationValues.set("workbench.startupEditor", "none");
+    initializedHarness.configurationValues.set("workbench.editor.showTabs", "single");
+    initializedHarness.configurationValues.set("workbench.editor.wrapTabs", false);
+    initializedHarness.configurationValues.set("window.openFoldersInNewWindow", "off");
+    initializedHarness.configurationValues.set("window.restoreWindows", "preserve");
+
+    await initializedHarness.settings.applyInitialApplicationSettings(initializedHarness.context);
+
+    assert.equal(initializedHarness.configurationValues.get("workbench.startupEditor"), "none");
+    assert.equal(initializedHarness.configurationValues.get("workbench.editor.showTabs"), "single");
+    assert.equal(initializedHarness.configurationValues.get("workbench.editor.wrapTabs"), false);
+    assert.equal(initializedHarness.configurationValues.get("window.openFoldersInNewWindow"), "off");
+    assert.equal(initializedHarness.configurationValues.get("window.restoreWindows"), "preserve");
+  } finally {
+    initializedHarness.cleanup();
+  }
+
+  const failedHarness = createSettingsHarness({
+    failSettingUpdate: "workbench.editor.wrapTabs"
+  });
+
+  try {
+    await assert.rejects(
+      () => failedHarness.settings.applyInitialApplicationSettings(failedHarness.context),
+      /Simulated settings update failure/
+    );
+    assert.equal(failedHarness.globalStateValues.get("kawaii_synthwave.initialApplicationSettingsVersion"), undefined);
+  } finally {
+    failedHarness.cleanup();
+  }
+});
 
 test("settings webview messages reach persistence services without touching real VS Code state", async () => {
   const harness = createSettingsHarness();
@@ -564,6 +645,11 @@ test("settings webview sync and file messages restore saved state after chained 
 
     harness.configurationValues.set("kawaii_synthwave.brightness", 0.31);
     harness.configurationValues.set("kawaii_synthwave.disableGlow", false);
+    harness.configurationValues.set("workbench.startupEditor", "welcomePage");
+    harness.configurationValues.set("workbench.editor.showTabs", "multiple");
+    harness.configurationValues.set("workbench.editor.wrapTabs", true);
+    harness.configurationValues.set("window.openFoldersInNewWindow", "on");
+    harness.configurationValues.set("window.restoreWindows", "preserve");
 
     await messageHandler({
       type: "update-color",
@@ -581,6 +667,13 @@ test("settings webview sync and file messages restore saved state after chained 
     await messageHandler({ type: "save-settings-to-vssync" });
 
     const savedBundle = harness.globalStateValues.get("kawaii_synthwave.syncedSettingsBundle");
+    assert.deepEqual(savedBundle.applicationSettings, {
+      startupEditor: "welcomePage",
+      editorShowTabs: "multiple",
+      editorWrapTabs: true,
+      openFoldersInNewWindow: "on",
+      restoreWindows: "preserve"
+    });
     assert.equal(savedBundle.extensionConfiguration.brightness, 0.31);
     assert.equal(savedBundle.colorCustomizations.workbench.dark["editor.background"], "#111111");
     assert.equal(savedBundle.effects.editorBackground.opacity, 0.12);
@@ -589,6 +682,11 @@ test("settings webview sync and file messages restore saved state after chained 
 
     harness.configurationValues.set("kawaii_synthwave.brightness", 0.86);
     harness.configurationValues.set("kawaii_synthwave.disableGlow", true);
+    harness.configurationValues.set("workbench.startupEditor", "none");
+    harness.configurationValues.set("workbench.editor.showTabs", "single");
+    harness.configurationValues.set("workbench.editor.wrapTabs", false);
+    harness.configurationValues.set("window.openFoldersInNewWindow", "off");
+    harness.configurationValues.set("window.restoreWindows", "none");
     await messageHandler({
       type: "change-theme-variant",
       themeVariantId: "light"
@@ -618,6 +716,11 @@ test("settings webview sync and file messages restore saved state after chained 
 
     assert.equal(harness.configurationValues.get("kawaii_synthwave.brightness"), 0.31);
     assert.equal(harness.configurationValues.get("kawaii_synthwave.disableGlow"), false);
+    assert.equal(harness.configurationValues.get("workbench.startupEditor"), "welcomePage");
+    assert.equal(harness.configurationValues.get("workbench.editor.showTabs"), "multiple");
+    assert.equal(harness.configurationValues.get("workbench.editor.wrapTabs"), true);
+    assert.equal(harness.configurationValues.get("window.openFoldersInNewWindow"), "on");
+    assert.equal(harness.configurationValues.get("window.restoreWindows"), "preserve");
     assert.equal(harness.configurationValues.get("workbench.colorTheme"), "Dark Pink Kawaii");
     assert.equal(
       harness.configurationValues.get("workbench.colorCustomizations")["[Dark Pink Kawaii]"]["editor.background"],
@@ -633,12 +736,18 @@ test("settings webview sync and file messages restore saved state after chained 
     harness.vscodeWindow.saveDialogResult = createUri(exportPath);
     await messageHandler({ type: "export-settings" });
     const exportedBundle = JSON.parse(fs.readFileSync(exportPath, "utf8"));
+    assert.deepEqual(exportedBundle.applicationSettings, savedBundle.applicationSettings);
     assert.equal(exportedBundle.extensionConfiguration.brightness, 0.31);
     assert.equal(exportedBundle.colorCustomizations.workbench.dark["editor.background"], "#111111");
     assert.equal(exportedBundle.effects.editorBackground.fit, "top");
 
     harness.configurationValues.set("kawaii_synthwave.brightness", 0.64);
     harness.configurationValues.set("kawaii_synthwave.disableGlow", true);
+    harness.configurationValues.set("workbench.startupEditor", "readme");
+    harness.configurationValues.set("workbench.editor.showTabs", "none");
+    harness.configurationValues.set("workbench.editor.wrapTabs", false);
+    harness.configurationValues.set("window.openFoldersInNewWindow", "default");
+    harness.configurationValues.set("window.restoreWindows", "one");
     await messageHandler({
       type: "change-theme-variant",
       themeVariantId: "light"
@@ -662,6 +771,11 @@ test("settings webview sync and file messages restore saved state after chained 
 
     assert.equal(harness.configurationValues.get("kawaii_synthwave.brightness"), 0.31);
     assert.equal(harness.configurationValues.get("kawaii_synthwave.disableGlow"), false);
+    assert.equal(harness.configurationValues.get("workbench.startupEditor"), "welcomePage");
+    assert.equal(harness.configurationValues.get("workbench.editor.showTabs"), "multiple");
+    assert.equal(harness.configurationValues.get("workbench.editor.wrapTabs"), true);
+    assert.equal(harness.configurationValues.get("window.openFoldersInNewWindow"), "on");
+    assert.equal(harness.configurationValues.get("window.restoreWindows"), "preserve");
     assert.equal(harness.configurationValues.get("workbench.colorTheme"), "Dark Pink Kawaii");
     assert.equal(
       harness.configurationValues.get("workbench.colorCustomizations")["[Dark Pink Kawaii]"]["editor.background"],

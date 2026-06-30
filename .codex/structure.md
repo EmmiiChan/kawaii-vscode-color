@@ -78,6 +78,7 @@ Setup and color settings path:
 Command Palette
   -> package.json activationEvents: onStartupFinished and onCommand:kawaii_synthwave.openSettings
   -> activate(context)
+  -> first activation in the current extension profile applies Kawaii application defaults for startup welcome page, editor tab mode, tab wrapping, and folder-window behavior while preserving the user's window.restoreWindows value
   -> registerCommand('kawaii_synthwave.openSettings')
   -> src/settings.ts opens a WebviewPanel editor tab
   -> Home page is shown first with theme and reference links
@@ -116,7 +117,7 @@ package.json contributes.configuration
 Important behavior:
 
 - `enableNeon() reads kawaii_synthwave settings at execution time`, including `kawaii_synthwave.brightness`, `kawaii_synthwave.disableGlow`, and `kawaii_synthwave.effectFeatureSettings`.
-- `activate(context)` stores the current `workbench.colorTheme`, registers `kawaii_synthwave.openSettings`, configures Settings Sync keys, and registers an `onDidChangeConfiguration` listener.
+- `activate(context)` stores the current `workbench.colorTheme`, registers `kawaii_synthwave.openSettings`, configures Settings Sync keys, registers an `onDidChangeConfiguration` listener, and applies local one-time application settings defaults through `kawaii_synthwave.initialApplicationSettingsVersion`.
 - The configuration listener watches `workbench.colorTheme`; when the user switches between `Dark Pink Kawaii` and `Light Pink-Pastel Kawaii` while Neon is already enabled, it regenerates the patched renderer script.
 - Brightness only controls glow alpha placeholders. It does not change the base theme palette.
 
@@ -184,16 +185,16 @@ Current source of truth:
 - `src/css/editor_chrome.css` remains the legacy bridge input for static workbench chrome rules during the Sass migration.
 - No-tab logo selector/style generation lives in `src/emptyEditorLogoStyles.ts`.
 - Renderer behavior lives in the JS template under `src/js`; typed browser-only renderer helper contracts live under `src/renderer`.
-- Settings webview orchestration, message routing, VS Code notifications/dialogs, native picker/download workflows, application setting persistence, color-reference parsing, and state composition live in `src/settings.ts`.
+- Settings webview orchestration, message routing, VS Code notifications/dialogs, native picker/download workflows, one-time application setting defaults, application setting persistence, color-reference parsing, and state composition live in `src/settings.ts`.
 - The Settings page owns application-level VS Code preferences such as `workbench.startupEditor`, `workbench.editor.showTabs`, `workbench.editor.wrapTabs`, `window.openFoldersInNewWindow`, and `window.restoreWindows`; it refreshes from VS Code configuration through `createSettingsState()` and only writes when the user clicks Save.
-- Runtime activation and command registration live in `src/extension.ts`.
+- Runtime activation, first-profile application settings bootstrap, and command registration live in `src/extension.ts`.
 - Extension-host Effects and Settings controllers plus service, filesystem, storage, and notification boundaries live under `src/extensionHost`.
 - Runtime asset resolution from source or `out/src` lives in `src/extensionRoot.ts`.
 - Random Neko payload parsing, URL resolution, guarded HTTPS fetch, and image response normalization live in `src/randomNekoImage.ts`.
 - Pure color customization block mutation, scope comparison, and hex validation live in `src/settingsPersistence.ts`.
 - VS Code configuration get/inspect/update target handling lives in `src/settingsStore.ts`.
 - Generated-theme-aware color customization updates/resets live in `src/settingsColorService.ts`.
-- Settings bundle creation/application, Settings Sync state, and JSON import/export actions live in `src/settingsBundle.ts`.
+- Settings bundle creation/application, application settings export/import, Settings Sync state, and JSON import/export actions live in `src/settingsBundle.ts`.
 - Deterministic effect/image persistence helpers live in `src/settingsEffectsPersistence.ts`.
 - Setup webview HTML generation lives in `src/settingsWebview.ts`, including the Effects page and modular switches.
 - Typed settings webview view-model serialization, CSP/HTML adapter contracts, page ids, style token names, and client message names live under `src/webview/settings`.

@@ -48,7 +48,7 @@ Expected result:
 - `npm run test:docs` should confirm `.codex` docs match package metadata, themes, message contracts, state keys, schemas, renderer placeholders, and `semanticTokenColors`.
 - `npm run type-check` should run the TypeScript compatibility configs in no-emit mode for current JS migration source, scripts, and tests.
 - `npm run test:check` should run `type-check`, `test:docs`, compile `out/`, then exit without syntax errors in selected scripts, compiled runtime output, and E2E files.
-- `npm run test:unit` should compile strict TypeScript output first, then pass build, version, workbench patch, shared contract, settings persistence, Settings Sync / JSON import-export chain, and mocked settings message-chain unit tests.
+- `npm run test:unit` should compile strict TypeScript output first, then pass build, version, workbench patch, shared contract, settings persistence, Settings Sync / JSON import-export chain including application settings, and mocked settings message-chain unit tests.
 - `npm run test:dom` should compile first, then pass settings webview DOM tests covering all safe webview events, app navigation, Help metadata, Color Settings inputs/debounce, Image Customization image/logo state, incoming webview messages, warnings/errors, split webview contracts, and editor-provided `--vscode-*` tokens instead of a standalone UI palette.
 - `npm run test:integration` should compile, activate the extension in the Extension Development Host, and execute `kawaii_synthwave.openSettings` without running the real Effects patch.
 - `npm run test:package` should compile script wrappers and create a local VSIX through `scripts/package-local-vsix.ts` without incrementing `package.json.version`.
@@ -166,7 +166,7 @@ The package loads compiled runtime JavaScript from `out/` and still ships source
 - `src/settingsPersistence.ts` owns pure color customization block mutation and hex/scope helpers.
 - `src/settingsStore.ts` owns the VS Code configuration adapter used by persistence services.
 - `src/settingsColorService.ts` owns generated-theme-aware color customization orchestration.
-- `src/settingsBundle.ts` owns settings bundle creation/application, Settings Sync, and JSON import/export actions.
+- `src/settingsBundle.ts` owns settings bundle creation/application, application settings export/import, Settings Sync, and JSON import/export actions.
 - `src/settingsEffectsPersistence.ts` owns deterministic effect/image persistence helpers.
 - `src/randomNekoImage.ts` owns Random Neko payload parsing, URL resolution, guarded HTTPS fetching, and testable image response normalization.
 - `src/renderer/ThemeTemplate.ts` owns typed browser-only renderer token replacement maps, selector constants, style ids, token color matching helpers, and placeholder-adjacent tests for the injected workbench script.
@@ -184,7 +184,7 @@ The package loads compiled runtime JavaScript from `out/` and still ships source
 
 | Layer | Command | Main coverage |
 | --- | --- | --- |
-| Unit without UI | `npm run test:unit` | Theme build merge behavior, version bump behavior, workbench patch helpers, settings persistence helpers, settings store adapter, color customization service, bundle/sync/file actions including chained Settings Sync / JSON import-export restoration, effect/image persistence, typed host controllers/services, and mocked settings message chains. |
+| Unit without UI | `npm run test:unit` | Theme build merge behavior, version bump behavior, workbench patch helpers, settings persistence helpers, settings store adapter, color customization service, bundle/sync/file actions including chained Settings Sync / JSON import-export restoration with application settings, effect/image persistence, typed host controllers/services, and mocked settings message chains. |
 | DOM UI | `npm run test:dom` | Compile first, then validate settings webview readiness, all safe webview events, app navigation, Help metadata, Color Settings inputs/debounce, Image Customization image/logo state, incoming webview messages, warnings/errors, split webview contracts, and `--vscode-*` color-token contract. |
 | VS Code integration | `npm run test:integration` | Compile, extension manifest registration, activation, command registration, and opening settings in the Extension Development Host. |
 | Package | `npm run test:package` | Compile script wrappers, run the TypeScript-backed local VSIX package helper, and validate prepublish compile/theme packaging without a version bump. |

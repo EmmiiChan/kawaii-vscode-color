@@ -125,17 +125,17 @@ Build behavior:
 
 | Module | Responsibility |
 | --- | --- |
-| `src/extension.ts` -> `out/src/extension.js` | Extension activation, command registration, Settings Sync setup, and composition of typed extension-host services. |
+| `src/extension.ts` -> `out/src/extension.js` | Extension activation, command registration, one-time first-profile application settings setup, Settings Sync setup, and composition of typed extension-host services. |
 | `src/extensionHost` -> `out/src/extensionHost` | VS Code adapters, Effects controller, Settings command/message controllers, renderer template assembly, stored image CSS values, settings host boundaries, workbench patch apply/remove orchestration, reload prompts. |
 | `src/extensionRoot.ts` -> `out/src/extensionRoot.js` | Resolves package-root asset paths from both source and compiled `out/src` runtime directories. |
 | `src/workbenchPatch.ts` -> `out/src/workbenchPatch.js` | Pure workbench path detection and marked HTML patch helpers for `kawaii-vscode-colors-ui.js` plus `kawaii-vscode-colors-ui.min.css`, with legacy marker cleanup for old `neondreams.js` wrappers. |
-| `src/settings.ts` | Settings webview lifecycle, message routing, Settings Sync/JSON orchestration, image workflows, color state composition, runtime read of `.codex/color_scheme_reference.md`. |
+| `src/settings.ts` | Settings webview lifecycle, message routing, first-profile application settings defaults, Settings Sync/JSON orchestration, image workflows, color state composition, runtime read of `.codex/color_scheme_reference.md`. |
 | `src/settingsWebview.ts` | Compatibility settings webview renderer for inline HTML/CSS/JS, DOM state, UI event emission, and VS Code webview token styling. |
 | `src/webview` -> `out/src/webview` | Typed settings webview view model, CSP/HTML helper contract, page ids, VS Code token names, and client `postMessage` names used while the renderer remains inline. |
 | `src/settingsPersistence.ts` -> `out/src/settingsPersistence.js` | Pure mutation helpers for theme-scoped workbench and TextMate customization blocks. |
 | `src/settingsStore.ts` -> `out/src/settingsStore.js` | VS Code configuration get/inspect/update adapter. |
 | `src/settingsColorService.ts` -> `out/src/settingsColorService.js` | Generated-theme-aware color update/reset and theme switching. |
-| `src/settingsBundle.ts` -> `out/src/settingsBundle.js` | Settings bundle schema, Settings Sync state, JSON export/import, and configuration/color/effects apply order. |
+| `src/settingsBundle.ts` -> `out/src/settingsBundle.js` | Settings bundle schema, Settings Sync state, JSON export/import, application settings export/import, and configuration/application/color/effects apply order. |
 | `src/settingsEffectsPersistence.ts` -> `out/src/settingsEffectsPersistence.js` | Image metadata normalization, safe filenames, stored image export/restore, opacity and fit normalization. |
 | `src/emptyEditorLogoStyles.ts` -> `out/src/emptyEditorLogoStyles.js` | CSS selector list and generated CSS for no-tab logo replacement. |
 | `src/randomNekoImage.ts` -> `out/src/randomNekoImage.js` | Testable Random Neko API payload parsing, URL resolution, guarded HTTPS fetch, and image response normalization. |
@@ -197,7 +197,7 @@ Rules:
 - Settings page messages write user-scope VS Code application settings such as `workbench.startupEditor`, `workbench.editor.showTabs`, `workbench.editor.wrapTabs`, `window.openFoldersInNewWindow`, and `window.restoreWindows`, never repository theme JSON.
 - Color messages write VS Code settings, never repository theme JSON.
 - Image Customization owns editor background/no-tab logo inputs, opacity, fit area, and the `Apply Effects` action. Image and opacity messages update `globalState`/global storage and require `apply-effects` to clean previous generated assets and refresh the selected modular Effects stack. `apply-neon-customizations` remains a legacy compatibility message.
-- Sync / Files owns Settings Sync and JSON bundle actions for `save-settings-to-vssync`, `import-settings-from-vssync`, `export-settings`, and `import-settings`.
+- Sync / Files owns Settings Sync and JSON bundle actions for `save-settings-to-vssync`, `import-settings-from-vssync`, `export-settings`, and `import-settings`; explicit bundles include VS Code application settings while first activation keeps `window.restoreWindows` local.
 - `e2e-apply-settings-bundle` is test-only and must remain gated by `KAWAII_E2E_ALLOW_NEON_PATCH=1`.
 - `e2e-set-test-fixtures` is test-only and must remain gated by `KAWAII_E2E_TEST_HOOKS=1` or `KAWAII_E2E_ALLOW_NEON_PATCH=1`; it replaces native dialogs and Random Neko network calls with deterministic local fixture paths during E2E.
 - Host errors are surfaced to both webview `error` messages and VS Code error notifications.
@@ -215,6 +215,7 @@ VS Code settings and extension/global state keys:
 - `kawaii_synthwave.emptyEditorLogoImage`
 - `kawaii_synthwave.emptyEditorLogoOpacity`
 - `kawaii_synthwave.effectFeatureSettings`
+- `kawaii_synthwave.initialApplicationSettingsVersion`
 - `kawaii_synthwave.openSettings`
 - `kawaii_synthwave.syncedSettingsBundle`
 
@@ -234,9 +235,11 @@ Settings bundle contract:
 - Current schema: `kawaii-vscode-color-settings`
 - Legacy accepted schema: `kawaii-synthwave-settings`
 - Current `schemaVersion: 1`
+- Optional `applicationSettings` object exports/imports `workbench.startupEditor`, `workbench.editor.showTabs`, `workbench.editor.wrapTabs`, `window.openFoldersInNewWindow`, and `window.restoreWindows` for explicit Settings Sync and JSON transfers.
 - Export color version: `colorVersion` with numeric `major`, `minor`, and `patch`; first export starts at `0.0.1`, then increments globally for Settings Sync and JSON exports.
 - Export file default: `kawaii-vscode-color-settings.json`
-- Apply order: extension configuration, color customizations, effects, then active theme variant.
+- Apply order: extension configuration, application settings, color customizations, effects, then active theme variant.
+- First-profile application settings use local `kawaii_synthwave.initialApplicationSettingsVersion` and are not added to Settings Sync keys, so each synced machine/profile can apply its own startup defaults.
 
 Stored image contract:
 

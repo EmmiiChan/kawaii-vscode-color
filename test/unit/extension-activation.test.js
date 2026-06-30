@@ -6,9 +6,10 @@ const test = require("node:test");
 const workspaceRoot = path.resolve(__dirname, "..", "..");
 const extensionPath = path.join(workspaceRoot, "out", "src", "extension.js");
 
-function createExtensionHarness() {
+function createExtensionHarness(options = {}) {
   const commandRegistrations = [];
   const configurationListeners = [];
+  const initialApplicationSettingsCalls = [];
   const settingsSyncContexts = [];
   const settingsOpenCalls = [];
   const neonEffectServiceOptions = [];
@@ -17,6 +18,7 @@ function createExtensionHarness() {
   const notificationServiceVscodeInputs = [];
   const controllerFactoryInputs = [];
   const settingsCommandFactoryInputs = [];
+  const loggedErrors = [];
   const configurationValues = new Map([
     ["workbench.colorTheme", "Dark Pink Kawaii"],
     ["kawaii_synthwave.brightness", 0.45],
@@ -85,6 +87,15 @@ function createExtensionHarness() {
   };
 
   const settingsStub = {
+    applyInitialApplicationSettings(context) {
+      initialApplicationSettingsCalls.push(context);
+
+      if (options.failInitialApplicationSettings) {
+        return Promise.reject(new Error("Simulated initial application settings failure"));
+      }
+
+      return Promise.resolve();
+    },
     configureSettingsSync(context) {
       settingsSyncContexts.push(context);
     },
@@ -96,6 +107,11 @@ function createExtensionHarness() {
   };
 
   const originalLoad = Module._load;
+  const originalConsoleError = console.error;
+  console.error = function captureConsoleError(...args) {
+    loggedErrors.push(args);
+  };
+
   Module._load = function loadWithExtensionStubs(request, parent, isMain) {
     if (request === "vscode") {
       return vscodeStub;
@@ -187,6 +203,7 @@ function createExtensionHarness() {
   return {
     cleanup() {
       Module._load = originalLoad;
+      console.error = originalConsoleError;
       delete require.cache[require.resolve(extensionPath)];
     },
     commandRegistrations,
@@ -201,6 +218,8 @@ function createExtensionHarness() {
     fakeNotifications,
     fakeStorage,
     fakeWorkbenchPatchService,
+    initialApplicationSettingsCalls,
+    loggedErrors,
     notificationServiceVscodeInputs,
     neonEffectServiceOptions,
     settingsActions,
@@ -247,6 +266,7 @@ test("extension activation wires command, settings sync, configuration listener,
     harness.extension.activate(context);
 
     assert.equal(harness.settingsCommandFactoryInputs.length, 1);
+    assert.deepEqual(harness.initialApplicationSettingsCalls, [context]);
     assert.equal(harness.settingsSyncContexts.length, 1);
     assert.equal(harness.settingsSyncContexts[0], context);
     assert.equal(harness.commandRegistrations.length, 1);
@@ -296,6 +316,33 @@ test("extension activation wires command, settings sync, configuration listener,
 
     harness.extension.deactivate();
     assert.throws(() => harness.extension.isNeonEnabled(), /controller is unavailable before extension activation/);
+  } finally {
+    harness.cleanup();
+  }
+});
+
+test("extension activation logs initial application settings failures without blocking activation", async () => {
+  const harness = createExtensionHarness({
+    failInitialApplicationSettings: true
+  });
+  const context = {
+    subscriptions: [],
+    globalState: {
+      get() {}
+    }
+  };
+
+  try {
+    assert.doesNotThrow(() => harness.extension.activate(context));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    assert.equal(harness.commandRegistrations.length, 1);
+    assert.equal(harness.configurationListeners.length, 1);
+    assert.deepEqual(harness.initialApplicationSettingsCalls, [context]);
+    assert.equal(harness.loggedErrors.length, 1);
+    assert.match(String(harness.loggedErrors[0][0]), /applyInitialApplicationSettings/);
+    assert.match(String(harness.loggedErrors[0][0]), /Simulated initial application settings failure/);
   } finally {
     harness.cleanup();
   }

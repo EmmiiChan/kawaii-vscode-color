@@ -42,6 +42,8 @@ const EDITOR_SHOW_TABS_SETTING = "workbench.editor.showTabs";
 const EDITOR_WRAP_TABS_SETTING = "workbench.editor.wrapTabs";
 const OPEN_FOLDERS_IN_NEW_WINDOW_SETTING = "window.openFoldersInNewWindow";
 const RESTORE_WINDOWS_SETTING = "window.restoreWindows";
+const INITIAL_APPLICATION_SETTINGS_STATE_KEY = "kawaii_synthwave.initialApplicationSettingsVersion";
+const INITIAL_APPLICATION_SETTINGS_VERSION = 1;
 const WORKBENCH_CUSTOMIZATIONS_SETTING = "workbench.colorCustomizations";
 const TOKEN_CUSTOMIZATIONS_SETTING = "editor.tokenColorCustomizations";
 const STARTUP_EDITOR_WELCOME_PAGE_VALUE = "welcomePage";
@@ -427,6 +429,33 @@ async function openSettings(context, actions) {
  */
 function configureSettingsSync(context) {
   return settingsBundleService.configureSettingsSync(context);
+}
+
+/**
+ * Applies first-install VS Code application setting defaults for this extension profile.
+ *
+ * @param {vscode.ExtensionContext} context - Extension context.
+ * @returns {Promise<void>} Completes when defaults are stored or already initialized.
+ */
+async function applyInitialApplicationSettings(context) {
+  const appliedVersion = context
+    && context.globalState
+    && typeof context.globalState.get === "function"
+    ? context.globalState.get(INITIAL_APPLICATION_SETTINGS_STATE_KEY)
+    : undefined;
+
+  if (typeof appliedVersion === "number" && appliedVersion >= INITIAL_APPLICATION_SETTINGS_VERSION) {
+    return;
+  }
+
+  await updateGlobalSetting(STARTUP_EDITOR_SETTING, STARTUP_EDITOR_WELCOME_PAGE_VALUE);
+  await updateGlobalSetting(EDITOR_SHOW_TABS_SETTING, EDITOR_SHOW_TABS_MULTIPLE_VALUE);
+  await updateGlobalSetting(EDITOR_WRAP_TABS_SETTING, true);
+  await updateGlobalSetting(OPEN_FOLDERS_IN_NEW_WINDOW_SETTING, OPEN_FOLDERS_IN_NEW_WINDOW_ON_VALUE);
+
+  if (context && context.globalState && typeof context.globalState.update === "function") {
+    await context.globalState.update(INITIAL_APPLICATION_SETTINGS_STATE_KEY, INITIAL_APPLICATION_SETTINGS_VERSION);
+  }
 }
 
 /**
@@ -2534,6 +2563,7 @@ function logSettingsError(methodName, error, context) {
 }
 
 export = {
+  applyInitialApplicationSettings,
   configureSettingsSync,
   openSettings
 };

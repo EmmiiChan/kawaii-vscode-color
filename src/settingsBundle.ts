@@ -14,6 +14,20 @@ const SETTINGS_EXPORT_SCHEMA_VERSION = 1;
 const SYNC_SETTINGS_STATE_KEY = "kawaii_synthwave.syncedSettingsBundle";
 const COLOR_EXPORT_VERSION_STATE_KEY = "kawaii_synthwave.colorExportVersion";
 const INITIAL_COLOR_EXPORT_VERSION: ColorVersion = { major: 0, minor: 0, patch: 1 };
+const STARTUP_EDITOR_SETTING = "workbench.startupEditor";
+const EDITOR_SHOW_TABS_SETTING = "workbench.editor.showTabs";
+const EDITOR_WRAP_TABS_SETTING = "workbench.editor.wrapTabs";
+const OPEN_FOLDERS_IN_NEW_WINDOW_SETTING = "window.openFoldersInNewWindow";
+const RESTORE_WINDOWS_SETTING = "window.restoreWindows";
+const STARTUP_EDITOR_DEFAULT_VALUE = "welcomePage";
+const EDITOR_SHOW_TABS_DEFAULT_VALUE = "multiple";
+const EDITOR_WRAP_TABS_DEFAULT_VALUE = false;
+const OPEN_FOLDERS_IN_NEW_WINDOW_DEFAULT_VALUE = "default";
+const RESTORE_WINDOWS_DEFAULT_VALUE = "folders";
+const STARTUP_EDITOR_ALLOWED_VALUES = new Set(["welcomePage", "welcomePageInEmptyWorkbench", "none", "newUntitledFile", "readme"]);
+const EDITOR_SHOW_TABS_ALLOWED_VALUES = new Set(["multiple", "single", "none"]);
+const OPEN_FOLDERS_IN_NEW_WINDOW_ALLOWED_VALUES = new Set(["on", "off", "default"]);
+const RESTORE_WINDOWS_ALLOWED_VALUES = new Set(["all", "folders", "one", "none", "preserve"]);
 
 interface ColorVersion {
   readonly major: number;
@@ -28,9 +42,18 @@ interface SettingsBundle {
   readonly exportedAt?: string;
   readonly activeThemeVariantId?: unknown;
   readonly activeThemeLabel?: string;
+  readonly applicationSettings?: unknown;
   readonly extensionConfiguration?: unknown;
   readonly colorCustomizations?: unknown;
   readonly effects?: unknown;
+}
+
+interface ApplicationSettingsExport {
+  readonly startupEditor: string;
+  readonly editorShowTabs: string;
+  readonly editorWrapTabs: boolean;
+  readonly openFoldersInNewWindow: string;
+  readonly restoreWindows: string;
 }
 
 interface ActiveThemeService {
@@ -203,6 +226,151 @@ export async function applyExtensionConfigurationExportToStore(
   }
 }
 
+export function getApplicationSettingsExportFromStore(settingsStore: SettingsStore): ApplicationSettingsExport {
+  return {
+    startupEditor: getStringSettingExport(
+      settingsStore,
+      STARTUP_EDITOR_SETTING,
+      STARTUP_EDITOR_DEFAULT_VALUE
+    ),
+    editorShowTabs: getAllowedStringSettingExport(
+      settingsStore,
+      EDITOR_SHOW_TABS_SETTING,
+      EDITOR_SHOW_TABS_ALLOWED_VALUES,
+      EDITOR_SHOW_TABS_DEFAULT_VALUE
+    ),
+    editorWrapTabs: getBooleanSettingExport(
+      settingsStore,
+      EDITOR_WRAP_TABS_SETTING,
+      EDITOR_WRAP_TABS_DEFAULT_VALUE
+    ),
+    openFoldersInNewWindow: getAllowedStringSettingExport(
+      settingsStore,
+      OPEN_FOLDERS_IN_NEW_WINDOW_SETTING,
+      OPEN_FOLDERS_IN_NEW_WINDOW_ALLOWED_VALUES,
+      OPEN_FOLDERS_IN_NEW_WINDOW_DEFAULT_VALUE
+    ),
+    restoreWindows: getAllowedStringSettingExport(
+      settingsStore,
+      RESTORE_WINDOWS_SETTING,
+      RESTORE_WINDOWS_ALLOWED_VALUES,
+      RESTORE_WINDOWS_DEFAULT_VALUE
+    )
+  };
+}
+
+export async function applyApplicationSettingsExportToStore(
+  settingsStore: SettingsStore,
+  applicationSettings: unknown
+): Promise<void> {
+  const settings = ensurePlainObject(applicationSettings);
+
+  await updateAllowedApplicationStringSetting(
+    settingsStore,
+    settings,
+    "startupEditor",
+    STARTUP_EDITOR_SETTING,
+    STARTUP_EDITOR_ALLOWED_VALUES
+  );
+  await updateAllowedApplicationStringSetting(
+    settingsStore,
+    settings,
+    "editorShowTabs",
+    EDITOR_SHOW_TABS_SETTING,
+    EDITOR_SHOW_TABS_ALLOWED_VALUES
+  );
+  await updateBooleanApplicationSetting(
+    settingsStore,
+    settings,
+    "editorWrapTabs",
+    EDITOR_WRAP_TABS_SETTING
+  );
+  await updateAllowedApplicationStringSetting(
+    settingsStore,
+    settings,
+    "openFoldersInNewWindow",
+    OPEN_FOLDERS_IN_NEW_WINDOW_SETTING,
+    OPEN_FOLDERS_IN_NEW_WINDOW_ALLOWED_VALUES
+  );
+  await updateAllowedApplicationStringSetting(
+    settingsStore,
+    settings,
+    "restoreWindows",
+    RESTORE_WINDOWS_SETTING,
+    RESTORE_WINDOWS_ALLOWED_VALUES
+  );
+}
+
+function getStringSettingExport(
+  settingsStore: SettingsStore,
+  settingName: string,
+  fallbackValue: string
+): string {
+  const settingValue = settingsStore.getConfigurationSettingValue(settingName);
+
+  return typeof settingValue === "string" && settingValue ? settingValue : fallbackValue;
+}
+
+function getAllowedStringSettingExport(
+  settingsStore: SettingsStore,
+  settingName: string,
+  allowedValues: ReadonlySet<string>,
+  fallbackValue: string
+): string {
+  const settingValue = getStringSettingExport(settingsStore, settingName, fallbackValue);
+
+  return allowedValues.has(settingValue) ? settingValue : fallbackValue;
+}
+
+function getBooleanSettingExport(
+  settingsStore: SettingsStore,
+  settingName: string,
+  fallbackValue: boolean
+): boolean {
+  const settingValue = settingsStore.getConfigurationSettingValue(settingName);
+
+  return typeof settingValue === "boolean" ? settingValue : fallbackValue;
+}
+
+async function updateAllowedApplicationStringSetting(
+  settingsStore: SettingsStore,
+  settings: PlainRecord,
+  fieldName: string,
+  settingName: string,
+  allowedValues: ReadonlySet<string>
+): Promise<void> {
+  if (!Object.prototype.hasOwnProperty.call(settings, fieldName)) {
+    return;
+  }
+
+  const value = settings[fieldName];
+
+  if (typeof value !== "string" || !allowedValues.has(value)) {
+    return;
+  }
+
+  await settingsStore.updateGlobalSetting(settingName, value);
+}
+
+async function updateBooleanApplicationSetting(
+  settingsStore: SettingsStore,
+  settings: PlainRecord,
+  fieldName: string,
+  settingName: string
+): Promise<void> {
+  if (!Object.prototype.hasOwnProperty.call(settings, fieldName)) {
+    return;
+  }
+
+  const value = settings[fieldName];
+
+  if (typeof value !== "boolean") {
+    return;
+  }
+
+  await settingsStore.updateGlobalSetting(settingName, value);
+}
+
 export function getColorCustomizationsExportFromStore(
   settingsStore: SettingsStore,
   options: Pick<SettingsBundleDependencies, "workbenchCustomizationsSetting" | "tokenCustomizationsSetting" | "themeVariants">
@@ -286,6 +454,9 @@ export async function createSettingsBundle(context: unknown, dependencies: Setti
     exportedAt: getIsoTimestamp(dependencies),
     activeThemeVariantId: activeThemeVariant.id,
     activeThemeLabel: activeThemeVariant.label,
+    applicationSettings: getApplicationSettingsExportFromStore(
+      dependencies.settingsStore
+    ),
     extensionConfiguration: getExtensionConfigurationExportFromStore(
       dependencies.settingsStore,
       dependencies
@@ -309,6 +480,10 @@ export async function applySettingsBundle(
     dependencies.settingsStore,
     normalizedBundle.extensionConfiguration,
     dependencies
+  );
+  await applyApplicationSettingsExportToStore(
+    dependencies.settingsStore,
+    normalizedBundle.applicationSettings
   );
   await applyColorCustomizationsExportToStore(
     dependencies.settingsStore,

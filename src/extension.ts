@@ -29,6 +29,10 @@ export function activate(context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(openSettings);
   context.subscriptions.push(vscode.workspace.onDidChangeConfiguration((event) => controller.handleConfigurationChange(event)));
+
+  void settings.applyInitialApplicationSettings(context).catch((error: unknown) => {
+    extensionLogger.logError("applyInitialApplicationSettings", error, {});
+  });
 }
 
 export function deactivate(): void {

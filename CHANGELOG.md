@@ -36,6 +36,8 @@ Use only the sections that matter for a given release:
 ### Changed
 
 - Rename the settings page from Neon Effect to Effects and refer to the injected runtime as Kawaii Neon in user-facing docs.
+- Apply first-profile extension defaults for VS Code welcome page, editor tabs, tab wrapping, and folder-window behavior while preserving the user's existing session-restore setting.
+- Include VS Code application settings in explicit Settings Sync and JSON settings bundles.
 - Move editor background image, no-tab logo, and Apply Effects controls from Color Settings to Image Customization.
 - Move Settings Sync and JSON import/export actions from Color Settings into the Sync / Files page with grouped action controls.
 - Gate generated workbench CSS and renderer token glow by module classes so each Effects module can be applied independently.
@@ -53,6 +55,7 @@ Use only the sections that matter for a given release:
 ### Tests
 
 - Expand gated Kawaii Neon E2E validation to apply all 16 Effects switch combinations with before/after screenshots, generated asset checks, runtime module class checks, and a `neon-effects-combination-matrix.json` report.
+- Cover first-profile application setting defaults plus Settings Sync and JSON bundle round trips for application settings.
 - Cover public color pack validation, GitHub folder ingestion, version-aware theme update planning, generated internal theme catalog output, and settings export color version increments in unit tests.
 
 ## [0.2.7] - 2026-06-25
