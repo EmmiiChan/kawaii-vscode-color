@@ -127,6 +127,43 @@ const baseState = {
       enabledValue: "welcomePage",
       disabledValue: "none",
       openNativeWelcomePage: true
+    },
+    editorTabs: {
+      showTabs: {
+        setting: "workbench.editor.showTabs",
+        value: "multiple",
+        options: [
+          {
+            value: "multiple",
+            label: "Multiple tabs"
+          },
+          {
+            value: "single",
+            label: "Single tab"
+          },
+          {
+            value: "none",
+            label: "Hidden"
+          }
+        ]
+      },
+      wrapTabs: {
+        setting: "workbench.editor.wrapTabs",
+        value: false,
+        effective: true
+      }
+    },
+    windowBehavior: {
+      openFoldersInNewWindow: {
+        setting: "window.openFoldersInNewWindow",
+        value: "default",
+        openInNewWindow: false
+      },
+      restoreWindows: {
+        setting: "window.restoreWindows",
+        value: "all",
+        restorePreviousSession: true
+      }
     }
   },
   workbenchColors: [

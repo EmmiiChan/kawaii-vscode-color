@@ -108,7 +108,11 @@ test("SettingsMessageController dispatches host messages and preserves legacy pa
   });
   await controller.handleMessage({
     type: "update-application-settings",
-    openNativeWelcomePage: false
+    openNativeWelcomePage: false,
+    showEditorTabs: "multiple",
+    wrapEditorTabs: true,
+    openFoldersInNewWindow: true,
+    restoreWindows: false
   });
 
   assert.deepEqual(calls, [
@@ -128,9 +132,52 @@ test("SettingsMessageController dispatches host messages and preserves legacy pa
       glow: false
     }],
     ["state"],
-    ["applicationSettings", false],
+    ["applicationSettings", {
+      openNativeWelcomePage: false,
+      showEditorTabs: "multiple",
+      wrapEditorTabs: true,
+      openFoldersInNewWindow: true,
+      restoreWindows: false
+    }],
     ["state"]
   ]);
+});
+
+test("SettingsMessageController rejects malformed application settings payloads", async () => {
+  const calls: Calls = [];
+  const controller = createSettingsMessageController({
+    handlers: createHandlers(calls),
+    isNeonE2ETestHookEnabled: () => false,
+    isSettingsE2ETestHookEnabled: () => false,
+    reportError: async (error) => {
+      record(calls, "error", error.message);
+    },
+    logError: () => {}
+  });
+
+  for (const message of [
+    { type: "update-application-settings", openNativeWelcomePage: true },
+    {
+      type: "update-application-settings",
+      openNativeWelcomePage: true,
+      showEditorTabs: "bad",
+      wrapEditorTabs: true,
+      openFoldersInNewWindow: true,
+      restoreWindows: true
+    },
+    {
+      type: "update-application-settings",
+      openNativeWelcomePage: true,
+      showEditorTabs: "multiple",
+      wrapEditorTabs: "yes",
+      openFoldersInNewWindow: true,
+      restoreWindows: true
+    }
+  ]) {
+    await controller.handleMessage(message);
+  }
+
+  assert.deepEqual(calls, []);
 });
 
 test("SettingsMessageController persists effect feature switches without posting stale state", async () => {
@@ -471,7 +518,13 @@ function createHandlers(calls: Calls) {
       record(calls, "logoOpacity", opacity);
     },
     async updateApplicationSettings(settings: TestMessage) {
-      record(calls, "applicationSettings", settings.openNativeWelcomePage);
+      record(calls, "applicationSettings", {
+        openNativeWelcomePage: settings.openNativeWelcomePage,
+        showEditorTabs: settings.showEditorTabs,
+        wrapEditorTabs: settings.wrapEditorTabs,
+        openFoldersInNewWindow: settings.openFoldersInNewWindow,
+        restoreWindows: settings.restoreWindows
+      });
     },
     async updateEffectFeatures(features: unknown) {
       record(calls, "effectFeatures", features);

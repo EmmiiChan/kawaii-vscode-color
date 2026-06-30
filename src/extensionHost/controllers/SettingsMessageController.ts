@@ -1,5 +1,7 @@
 import { isEffectFeatureSettings } from "../../shared/models/effects";
 
+type EditorShowTabsValue = "multiple" | "single" | "none";
+
 export type SettingsHostMessage =
   | { readonly type: "ready" }
   | { readonly type: "refresh" }
@@ -25,7 +27,14 @@ export type SettingsHostMessage =
   | { readonly type: "download-empty-editor-logo-image" }
   | { readonly type: "update-empty-editor-logo-opacity"; readonly opacity: unknown }
   | { readonly type: "update-effect-features"; readonly features: unknown }
-  | { readonly type: "update-application-settings"; readonly openNativeWelcomePage: unknown }
+  | {
+    readonly type: "update-application-settings";
+    readonly openNativeWelcomePage: unknown;
+    readonly showEditorTabs: unknown;
+    readonly wrapEditorTabs: unknown;
+    readonly openFoldersInNewWindow: unknown;
+    readonly restoreWindows: unknown;
+  }
   | {
     readonly type: "apply-effects";
     readonly features: unknown;
@@ -156,7 +165,11 @@ export function isSettingsHostMessage(message: unknown): message is SettingsHost
     case "update-effect-features":
       return isEffectFeatureSettings(message.features);
     case "update-application-settings":
-      return typeof message.openNativeWelcomePage === "boolean";
+      return typeof message.openNativeWelcomePage === "boolean"
+        && isEditorShowTabsValue(message.showEditorTabs)
+        && typeof message.wrapEditorTabs === "boolean"
+        && typeof message.openFoldersInNewWindow === "boolean"
+        && typeof message.restoreWindows === "boolean";
     case "update-color":
       return Object.prototype.hasOwnProperty.call(message, "section")
         && Object.prototype.hasOwnProperty.call(message, "id")
@@ -169,6 +182,10 @@ export function isSettingsHostMessage(message: unknown): message is SettingsHost
     default:
       return false;
   }
+}
+
+function isEditorShowTabsValue(value: unknown): value is EditorShowTabsValue {
+  return value === "multiple" || value === "single" || value === "none";
 }
 
 class DefaultSettingsMessageController implements SettingsMessageController {

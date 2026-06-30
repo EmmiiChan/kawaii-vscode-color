@@ -194,7 +194,7 @@ Rules:
 
 - `ready` and `refresh` rebuild state with `createSettingsState()`.
 - Incoming settings webview messages are dispatched through `src/extensionHost/controllers/SettingsMessageController.ts`; legacy handlers in `src/settings.ts` preserve existing payload names and side effects.
-- Settings page messages write user-scope VS Code application settings such as `workbench.startupEditor`, never repository theme JSON.
+- Settings page messages write user-scope VS Code application settings such as `workbench.startupEditor`, `workbench.editor.showTabs`, `workbench.editor.wrapTabs`, `window.openFoldersInNewWindow`, and `window.restoreWindows`, never repository theme JSON.
 - Color messages write VS Code settings, never repository theme JSON.
 - Image Customization owns editor background/no-tab logo inputs, opacity, fit area, and the `Apply Effects` action. Image and opacity messages update `globalState`/global storage and require `apply-effects` to clean previous generated assets and refresh the selected modular Effects stack. `apply-neon-customizations` remains a legacy compatibility message.
 - Sync / Files owns Settings Sync and JSON bundle actions for `save-settings-to-vssync`, `import-settings-from-vssync`, `export-settings`, and `import-settings`.
@@ -222,6 +222,10 @@ Other VS Code settings touched by the extension:
 
 - `workbench.colorTheme`
 - `workbench.startupEditor`
+- `workbench.editor.showTabs`
+- `workbench.editor.wrapTabs`
+- `window.openFoldersInNewWindow`
+- `window.restoreWindows`
 - `workbench.colorCustomizations`
 - `editor.tokenColorCustomizations`
 

@@ -82,7 +82,7 @@ Command Palette
   -> src/settings.ts opens a WebviewPanel editor tab
   -> Home page is shown first with theme and reference links
   -> side menu switches between Home, Settings, Color Settings, Effects, Image Customization, Sync/Files, and Help
-  -> Settings reads current VS Code application settings such as workbench.startupEditor and saves explicit user-scope changes
+  -> Settings reads current VS Code application settings such as workbench.startupEditor, editor tabs, folder-window behavior, and session restore behavior, then saves explicit user-scope changes
   -> Color Settings reads colors from the active generated dark or light theme file
   -> Image Customization manages editor background/no-tab logo image inputs, opacity, fit area, and Apply Effects
   -> Sync/Files manages Settings Sync save/import plus JSON export/import actions
@@ -185,7 +185,7 @@ Current source of truth:
 - No-tab logo selector/style generation lives in `src/emptyEditorLogoStyles.ts`.
 - Renderer behavior lives in the JS template under `src/js`; typed browser-only renderer helper contracts live under `src/renderer`.
 - Settings webview orchestration, message routing, VS Code notifications/dialogs, native picker/download workflows, application setting persistence, color-reference parsing, and state composition live in `src/settings.ts`.
-- The Settings page owns application-level VS Code preferences such as `workbench.startupEditor`; it refreshes from VS Code configuration through `createSettingsState()` and only writes when the user clicks Save.
+- The Settings page owns application-level VS Code preferences such as `workbench.startupEditor`, `workbench.editor.showTabs`, `workbench.editor.wrapTabs`, `window.openFoldersInNewWindow`, and `window.restoreWindows`; it refreshes from VS Code configuration through `createSettingsState()` and only writes when the user clicks Save.
 - Runtime activation and command registration live in `src/extension.ts`.
 - Extension-host Effects and Settings controllers plus service, filesystem, storage, and notification boundaries live under `src/extensionHost`.
 - Runtime asset resolution from source or `out/src` lives in `src/extensionRoot.ts`.

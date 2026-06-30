@@ -31,6 +31,10 @@ function createSettingsHarness(options = {}) {
     ["workbench.colorCustomizations", {}],
     ["editor.tokenColorCustomizations", {}],
     ["workbench.startupEditor", "welcomePage"],
+    ["workbench.editor.showTabs", "multiple"],
+    ["workbench.editor.wrapTabs", false],
+    ["window.openFoldersInNewWindow", "default"],
+    ["window.restoreWindows", "folders"],
     ["kawaii_synthwave.brightness", 0.45],
     ["kawaii_synthwave.disableGlow", false]
   ]);
@@ -251,26 +255,78 @@ test("settings webview messages reach persistence services without touching real
       harness.postedMessages.at(-1).state.applicationSettings.startupEditor.value,
       "welcomePage"
     );
+    assert.equal(
+      harness.postedMessages.at(-1).state.applicationSettings.editorTabs.showTabs.value,
+      "multiple"
+    );
+    assert.equal(
+      harness.postedMessages.at(-1).state.applicationSettings.editorTabs.wrapTabs.value,
+      false
+    );
+    assert.equal(
+      harness.postedMessages.at(-1).state.applicationSettings.windowBehavior.openFoldersInNewWindow.value,
+      "default"
+    );
+    assert.equal(
+      harness.postedMessages.at(-1).state.applicationSettings.windowBehavior.restoreWindows.value,
+      "folders"
+    );
 
     await messageHandler({
       type: "update-application-settings",
-      openNativeWelcomePage: false
+      openNativeWelcomePage: false,
+      showEditorTabs: "none",
+      wrapEditorTabs: true,
+      openFoldersInNewWindow: false,
+      restoreWindows: false
     });
     assert.equal(harness.configurationValues.get("workbench.startupEditor"), "none");
+    assert.equal(harness.configurationValues.get("workbench.editor.showTabs"), "none");
+    assert.equal(harness.configurationValues.get("workbench.editor.wrapTabs"), true);
+    assert.equal(harness.configurationValues.get("window.openFoldersInNewWindow"), "off");
+    assert.equal(harness.configurationValues.get("window.restoreWindows"), "none");
     assert.equal(
       harness.postedMessages.at(-1).state.applicationSettings.startupEditor.openNativeWelcomePage,
       false
     );
+    assert.equal(
+      harness.postedMessages.at(-1).state.applicationSettings.editorTabs.showTabs.value,
+      "none"
+    );
+    assert.equal(
+      harness.postedMessages.at(-1).state.applicationSettings.editorTabs.wrapTabs.value,
+      true
+    );
 
     harness.configurationValues.set("workbench.startupEditor", "none");
+    harness.configurationValues.set("workbench.editor.showTabs", "single");
+    harness.configurationValues.set("workbench.editor.wrapTabs", false);
+    harness.configurationValues.set("window.openFoldersInNewWindow", "default");
+    harness.configurationValues.set("window.restoreWindows", "preserve");
     await messageHandler({
       type: "update-application-settings",
-      openNativeWelcomePage: true
+      openNativeWelcomePage: true,
+      showEditorTabs: "multiple",
+      wrapEditorTabs: true,
+      openFoldersInNewWindow: true,
+      restoreWindows: true
     });
     assert.equal(harness.configurationValues.get("workbench.startupEditor"), "welcomePage");
+    assert.equal(harness.configurationValues.get("workbench.editor.showTabs"), "multiple");
+    assert.equal(harness.configurationValues.get("workbench.editor.wrapTabs"), true);
+    assert.equal(harness.configurationValues.get("window.openFoldersInNewWindow"), "on");
+    assert.equal(harness.configurationValues.get("window.restoreWindows"), "all");
     assert.equal(
       harness.postedMessages.at(-1).state.applicationSettings.startupEditor.openNativeWelcomePage,
       true
+    );
+    assert.equal(
+      harness.postedMessages.at(-1).state.applicationSettings.windowBehavior.openFoldersInNewWindow.value,
+      "on"
+    );
+    assert.equal(
+      harness.postedMessages.at(-1).state.applicationSettings.windowBehavior.restoreWindows.value,
+      "all"
     );
 
     await messageHandler({

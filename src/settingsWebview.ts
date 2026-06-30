@@ -399,7 +399,31 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
       min-height: 0;
       margin-top: 18px;
       padding-right: 4px;
+      display: grid;
+      gap: 12px;
       overflow: auto;
+    }
+
+    .settings-group {
+      display: grid;
+      gap: 8px;
+    }
+
+    .settings-group-heading {
+      padding: 0 2px;
+    }
+
+    .settings-group-title {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .settings-group-description {
+      margin: 4px 0 0;
+      color: var(--muted-color);
+      font-size: 12px;
+      line-height: 1.4;
     }
 
     .settings-row {
@@ -413,6 +437,22 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
       border-radius: 6px;
     }
 
+    .settings-row-nested {
+      margin-left: 20px;
+    }
+
+    .settings-row-control {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      min-width: 160px;
+    }
+
+    .settings-select {
+      width: 180px;
+      max-width: 100%;
+    }
+
     .settings-row-title {
       display: flex;
       align-items: center;
@@ -424,7 +464,8 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
     }
 
     .settings-row-description,
-    .settings-row-meta {
+    .settings-row-meta,
+    .settings-row-dependency {
       margin: 4px 0 0;
       color: var(--muted-color);
       font-size: 12px;
@@ -1147,6 +1188,62 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
                 </span>
               </label>
             </section>
+            <section class="settings-group" aria-labelledby="editor-tabs-settings-title">
+              <div class="settings-group-heading">
+                <h3 id="editor-tabs-settings-title" class="settings-group-title">Editor tabs</h3>
+                <p class="settings-group-description">Choose how VS Code shows editor tabs. Wrapping only applies while multiple tabs are visible.</p>
+              </div>
+              <section class="settings-row" aria-labelledby="editor-show-tabs-title">
+                <div>
+                  <h3 id="editor-show-tabs-title" class="settings-row-title">Show editor tabs</h3>
+                  <p class="settings-row-description">Select whether VS Code shows multiple tabs, one tab, or hides tabs.</p>
+                  <p id="editor-show-tabs-meta" class="settings-row-meta"></p>
+                </div>
+                <div class="settings-row-control">
+                  <select id="editor-show-tabs" class="select settings-select" aria-label="Show editor tabs"></select>
+                </div>
+              </section>
+              <section class="settings-row settings-row-nested" aria-labelledby="editor-wrap-tabs-title">
+                <div>
+                  <h3 id="editor-wrap-tabs-title" class="settings-row-title">Wrap tabs instead of scrolling</h3>
+                  <p class="settings-row-description">Keep tab rows visible instead of scrolling horizontally when many editor tabs are open.</p>
+                  <p id="editor-wrap-tabs-dependency" class="settings-row-dependency"></p>
+                  <p id="editor-wrap-tabs-meta" class="settings-row-meta"></p>
+                </div>
+                <label class="switch-control" for="editor-wrap-tabs-toggle">
+                  <input id="editor-wrap-tabs-toggle" type="checkbox">
+                  <span class="switch-track" aria-hidden="true">
+                    <span class="switch-thumb"></span>
+                  </span>
+                </label>
+              </section>
+            </section>
+            <section class="settings-row" aria-labelledby="open-folders-new-window-title">
+              <div>
+                <h3 id="open-folders-new-window-title" class="settings-row-title">Open new project or folder in another window</h3>
+                <p class="settings-row-description">Use a new VS Code window when opening a different folder or project.</p>
+                <p id="open-folders-new-window-meta" class="settings-row-meta"></p>
+              </div>
+              <label class="switch-control" for="open-folders-new-window-toggle">
+                <input id="open-folders-new-window-toggle" type="checkbox">
+                <span class="switch-track" aria-hidden="true">
+                  <span class="switch-thumb"></span>
+                </span>
+              </label>
+            </section>
+            <section class="settings-row" aria-labelledby="restore-windows-title">
+              <div>
+                <h3 id="restore-windows-title" class="settings-row-title">Restore previous session on startup</h3>
+                <p class="settings-row-description">Restore the previous VS Code session when the editor starts, or open an empty environment.</p>
+                <p id="restore-windows-meta" class="settings-row-meta"></p>
+              </div>
+              <label class="switch-control" for="restore-windows-toggle">
+                <input id="restore-windows-toggle" type="checkbox">
+                <span class="switch-track" aria-hidden="true">
+                  <span class="switch-thumb"></span>
+                </span>
+              </label>
+            </section>
           </div>
           <div class="settings-save-bar">
             <button id="save-application-settings" class="button" type="button">Save</button>
@@ -1427,6 +1524,15 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
     const themeVariantSelect = document.getElementById("theme-variant");
     const startupEditorToggle = document.getElementById("startup-editor-toggle");
     const startupEditorSettingMeta = document.getElementById("startup-editor-setting-meta");
+    const editorShowTabsSelect = document.getElementById("editor-show-tabs");
+    const editorShowTabsMeta = document.getElementById("editor-show-tabs-meta");
+    const editorWrapTabsToggle = document.getElementById("editor-wrap-tabs-toggle");
+    const editorWrapTabsDependency = document.getElementById("editor-wrap-tabs-dependency");
+    const editorWrapTabsMeta = document.getElementById("editor-wrap-tabs-meta");
+    const openFoldersNewWindowToggle = document.getElementById("open-folders-new-window-toggle");
+    const openFoldersNewWindowMeta = document.getElementById("open-folders-new-window-meta");
+    const restoreWindowsToggle = document.getElementById("restore-windows-toggle");
+    const restoreWindowsMeta = document.getElementById("restore-windows-meta");
     const saveApplicationSettings = document.getElementById("save-application-settings");
     const saveVssync = document.getElementById("save-vssync");
     const importVssync = document.getElementById("import-vssync");
@@ -1506,12 +1612,34 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
       setStatus("Unsaved application setting change.");
     });
 
+    editorShowTabsSelect.addEventListener("change", () => {
+      renderEditorTabsDependencyState(editorShowTabsSelect.value);
+      setStatus("Unsaved application setting change.");
+    });
+
+    editorWrapTabsToggle.addEventListener("change", () => {
+      renderEditorTabsDependencyState(editorShowTabsSelect.value);
+      setStatus("Unsaved application setting change.");
+    });
+
+    openFoldersNewWindowToggle.addEventListener("change", () => {
+      setStatus("Unsaved application setting change.");
+    });
+
+    restoreWindowsToggle.addEventListener("change", () => {
+      setStatus("Unsaved application setting change.");
+    });
+
     saveApplicationSettings.addEventListener("click", () => {
       clearPendingUpdates();
       setStatus("Saving application settings...");
       vscode.postMessage({
         type: "update-application-settings",
-        openNativeWelcomePage: Boolean(startupEditorToggle.checked)
+        openNativeWelcomePage: Boolean(startupEditorToggle.checked),
+        showEditorTabs: getSupportedEditorShowTabsValue(editorShowTabsSelect.value),
+        wrapEditorTabs: Boolean(editorWrapTabsToggle.checked),
+        openFoldersInNewWindow: Boolean(openFoldersNewWindowToggle.checked),
+        restoreWindows: Boolean(restoreWindowsToggle.checked)
       });
     });
 
@@ -1713,8 +1841,21 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
 
     function renderApplicationSettings() {
       const startupEditor = getStartupEditorState();
+      const editorTabs = getEditorTabsState();
+      const windowBehavior = getWindowBehaviorState();
+
       startupEditorToggle.checked = Boolean(startupEditor.openNativeWelcomePage);
       startupEditorSettingMeta.textContent = "Current VS Code setting: " + startupEditor.setting + " = " + startupEditor.value + ".";
+      renderEditorShowTabsOptions(editorTabs.showTabs);
+      editorShowTabsSelect.value = editorTabs.showTabs.value;
+      editorShowTabsMeta.textContent = "Current VS Code setting: " + editorTabs.showTabs.setting + " = " + editorTabs.showTabs.displayValue + ".";
+      editorWrapTabsToggle.checked = Boolean(editorTabs.wrapTabs.value);
+      editorWrapTabsMeta.textContent = "Current VS Code setting: " + editorTabs.wrapTabs.setting + " = " + editorTabs.wrapTabs.value + ".";
+      renderEditorTabsDependencyState(editorTabs.showTabs.value);
+      openFoldersNewWindowToggle.checked = Boolean(windowBehavior.openFoldersInNewWindow.openInNewWindow);
+      openFoldersNewWindowMeta.textContent = "Current VS Code setting: " + windowBehavior.openFoldersInNewWindow.setting + " = " + windowBehavior.openFoldersInNewWindow.value + ".";
+      restoreWindowsToggle.checked = Boolean(windowBehavior.restoreWindows.restorePreviousSession);
+      restoreWindowsMeta.textContent = "Current VS Code setting: " + windowBehavior.restoreWindows.setting + " = " + windowBehavior.restoreWindows.value + ".";
     }
 
     function getStartupEditorState() {
@@ -1726,6 +1867,96 @@ function createSettingsWebviewHtml(webview, initialState, nonce = createNonce())
         value: startupEditor.value || "none",
         openNativeWelcomePage: startupEditor.openNativeWelcomePage === true
       };
+    }
+
+    function getEditorTabsState() {
+      const applicationSettings = state.applicationSettings || {};
+      const editorTabs = applicationSettings.editorTabs || {};
+      const showTabs = editorTabs.showTabs || {};
+      const wrapTabs = editorTabs.wrapTabs || {};
+      const showTabsValue = getSupportedEditorShowTabsValue(showTabs.value);
+
+      return {
+        showTabs: {
+          setting: showTabs.setting || "workbench.editor.showTabs",
+          value: showTabsValue,
+          displayValue: showTabs.rawValue || showTabs.value || showTabsValue,
+          options: getEditorShowTabsOptions(showTabs.options)
+        },
+        wrapTabs: {
+          setting: wrapTabs.setting || "workbench.editor.wrapTabs",
+          value: wrapTabs.value === true,
+          effective: showTabsValue === "multiple"
+        }
+      };
+    }
+
+    function getEditorShowTabsOptions(options) {
+      const fallbackOptions = [
+        { value: "multiple", label: "Multiple tabs" },
+        { value: "single", label: "Single tab" },
+        { value: "none", label: "Hidden" }
+      ];
+
+      if (!Array.isArray(options) || options.length === 0) {
+        return fallbackOptions;
+      }
+
+      const normalizedOptions = options
+        .filter((option) => option && isSupportedEditorShowTabsValue(option.value))
+        .map((option) => ({
+          value: option.value,
+          label: option.label || option.value
+        }));
+
+      return normalizedOptions.length > 0 ? normalizedOptions : fallbackOptions;
+    }
+
+    function renderEditorShowTabsOptions(showTabs) {
+      editorShowTabsSelect.innerHTML = "";
+      showTabs.options.forEach((option) => {
+        const optionElement = document.createElement("option");
+        optionElement.value = option.value;
+        optionElement.textContent = option.label;
+        editorShowTabsSelect.appendChild(optionElement);
+      });
+    }
+
+    function renderEditorTabsDependencyState(showTabsValue) {
+      if (showTabsValue === "multiple") {
+        editorWrapTabsDependency.textContent = "Wrap tabs is active because Show editor tabs is Multiple tabs.";
+        return;
+      }
+
+      editorWrapTabsDependency.textContent = "Wrap tabs is ignored unless Multiple tabs is selected.";
+    }
+
+    function getWindowBehaviorState() {
+      const applicationSettings = state.applicationSettings || {};
+      const windowBehavior = applicationSettings.windowBehavior || {};
+      const openFoldersInNewWindow = windowBehavior.openFoldersInNewWindow || {};
+      const restoreWindows = windowBehavior.restoreWindows || {};
+
+      return {
+        openFoldersInNewWindow: {
+          setting: openFoldersInNewWindow.setting || "window.openFoldersInNewWindow",
+          value: openFoldersInNewWindow.value || "default",
+          openInNewWindow: openFoldersInNewWindow.openInNewWindow === true
+        },
+        restoreWindows: {
+          setting: restoreWindows.setting || "window.restoreWindows",
+          value: restoreWindows.value || "folders",
+          restorePreviousSession: restoreWindows.restorePreviousSession === true
+        }
+      };
+    }
+
+    function getSupportedEditorShowTabsValue(value) {
+      return isSupportedEditorShowTabsValue(value) ? value : "multiple";
+    }
+
+    function isSupportedEditorShowTabsValue(value) {
+      return value === "multiple" || value === "single" || value === "none";
     }
 
     function renderThemeVariantSelector() {

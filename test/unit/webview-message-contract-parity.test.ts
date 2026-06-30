@@ -54,7 +54,14 @@ test("shared webview guard accepts real inline settings webview payloads handled
         glow: false
       }
     },
-    { type: "update-application-settings", openNativeWelcomePage: true }
+    {
+      type: "update-application-settings",
+      openNativeWelcomePage: true,
+      showEditorTabs: "multiple",
+      wrapEditorTabs: true,
+      openFoldersInNewWindow: false,
+      restoreWindows: true
+    }
   ];
 
   for (const message of realInlineMessages) {
@@ -87,10 +94,31 @@ test("shared webview guard rejects malformed legacy settings payloads", () => {
       editorBackgroundFit: "left",
       emptyEditorLogoOpacity: 0.7
     },
-    { type: "update-application-settings", openNativeWelcomePage: "yes" }
+    { type: "update-application-settings", openNativeWelcomePage: "yes" },
+    {
+      type: "update-application-settings",
+      openNativeWelcomePage: true,
+      showEditorTabs: "bad",
+      wrapEditorTabs: true,
+      openFoldersInNewWindow: false,
+      restoreWindows: true
+    },
+    {
+      type: "update-application-settings",
+      openNativeWelcomePage: true,
+      showEditorTabs: "multiple",
+      wrapEditorTabs: true,
+      openFoldersInNewWindow: "yes",
+      restoreWindows: true
+    },
+    { type: "update-application-settings", openNativeWelcomePage: true }
   ];
 
   for (const message of malformedMessages) {
     assert.equal(isWebviewToHostMessage(message), false, `${message.type} should reject malformed payload`);
+
+    if (message.type === "update-application-settings") {
+      assert.equal(isSettingsHostMessage(message), false, `${message.type} should reject malformed payload at host boundary`);
+    }
   }
 });

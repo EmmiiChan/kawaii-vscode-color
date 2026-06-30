@@ -6,7 +6,11 @@ const {
     assertWebviewPageVisible,
     assertWebviewTextIncludes,
     clickWebviewCss,
+    getWebviewE2EState,
+    getWebviewInputValue,
+    getWebviewText,
     takeE2EScreenshot,
+    waitForWebviewE2EState,
     withSettingsWebview
 } = require("./helpers/extester-app");
 
@@ -42,6 +46,110 @@ describe("Settings webview E2E", function () {
                 await assertWebviewTextIncludes(`#${pageId}`, expectedText);
                 await takeE2EScreenshot(`settings-page-${navPage}`);
             }
+        });
+    });
+
+    it("captures and validates application settings option combinations", async function () {
+        await withSettingsWebview(async (_webview, driver) => {
+            await clickWebviewCss('.nav-button[data-page="settings"]');
+            await assertWebviewPageVisible("settings-page");
+            await assertWebviewCssVisible("#editor-show-tabs");
+            await assertWebviewCssVisible("#editor-wrap-tabs-toggle + .switch-track");
+            await takeE2EScreenshot("settings-page-settings-before-defaults");
+
+            const tabCases = [
+                {
+                    showTabs: "multiple",
+                    wrapTabs: false,
+                    dependencyText: "active",
+                    screenshot: "settings-page-settings-tabs-multiple-wrap-off"
+                },
+                {
+                    showTabs: "multiple",
+                    wrapTabs: true,
+                    dependencyText: "active",
+                    screenshot: "settings-page-settings-tabs-multiple-wrap-on"
+                },
+                {
+                    showTabs: "single",
+                    wrapTabs: false,
+                    dependencyText: "ignored unless Multiple tabs",
+                    screenshot: "settings-page-settings-tabs-single-wrap-off-inactive"
+                },
+                {
+                    showTabs: "single",
+                    wrapTabs: true,
+                    dependencyText: "ignored unless Multiple tabs",
+                    screenshot: "settings-page-settings-tabs-single-wrap-on-inactive"
+                },
+                {
+                    showTabs: "none",
+                    wrapTabs: false,
+                    dependencyText: "ignored unless Multiple tabs",
+                    screenshot: "settings-page-settings-tabs-none-wrap-off-inactive"
+                },
+                {
+                    showTabs: "none",
+                    wrapTabs: true,
+                    dependencyText: "ignored unless Multiple tabs",
+                    screenshot: "settings-page-settings-tabs-none-wrap-on-inactive"
+                }
+            ];
+
+            for (const tabCase of tabCases) {
+                await setWebviewSelectValue(driver, "#editor-show-tabs", tabCase.showTabs);
+                await setWebviewCheckboxChecked(driver, "#editor-wrap-tabs-toggle", tabCase.wrapTabs);
+                assert.equal(await getWebviewInputValue("#editor-show-tabs"), tabCase.showTabs);
+                assert.equal(await getWebviewCheckboxChecked(driver, "#editor-wrap-tabs-toggle"), tabCase.wrapTabs);
+                assert.match(await getWebviewText("#editor-wrap-tabs-dependency"), new RegExp(tabCase.dependencyText));
+                await takeE2EScreenshot(tabCase.screenshot);
+            }
+
+            await setWebviewCheckboxChecked(driver, "#open-folders-new-window-toggle", true);
+            await setWebviewCheckboxChecked(driver, "#restore-windows-toggle", true);
+            assert.equal(await getWebviewCheckboxChecked(driver, "#open-folders-new-window-toggle"), true);
+            assert.equal(await getWebviewCheckboxChecked(driver, "#restore-windows-toggle"), true);
+            await takeE2EScreenshot("settings-page-settings-window-switches-on");
+
+            await setWebviewCheckboxChecked(driver, "#open-folders-new-window-toggle", false);
+            await setWebviewCheckboxChecked(driver, "#restore-windows-toggle", false);
+            assert.equal(await getWebviewCheckboxChecked(driver, "#open-folders-new-window-toggle"), false);
+            assert.equal(await getWebviewCheckboxChecked(driver, "#restore-windows-toggle"), false);
+            await takeE2EScreenshot("settings-page-settings-window-switches-off");
+
+            await clickWebviewCss("#save-application-settings");
+            await waitForWebviewE2EState((state) => {
+                const applicationSettings = state.applicationSettings || {};
+                const editorTabs = applicationSettings.editorTabs || {};
+                const windowBehavior = applicationSettings.windowBehavior || {};
+
+                return editorTabs.showTabs
+                    && editorTabs.showTabs.value === "none"
+                    && editorTabs.wrapTabs
+                    && editorTabs.wrapTabs.value === true
+                    && windowBehavior.openFoldersInNewWindow
+                    && windowBehavior.openFoldersInNewWindow.value === "off"
+                    && windowBehavior.restoreWindows
+                    && windowBehavior.restoreWindows.value === "none";
+            }, "Expected saved application settings state to reflect the selected UI stack");
+
+            const savedState = await getWebviewE2EState();
+            assert.equal(savedState.applicationSettings.editorTabs.showTabs.value, "none");
+            assert.equal(savedState.applicationSettings.editorTabs.wrapTabs.value, true);
+            assert.equal(savedState.applicationSettings.windowBehavior.openFoldersInNewWindow.value, "off");
+            assert.equal(savedState.applicationSettings.windowBehavior.restoreWindows.value, "none");
+            await takeE2EScreenshot("settings-page-settings-after-save");
+
+            await setWebviewSelectValue(driver, "#editor-show-tabs", "multiple");
+            await setWebviewCheckboxChecked(driver, "#editor-wrap-tabs-toggle", false);
+            await clickWebviewCss("#save-application-settings");
+            await waitForWebviewE2EState((state) => {
+                const editorTabs = ((state.applicationSettings || {}).editorTabs || {});
+                return editorTabs.showTabs
+                    && editorTabs.showTabs.value === "multiple"
+                    && editorTabs.wrapTabs
+                    && editorTabs.wrapTabs.value === false;
+            }, "Expected editor tabs to be restored for the remaining E2E suite");
         });
     });
 
@@ -96,3 +204,41 @@ describe("Settings webview E2E", function () {
         });
     });
 });
+
+async function setWebviewSelectValue(driver, css, value) {
+    await assertWebviewCssVisible(css);
+    const selected = await driver.executeScript(`
+        const select = document.querySelector(arguments[0]);
+        if (!select) {
+            return null;
+        }
+        select.value = arguments[1];
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+        return select.value;
+    `, css, value);
+
+    assert.equal(selected, value, `Expected ${css} to select ${value}`);
+}
+
+async function setWebviewCheckboxChecked(driver, css, checked) {
+    await assertWebviewCssVisible(`${css} + .switch-track`);
+    const actual = await driver.executeScript(`
+        const checkbox = document.querySelector(arguments[0]);
+        if (!checkbox) {
+            return null;
+        }
+        checkbox.checked = arguments[1];
+        checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+        return checkbox.checked;
+    `, css, checked);
+
+    assert.equal(actual, checked, `Expected ${css}.checked to be ${checked}`);
+}
+
+async function getWebviewCheckboxChecked(driver, css) {
+    await assertWebviewCssVisible(`${css} + .switch-track`);
+    return driver.executeScript(`
+        const checkbox = document.querySelector(arguments[0]);
+        return checkbox ? checkbox.checked : null;
+    `, css);
+}

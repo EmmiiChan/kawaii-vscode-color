@@ -38,11 +38,29 @@ const THEME_VARIANTS = KAWAII_THEME_VARIANTS.map(function mapThemeVariant(themeV
 const DEFAULT_THEME_VARIANT_ID = "dark";
 const COLOR_THEME_SETTING = "workbench.colorTheme";
 const STARTUP_EDITOR_SETTING = "workbench.startupEditor";
+const EDITOR_SHOW_TABS_SETTING = "workbench.editor.showTabs";
+const EDITOR_WRAP_TABS_SETTING = "workbench.editor.wrapTabs";
+const OPEN_FOLDERS_IN_NEW_WINDOW_SETTING = "window.openFoldersInNewWindow";
+const RESTORE_WINDOWS_SETTING = "window.restoreWindows";
 const WORKBENCH_CUSTOMIZATIONS_SETTING = "workbench.colorCustomizations";
 const TOKEN_CUSTOMIZATIONS_SETTING = "editor.tokenColorCustomizations";
 const STARTUP_EDITOR_WELCOME_PAGE_VALUE = "welcomePage";
 const STARTUP_EDITOR_EMPTY_WORKBENCH_WELCOME_PAGE_VALUE = "welcomePageInEmptyWorkbench";
 const STARTUP_EDITOR_DISABLED_VALUE = "none";
+const EDITOR_SHOW_TABS_MULTIPLE_VALUE = "multiple";
+const EDITOR_SHOW_TABS_SINGLE_VALUE = "single";
+const EDITOR_SHOW_TABS_NONE_VALUE = "none";
+const EDITOR_SHOW_TABS_OPTIONS = [
+  { value: EDITOR_SHOW_TABS_MULTIPLE_VALUE, label: "Multiple tabs" },
+  { value: EDITOR_SHOW_TABS_SINGLE_VALUE, label: "Single tab" },
+  { value: EDITOR_SHOW_TABS_NONE_VALUE, label: "Hidden" }
+];
+const OPEN_FOLDERS_IN_NEW_WINDOW_ON_VALUE = "on";
+const OPEN_FOLDERS_IN_NEW_WINDOW_OFF_VALUE = "off";
+const OPEN_FOLDERS_IN_NEW_WINDOW_DEFAULT_VALUE = "default";
+const RESTORE_WINDOWS_ALL_VALUE = "all";
+const RESTORE_WINDOWS_NONE_VALUE = "none";
+const RESTORE_WINDOWS_FOLDERS_VALUE = "folders";
 const BRIGHTNESS_SETTING = "kawaii_synthwave.brightness";
 const DISABLE_GLOW_SETTING = "kawaii_synthwave.disableGlow";
 const SETTINGS_EXPORT_FILE_NAME = "kawaii-vscode-color-settings.json";
@@ -1313,9 +1331,24 @@ async function updateEffectFeatures(context, features) {
  */
 async function updateApplicationSettings(settings) {
   const openNativeWelcomePage = Boolean(settings && settings.openNativeWelcomePage);
+  const showEditorTabs = normalizeEditorShowTabsValue(settings && settings.showEditorTabs);
+  const wrapEditorTabs = Boolean(settings && settings.wrapEditorTabs);
+  const openFoldersInNewWindow = Boolean(settings && settings.openFoldersInNewWindow);
+  const restoreWindows = Boolean(settings && settings.restoreWindows);
+
   await updateGlobalSetting(
     STARTUP_EDITOR_SETTING,
     openNativeWelcomePage ? STARTUP_EDITOR_WELCOME_PAGE_VALUE : STARTUP_EDITOR_DISABLED_VALUE
+  );
+  await updateGlobalSetting(EDITOR_SHOW_TABS_SETTING, showEditorTabs);
+  await updateGlobalSetting(EDITOR_WRAP_TABS_SETTING, wrapEditorTabs);
+  await updateGlobalSetting(
+    OPEN_FOLDERS_IN_NEW_WINDOW_SETTING,
+    openFoldersInNewWindow ? OPEN_FOLDERS_IN_NEW_WINDOW_ON_VALUE : OPEN_FOLDERS_IN_NEW_WINDOW_OFF_VALUE
+  );
+  await updateGlobalSetting(
+    RESTORE_WINDOWS_SETTING,
+    restoreWindows ? RESTORE_WINDOWS_ALL_VALUE : RESTORE_WINDOWS_NONE_VALUE
   );
 }
 
@@ -2017,6 +2050,14 @@ function createSettingsState(context, webview) {
  */
 function getApplicationSettingsState() {
   const startupEditorValue = getStartupEditorSettingValue();
+  const rawEditorShowTabsValue = getStringSettingValue(EDITOR_SHOW_TABS_SETTING, EDITOR_SHOW_TABS_MULTIPLE_VALUE);
+  const editorShowTabsValue = normalizeEditorShowTabsValue(rawEditorShowTabsValue);
+  const editorWrapTabsValue = getBooleanSettingValue(EDITOR_WRAP_TABS_SETTING, false);
+  const openFoldersInNewWindowValue = getStringSettingValue(
+    OPEN_FOLDERS_IN_NEW_WINDOW_SETTING,
+    OPEN_FOLDERS_IN_NEW_WINDOW_DEFAULT_VALUE
+  );
+  const restoreWindowsValue = getStringSettingValue(RESTORE_WINDOWS_SETTING, RESTORE_WINDOWS_FOLDERS_VALUE);
 
   return {
     startupEditor: {
@@ -2026,6 +2067,31 @@ function getApplicationSettingsState() {
       disabledValue: STARTUP_EDITOR_DISABLED_VALUE,
       openNativeWelcomePage: startupEditorValue === STARTUP_EDITOR_WELCOME_PAGE_VALUE
         || startupEditorValue === STARTUP_EDITOR_EMPTY_WORKBENCH_WELCOME_PAGE_VALUE
+    },
+    editorTabs: {
+      showTabs: {
+        setting: EDITOR_SHOW_TABS_SETTING,
+        value: editorShowTabsValue,
+        rawValue: rawEditorShowTabsValue,
+        options: EDITOR_SHOW_TABS_OPTIONS
+      },
+      wrapTabs: {
+        setting: EDITOR_WRAP_TABS_SETTING,
+        value: editorWrapTabsValue,
+        effective: editorShowTabsValue === EDITOR_SHOW_TABS_MULTIPLE_VALUE
+      }
+    },
+    windowBehavior: {
+      openFoldersInNewWindow: {
+        setting: OPEN_FOLDERS_IN_NEW_WINDOW_SETTING,
+        value: openFoldersInNewWindowValue,
+        openInNewWindow: openFoldersInNewWindowValue === OPEN_FOLDERS_IN_NEW_WINDOW_ON_VALUE
+      },
+      restoreWindows: {
+        setting: RESTORE_WINDOWS_SETTING,
+        value: restoreWindowsValue,
+        restorePreviousSession: restoreWindowsValue === RESTORE_WINDOWS_ALL_VALUE
+      }
     }
   };
 }
@@ -2036,9 +2102,55 @@ function getApplicationSettingsState() {
  * @returns {string} Normalized startup editor value.
  */
 function getStartupEditorSettingValue() {
-  const settingValue = settingsStore.getConfigurationSettingValue(STARTUP_EDITOR_SETTING);
+  return getStringSettingValue(STARTUP_EDITOR_SETTING, STARTUP_EDITOR_DISABLED_VALUE);
+}
 
-  return typeof settingValue === "string" && settingValue ? settingValue : STARTUP_EDITOR_DISABLED_VALUE;
+/**
+ * Gets a string setting value from VS Code configuration.
+ *
+ * @param {string} settingName - VS Code setting key.
+ * @param {string} fallbackValue - Value used when the setting is missing or non-string.
+ * @returns {string} String setting value.
+ */
+function getStringSettingValue(settingName, fallbackValue) {
+  const settingValue = settingsStore.getConfigurationSettingValue(settingName);
+
+  return typeof settingValue === "string" && settingValue ? settingValue : fallbackValue;
+}
+
+/**
+ * Gets a boolean setting value from VS Code configuration.
+ *
+ * @param {string} settingName - VS Code setting key.
+ * @param {boolean} fallbackValue - Value used when the setting is missing or non-boolean.
+ * @returns {boolean} Boolean setting value.
+ */
+function getBooleanSettingValue(settingName, fallbackValue) {
+  const settingValue = settingsStore.getConfigurationSettingValue(settingName);
+
+  return typeof settingValue === "boolean" ? settingValue : fallbackValue;
+}
+
+/**
+ * Normalizes workbench.editor.showTabs to the supported Settings selector values.
+ *
+ * @param {unknown} value - Candidate VS Code show-tabs value.
+ * @returns {string} Supported show-tabs value.
+ */
+function normalizeEditorShowTabsValue(value) {
+  return isSupportedEditorShowTabsValue(value) ? value : EDITOR_SHOW_TABS_MULTIPLE_VALUE;
+}
+
+/**
+ * Checks whether a value is supported by the Settings page show-tabs selector.
+ *
+ * @param {unknown} value - Candidate VS Code show-tabs value.
+ * @returns {boolean} True when the value is supported.
+ */
+function isSupportedEditorShowTabsValue(value) {
+  return value === EDITOR_SHOW_TABS_MULTIPLE_VALUE
+    || value === EDITOR_SHOW_TABS_SINGLE_VALUE
+    || value === EDITOR_SHOW_TABS_NONE_VALUE;
 }
 
 /**

@@ -10,7 +10,8 @@ const {
   getLastPostedMessage,
   getRequiredElement,
   renderWebview,
-  sendWindowMessage
+  sendWindowMessage,
+  setSelectValue
 } = require("./settings-webview-helper");
 
 function getButtonByText(document, selector, text) {
@@ -88,7 +89,7 @@ test("settings webview toggles each app page and keeps one active nav item", asy
   });
 });
 
-test("settings webview renders application settings and saves startup editor choice", async () => {
+test("settings webview renders application settings and saves the combined application settings payload", async () => {
   const { document, postedMessages, window } = await renderWebview({
     applicationSettings: {
       startupEditor: {
@@ -97,6 +98,34 @@ test("settings webview renders application settings and saves startup editor cho
         enabledValue: "welcomePage",
         disabledValue: "none",
         openNativeWelcomePage: false
+      },
+      editorTabs: {
+        showTabs: {
+          setting: "workbench.editor.showTabs",
+          value: "multiple",
+          options: [
+            { value: "multiple", label: "Multiple tabs" },
+            { value: "single", label: "Single tab" },
+            { value: "none", label: "Hidden" }
+          ]
+        },
+        wrapTabs: {
+          setting: "workbench.editor.wrapTabs",
+          value: false,
+          effective: true
+        }
+      },
+      windowBehavior: {
+        openFoldersInNewWindow: {
+          setting: "window.openFoldersInNewWindow",
+          value: "default",
+          openInNewWindow: false
+        },
+        restoreWindows: {
+          setting: "window.restoreWindows",
+          value: "folders",
+          restorePreviousSession: false
+        }
       }
     }
   });
@@ -116,6 +145,34 @@ test("settings webview renders application settings and saves startup editor cho
           setting: "workbench.startupEditor",
           value: "welcomePageInEmptyWorkbench",
           openNativeWelcomePage: true
+        },
+        editorTabs: {
+          showTabs: {
+            setting: "workbench.editor.showTabs",
+            value: "single",
+            options: [
+              { value: "multiple", label: "Multiple tabs" },
+              { value: "single", label: "Single tab" },
+              { value: "none", label: "Hidden" }
+            ]
+          },
+          wrapTabs: {
+            setting: "workbench.editor.wrapTabs",
+            value: true,
+            effective: false
+          }
+        },
+        windowBehavior: {
+          openFoldersInNewWindow: {
+            setting: "window.openFoldersInNewWindow",
+            value: "default",
+            openInNewWindow: false
+          },
+          restoreWindows: {
+            setting: "window.restoreWindows",
+            value: "folders",
+            restorePreviousSession: false
+          }
         }
       }
     })
@@ -127,13 +184,27 @@ test("settings webview renders application settings and saves startup editor cho
   assert.match(document.getElementById("startup-editor-setting-info").textContent, /workbench\.startupEditor/);
   assert.match(document.getElementById("startup-editor-setting-info").textContent, /welcomePage/);
   assert.match(document.getElementById("startup-editor-setting-meta").textContent, /welcomePageInEmptyWorkbench/);
+  assert.equal(getRequiredElement(document, "#editor-show-tabs").value, "single");
+  assert.equal(getRequiredElement(document, "#editor-wrap-tabs-toggle").checked, true);
+  assert.match(document.getElementById("editor-wrap-tabs-dependency").textContent, /ignored unless Multiple tabs/);
+  assert.match(document.getElementById("open-folders-new-window-meta").textContent, /default/);
+  assert.match(document.getElementById("restore-windows-meta").textContent, /folders/);
   assert.ok(document.querySelector(".settings-save-bar"), "Expected a persistent Settings save bar");
 
   toggle.click();
+  setSelectValue(window, "#editor-show-tabs", "multiple");
+  assert.equal(getRequiredElement(document, "#editor-wrap-tabs-toggle").checked, true);
+  assert.match(document.getElementById("editor-wrap-tabs-dependency").textContent, /active/);
+  getRequiredElement(document, "#open-folders-new-window-toggle").click();
+  getRequiredElement(document, "#restore-windows-toggle").click();
   click(document, "#save-application-settings");
 
   expectPostedMessage(postedMessages, "update-application-settings", {
-    openNativeWelcomePage: false
+    openNativeWelcomePage: false,
+    showEditorTabs: "multiple",
+    wrapEditorTabs: true,
+    openFoldersInNewWindow: true,
+    restoreWindows: true
   });
 
   sendWindowMessage(window, {
@@ -144,13 +215,115 @@ test("settings webview renders application settings and saves startup editor cho
           setting: "workbench.startupEditor",
           value: "welcomePage",
           openNativeWelcomePage: true
+        },
+        editorTabs: {
+          showTabs: {
+            setting: "workbench.editor.showTabs",
+            value: "none",
+            options: [
+              { value: "multiple", label: "Multiple tabs" },
+              { value: "single", label: "Single tab" },
+              { value: "none", label: "Hidden" }
+            ]
+          },
+          wrapTabs: {
+            setting: "workbench.editor.wrapTabs",
+            value: false,
+            effective: false
+          }
+        },
+        windowBehavior: {
+          openFoldersInNewWindow: {
+            setting: "window.openFoldersInNewWindow",
+            value: "off",
+            openInNewWindow: false
+          },
+          restoreWindows: {
+            setting: "window.restoreWindows",
+            value: "none",
+            restorePreviousSession: false
+          }
         }
       }
     })
   });
 
   assert.equal(toggle.checked, true, "Expected incoming VS Code state to overwrite temporary switch state");
+  assert.equal(getRequiredElement(document, "#editor-show-tabs").value, "none");
+  assert.equal(getRequiredElement(document, "#editor-wrap-tabs-toggle").checked, false);
+  assert.equal(getRequiredElement(document, "#open-folders-new-window-toggle").checked, false);
+  assert.equal(getRequiredElement(document, "#restore-windows-toggle").checked, false);
   assert.match(document.getElementById("status").textContent, /Saved/);
+});
+
+test("settings webview renders the editor tabs and window behavior hypothesis matrix", async () => {
+  const { document, window } = await renderWebview();
+  const tabCombinations = [
+    { showTabs: "multiple", wrapTabs: false, dependency: /active/ },
+    { showTabs: "multiple", wrapTabs: true, dependency: /active/ },
+    { showTabs: "single", wrapTabs: false, dependency: /ignored unless Multiple tabs/ },
+    { showTabs: "single", wrapTabs: true, dependency: /ignored unless Multiple tabs/ },
+    { showTabs: "none", wrapTabs: false, dependency: /ignored unless Multiple tabs/ },
+    { showTabs: "none", wrapTabs: true, dependency: /ignored unless Multiple tabs/ }
+  ];
+
+  click(document, '[data-page="settings"]');
+
+  for (const combination of tabCombinations) {
+    sendWindowMessage(window, {
+      type: "state",
+      state: createInitialState({
+        applicationSettings: {
+          editorTabs: {
+            showTabs: {
+              setting: "workbench.editor.showTabs",
+              value: combination.showTabs,
+              options: [
+                { value: "multiple", label: "Multiple tabs" },
+                { value: "single", label: "Single tab" },
+                { value: "none", label: "Hidden" }
+              ]
+            },
+            wrapTabs: {
+              setting: "workbench.editor.wrapTabs",
+              value: combination.wrapTabs,
+              effective: combination.showTabs === "multiple"
+            }
+          }
+        }
+      })
+    });
+
+    expectVisiblePage(document, "settings");
+    assert.equal(getRequiredElement(document, "#editor-show-tabs").value, combination.showTabs);
+    assert.equal(getRequiredElement(document, "#editor-wrap-tabs-toggle").checked, combination.wrapTabs);
+    assert.match(document.getElementById("editor-wrap-tabs-dependency").textContent, combination.dependency);
+  }
+
+  sendWindowMessage(window, {
+    type: "state",
+    state: createInitialState({
+      applicationSettings: {
+        windowBehavior: {
+          openFoldersInNewWindow: {
+            setting: "window.openFoldersInNewWindow",
+            value: "on",
+            openInNewWindow: true
+          },
+          restoreWindows: {
+            setting: "window.restoreWindows",
+            value: "all",
+            restorePreviousSession: true
+          }
+        }
+      }
+    })
+  });
+
+  assert.equal(getRequiredElement(document, "#open-folders-new-window-toggle").checked, true);
+  assert.equal(getRequiredElement(document, "#restore-windows-toggle").checked, true);
+  assert.match(document.getElementById("open-folders-new-window-meta").textContent, /on/);
+  assert.match(document.getElementById("restore-windows-meta").textContent, /all/);
 });
 
 test("settings webview owns image controls on image customization page", async () => {

@@ -11,6 +11,7 @@ import { isRecord } from "../validation/guards";
 
 type LegacyColorSection = "workbench" | "token";
 type LegacyColorId = string | number;
+type EditorShowTabsValue = "multiple" | "single" | "none";
 export type EffectsStatusTone = "info" | "success" | "warning" | "error" | "busy";
 
 export type WebviewToHostMessage =
@@ -65,7 +66,14 @@ export type WebviewToHostMessage =
     | { readonly type: "update-empty-editor-logo-opacity"; readonly opacity: OpacityValue }
     | { readonly type: "update-editor-background-fit"; readonly fit: EditorBackgroundFit }
     | { readonly type: "update-effect-features"; readonly features: EffectFeatureSettings }
-    | { readonly type: "update-application-settings"; readonly openNativeWelcomePage: boolean }
+    | {
+        readonly type: "update-application-settings";
+        readonly openNativeWelcomePage: boolean;
+        readonly showEditorTabs: EditorShowTabsValue;
+        readonly wrapEditorTabs: boolean;
+        readonly openFoldersInNewWindow: boolean;
+        readonly restoreWindows: boolean;
+    }
     | { readonly type: "open-link"; readonly href: string }
     | { readonly type: "open-link"; readonly url: string }
     | { readonly type: "e2e-set-test-fixtures"; readonly fixtures: unknown }
@@ -150,7 +158,11 @@ export function isWebviewToHostMessage(value: unknown): value is WebviewToHostMe
         case "update-effect-features":
             return isEffectFeatureSettings(value.features);
         case "update-application-settings":
-            return typeof value.openNativeWelcomePage === "boolean";
+            return typeof value.openNativeWelcomePage === "boolean"
+                && isEditorShowTabsValue(value.showEditorTabs)
+                && typeof value.wrapEditorTabs === "boolean"
+                && typeof value.openFoldersInNewWindow === "boolean"
+                && typeof value.restoreWindows === "boolean";
         case "open-link":
             return typeof value.href === "string" || typeof value.url === "string";
         case "e2e-set-test-fixtures":
@@ -160,6 +172,10 @@ export function isWebviewToHostMessage(value: unknown): value is WebviewToHostMe
         default:
             return false;
     }
+}
+
+function isEditorShowTabsValue(value: unknown): value is EditorShowTabsValue {
+    return value === "multiple" || value === "single" || value === "none";
 }
 
 export function isHostToWebviewMessage(value: unknown): value is HostToWebviewMessage {
